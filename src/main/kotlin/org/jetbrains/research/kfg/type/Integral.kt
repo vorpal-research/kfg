@@ -59,6 +59,7 @@ class LongType : Integral {
     override fun getWidth() = width
     override fun isSigned() = signed
     override fun isLong() = true
+    override fun isDWord() = true
 }
 
 class CharType : Integral {

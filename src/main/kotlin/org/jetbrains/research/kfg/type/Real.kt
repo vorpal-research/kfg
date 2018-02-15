@@ -16,6 +16,7 @@ class FloatType : Real {
 class DoubleType : Real {
     override fun getName() = "double"
     override fun toString() = getName()
+    override fun isDWord() = true
 
     companion object {
         val instance = DoubleType()
