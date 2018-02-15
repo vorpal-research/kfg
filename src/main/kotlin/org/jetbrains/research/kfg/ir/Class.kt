@@ -24,4 +24,6 @@ class Class {
         this.superClass = superClass
         this.modifiers = modifiers
     }
+
+    fun getMethod(name: String) = methods.find { it.name == name }
 }

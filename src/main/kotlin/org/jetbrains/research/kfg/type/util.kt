@@ -1,6 +1,8 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.InvalidTypeDescException
+import org.jetbrains.research.kfg.UnexpectedOpcodeException
+import org.objectweb.asm.Opcodes
 
 fun toRealName(type: String) = type.replace('/', '.')
 
@@ -21,5 +23,20 @@ fun parseDesc(desc: String): Type {
         }
         '[' -> tf.getArrayType(parseDesc(desc.substring(1)))
         else -> throw InvalidTypeDescException(desc)
+    }
+}
+
+fun parsePrimaryType(opcode: Int): Type {
+    val tf = TypeFactory.instance
+    return when (opcode) {
+        Opcodes.T_CHAR -> tf.getCharType()
+        Opcodes.T_BOOLEAN -> tf.getBoolType()
+        Opcodes.T_BYTE -> tf.getByteType()
+        Opcodes.T_DOUBLE -> tf.getDoubleType()
+        Opcodes.T_FLOAT -> tf.getFloatType()
+        Opcodes.T_INT -> tf.getIntType()
+        Opcodes.T_LONG -> tf.getLongType()
+        Opcodes.T_SHORT -> tf.getShortType()
+        else -> throw UnexpectedOpcodeException("PrimaryType opcode $opcode")
     }
 }

@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kfg.ir.instruction.Instruction
+
 class BasicBlock {
     val name: String
     val method: Method
