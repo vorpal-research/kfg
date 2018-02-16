@@ -13,4 +13,7 @@ class BasicBlock {
         this.name = name
         this.method = method
     }
+
+    fun addSuccessor(bb: BasicBlock) = successors.add(bb)
+    fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
 }

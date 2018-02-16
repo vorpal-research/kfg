@@ -1,10 +1,14 @@
 package org.jetbrains.research.kfg.value
 
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.value.expr.*
 
 class ValueFactory {
+    val exprFactory = ExprFactory()
+
     private object Holder {
         val instance = ValueFactory()
     }
@@ -22,26 +26,7 @@ class ValueFactory {
     fun getLongConstant(value: Long): Value = LongConstant(value)
     fun getFloatConstant(value: Float): Value = FloatConstant(value)
     fun getDoubleConstant(value: Double): Value = DoubleConstant(value)
-
-    // terms
-    fun getArrayLoad(arrayRef: Value, index: Value): Value {
-        val type = arrayRef.type as ArrayType
-        return ArrayLoadValue(type, arrayRef, index)
-    }
-
-    fun getNewArray(type: Type, count: Value): Value = NewArrayValue(type, count)
-
-    fun getNew(type: Type): Value = NewValue(type)
-
-    fun getCheckCast(type: Type, obj: Value): Value = CheckCastValue(type, obj)
-
-    fun getInstanceOf(obj: Value): Value = InstanceOfValue(obj)
-
-    fun getBinary(opcode: BinaryOpcode, lhv: Value, rhv: Value): Value = BinaryValue(opcode, lhv, rhv)
-
-    fun getCast(type: Type, obj: Value): Value = CastValue(type, obj)
-
-    fun getCmp(opcode: CmpOpcode, lhv: Value, rhv: Value): Value = CmpValue(opcode, lhv, rhv)
-
-    fun getArrayLength(arrayRef: Value): Value = ArrayLengthValue(arrayRef)
+    fun getStringConstant(value: String): Value = StringConstant(value)
+    fun getClassConstant(desc: String): Value = ClassConstant(desc)
+    fun getMethodConstant(method: Method): Value = MethodConstant(method)
 }

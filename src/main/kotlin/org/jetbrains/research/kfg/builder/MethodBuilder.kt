@@ -5,18 +5,16 @@ import org.jetbrains.research.kfg.InvalidOperandException
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.ClassManager
-import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.instruction.Instruction
 import org.jetbrains.research.kfg.ir.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseDesc
 import org.jetbrains.research.kfg.type.parsePrimaryType
-import org.jetbrains.research.kfg.value.Value
-import org.jetbrains.research.kfg.value.ValueFactory
-import org.jetbrains.research.kfg.value.toBinaryOpcode
-import org.jetbrains.research.kfg.value.toCmpOpcode
-import org.objectweb.asm.AnnotationVisitor
+import org.jetbrains.research.kfg.value.*
+import org.jetbrains.research.kfg.value.expr.BinaryOpcode
+import org.jetbrains.research.kfg.value.expr.UnaryOpcode
+import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Handle
 import org.objectweb.asm.Label
 import org.objectweb.asm.Opcodes
@@ -26,15 +24,36 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
     : JSRInlinerAdapter(null, method.modifiers, method.name, desc, null, exceptions) {
     val TF = TypeFactory.instance
     val VF = ValueFactory.instance
+    val EF = VF.exprFactory
     val IF = InstructionFactory.instance
 
     private val locals = mutableMapOf<Int, Value>()
+    private val labels = mutableMapOf<Label, BasicBlock>()
     private val stack = Stack<Value>()
     private var currentBlock = BasicBlock("entry", method)
+    private var successor: BasicBlock? = null
+    private var cond: Value? = null
 
     private fun newInstruction(i: Instruction) {
         currentBlock.instructions.add(i)
         i.bb = currentBlock
+    }
+
+    private fun getBasicBlockByLabel(lbl: Label): BasicBlock {
+        if (labels.contains(lbl)) {
+            return labels[lbl]!!
+        } else {
+            val bb = BasicBlock(lbl.toString(), method)
+            labels[lbl] = bb
+            return bb
+        }
+    }
+
+    private fun newBasicBlock(bb: BasicBlock) {
+        currentBlock.addSuccessor(bb)
+        bb.addPredecessor(currentBlock)
+        method.addBasicBlock(bb)
+        currentBlock = bb
     }
 
     private fun convertConst(opcode: Int) {
@@ -52,7 +71,7 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
     private fun convertArrayLoad(opcode: Int) {
         val index = stack.pop()
         val arrayRef = stack.pop()
-        stack.push(VF.getArrayLoad(arrayRef, index))
+        stack.push(EF.getArrayLoad(arrayRef, index))
     }
 
     private fun convertArrayStore(opcode: Int) {
@@ -164,7 +183,17 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
         val lhv = stack.pop()
         val rhv = stack.pop()
         val binOp = toBinaryOpcode(opcode)
-        stack.push(VF.getBinary(binOp, lhv, rhv))
+        stack.push(EF.getBinary(binOp, lhv, rhv))
+    }
+
+    private fun convertUnary(opcode: Int) {
+        val array = stack.pop()
+        val op = when (opcode) {
+            in INEG .. DNEG -> UnaryOpcode.NEG
+            ARRAYLENGTH -> UnaryOpcode.LENGTH
+            else -> throw InvalidOperandException("Unary opcode $opcode")
+        }
+        stack.push(EF.getUnary(op, array))
     }
 
     private fun convertCast(opcode: Int) {
@@ -179,14 +208,14 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
             I2S -> TF.getShortType()
             else -> throw UnexpectedOpcodeException("Cast opcode $opcode")
         }
-        stack.push(VF.getCast(type, op))
+        stack.push(EF.getCast(type, op))
     }
 
     private fun convertCmp(opcode: Int) {
         val lhv = stack.pop()
         val rhv = stack.pop()
         val op = toCmpOpcode(opcode)
-        stack.push(VF.getCmp(op, lhv, rhv))
+        stack.push(EF.getCmp(op, lhv, rhv))
     }
 
     private fun convertReturn(opcode: Int) {
@@ -196,11 +225,6 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
             val retval = stack.pop()
             newInstruction(IF.getReturn(retval))
         }
-    }
-
-    private fun convertArrayLength(opcode: Int) {
-        val array = stack.pop()
-        stack.push(VF.getArrayLength(array))
     }
 
     private fun convertLocalLoad(opcode: Int, `var`: Int) {
@@ -213,12 +237,23 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
         newInstruction(IF.getAssign(local, obj))
     }
 
+    private fun convertMonitor(opcode: Int) {
+        val owner = stack.pop()
+        when (opcode) {
+            MONITORENTER -> newInstruction(IF.getEnterMonitor(owner))
+            MONITOREXIT -> newInstruction(IF.getExitMonitor(owner))
+            else -> throw UnexpectedOpcodeException("Monitor opcode $opcode")
+        }
+    }
+
     override fun visitCode() {
         super.visitCode()
         var indx = 0
         for (it in method.arguments) {
             locals[indx] = VF.getLocal(indx++, it)
         }
+        val entryLbl = Label()
+        labels[entryLbl] = currentBlock
     }
 
     override fun visitInsn(opcode: Int) {
@@ -232,14 +267,14 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
             in DUP .. DUP2_X2 -> convertDup(opcode)
             SWAP -> convertSwap(opcode)
             in IADD .. DREM -> convertBinary(opcode)
+            in INEG .. DNEG -> convertUnary(opcode)
             in ISHL .. LXOR -> convertBinary(opcode)
             in I2L .. I2S -> convertCast(opcode)
             in LCMP .. DCMPG -> convertCmp(opcode)
             in IRETURN .. RETURN -> convertReturn(opcode)
-            ARRAYLENGTH -> convertArrayLength(opcode)
+            ARRAYLENGTH -> convertUnary(opcode)
             ATHROW -> TODO()
-            MONITORENTER -> TODO()
-            MONITOREXIT -> TODO()
+            in MONITORENTER .. MONITOREXIT -> convertMonitor(opcode)
             else -> throw UnexpectedOpcodeException("Insn opcode $opcode")
         }
     }
@@ -252,7 +287,7 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
             NEWARRAY -> {
                 val type = parsePrimaryType(operand)
                 val count = stack.pop()
-                stack.push(VF.getNewArray(type, count))
+                stack.push(EF.getNewArray(type, count))
             }
             else -> throw UnexpectedOpcodeException("IntInsn opcode $opcode")
         }
@@ -272,18 +307,18 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
         super.visitTypeInsn(opcode, desc)
         val type = parseDesc(desc)
         when (opcode) {
-            NEW -> stack.push(VF.getNew(type))
+            NEW -> stack.push(EF.getNew(type))
             ANEWARRAY -> {
                 val count = stack.pop()
-                stack.push(VF.getNewArray(type, count))
+                stack.push(EF.getNewArray(type, count))
             }
             CHECKCAST -> {
                 val castable = stack.pop()
-                stack.push(VF.getCheckCast(type, castable))
+                stack.push(EF.getCheckCast(type, castable))
             }
             INSTANCEOF -> {
                 val obj = stack.pop()
-                stack.push(VF.getInstanceOf(obj))
+                stack.push(EF.getInstanceOf(obj))
             }
             else -> InvalidOpcodeException("$opcode in TypeInsn")
         }
@@ -329,22 +364,59 @@ class MethodBuilder(val method: Method, val CM: ClassManager, desc: String, exce
 
     override fun visitJumpInsn(opcode: Int, lbl: Label?) {
         super.visitJumpInsn(opcode, lbl)
-        TODO()
+        if (lbl == null) throw InvalidOperandException("Null label in jump")
+
+        var succ = getBasicBlockByLabel(lbl)
+        if (opcode == GOTO) {
+            newInstruction(IF.getJump(succ))
+        } else {
+            val lhv = stack.pop()
+            val opc = toCmpOpcode(opcode)
+            successor = succ
+            cond = when (opcode) {
+                in IFEQ .. IFLE -> EF.getCmp(opc, lhv, VF.getIntConstant(0))
+                in IF_ICMPEQ .. IF_ACMPNE -> EF.getCmp(opc, lhv, stack.pop())
+                in IFNULL .. IFNONNULL -> EF.getCmp(opc, lhv, VF.getNullConstant())
+                else -> throw UnexpectedOpcodeException("Jump opcode $opcode")
+            }
+        }
     }
 
     override fun visitLabel(label: Label?) {
         super.visitLabel(label)
-        TODO()
+        if (label == null) throw InvalidOperandException("Null label in label")
+        val next = getBasicBlockByLabel(label)
+        if (cond != null && successor != null) {
+            newInstruction(IF.getBranch(cond!!, next, successor!!))
+        }
+        newBasicBlock(next)
     }
 
-    override fun visitLdcInsn(cst: Any?) {
+    override fun visitLdcInsn(cst: Any) {
         super.visitLdcInsn(cst)
-        TODO()
+        when (cst) {
+            is Int -> stack.push(VF.getIntConstant(cst))
+            is Float -> stack.push(VF.getFloatConstant(cst))
+            is Double -> stack.push(VF.getDoubleConstant(cst))
+            is Long -> stack.push(VF.getLongConstant(cst))
+            is String -> stack.push(VF.getStringConstant(cst))
+            is org.objectweb.asm.Type -> stack.push(VF.getClassConstant(cst.descriptor))
+            is org.objectweb.asm.Handle -> {
+                val klass = CM.getClassByName(cst.owner)
+                        ?: throw InvalidOperandException("Class ${cst.owner}")
+                val method = klass.getMethod(cst.name)
+                        ?: throw InvalidOperandException("Method ${cst.name} in ${cst.owner}")
+                stack.push(VF.getMethodConstant(method))
+            }
+            else -> throw InvalidOperandException("Unknown object $cst")
+        }
     }
 
     override fun visitIincInsn(`var`: Int, increment: Int) {
         super.visitIincInsn(`var`, increment)
-        TODO()
+        val lhv = locals[`var`] ?: throw InvalidOperandException("$`var` local is invalid")
+        val rhv = EF.getBinary(BinaryOpcode.ADD, lhv, VF.getIntConstant(increment))
+        newInstruction(IF.getAssign(lhv, rhv))
     }
 
     override fun visitTableSwitchInsn(min: Int, max: Int, dflt: Label?, vararg labels: Label?) {
