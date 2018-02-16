@@ -5,4 +5,6 @@ import org.jetbrains.research.kfg.value.Value
 
 class Method(val name: String, val classRef: Class, val modifiers: Int, val arguments: Array<Type>, val retType: Type) {
     val basicBlocks = mutableListOf<BasicBlock>()
+
+    fun addBasicBlock(bb: BasicBlock) = basicBlocks.add(bb)
 }
