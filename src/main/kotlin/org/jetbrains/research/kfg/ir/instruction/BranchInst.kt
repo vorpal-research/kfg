@@ -5,4 +5,6 @@ import org.jetbrains.research.kfg.value.Value
 
 class BranchInst(cond: Value, val trueSuccessor: BasicBlock, val falseSuccessor: BasicBlock) : Instruction(arrayOf(cond)) {
     fun getCond() = operands[0]
+
+    override fun print() = "if (${getCond()}) goto ${trueSuccessor.name} else ${falseSuccessor.name}"
 }

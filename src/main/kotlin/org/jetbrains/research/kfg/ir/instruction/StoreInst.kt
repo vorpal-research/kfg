@@ -6,4 +6,6 @@ class StoreInst(arrayRef: Value, index: Value, value: Value) : Instruction(array
     fun getArrayRef() = operands[0]
     fun getIndex() = operands[1]
     fun getValue() = operands[2]
+
+    override fun print() = "${getArrayRef()}[${getIndex()}] = ${getValue()}"
 }

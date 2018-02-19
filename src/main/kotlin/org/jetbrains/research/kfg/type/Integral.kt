@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.type
 
 interface Integral : Type {
     override fun isPrimitive() = true
+    override fun isIntegral() = true
 
     fun getWidth(): Int
     fun isSigned(): Boolean

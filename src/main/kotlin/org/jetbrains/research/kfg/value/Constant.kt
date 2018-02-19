@@ -7,6 +7,9 @@ import org.jetbrains.research.kfg.type.parseDesc
 
 abstract class Constant(type: Type) : Value(type)
 
+class BoolConstant(val value: Boolean) : Constant(TypeFactory.instance.getBoolType()) {
+    override fun getName() = value.toString()
+}
 class ByteConstant(val value: Byte) : Constant(TypeFactory.instance.getByteType()) {
     override fun getName() = value.toString()
 }
@@ -44,7 +47,7 @@ class NullConstant : Constant(TypeFactory.instance.getNullType()) {
 }
 
 class StringConstant(val value: String) : Constant(TypeFactory.instance.getRefType("java.lang.String")) {
-    override fun getName() = value
+    override fun getName() = "\"$value\""
 }
 
 class ClassConstant(val desc: String) : Constant(parseDesc(desc)) {
