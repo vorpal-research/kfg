@@ -9,4 +9,11 @@ class ReturnInst : Instruction {
     fun hasReturnValue() = operands.isNotEmpty()
     fun getReturnType() = operands[0].type
     fun getReturnValue() = operands[0]
+
+    override fun print(): String {
+        val sb = StringBuilder()
+        sb.append("return ")
+        if (hasReturnValue()) sb.appendln(getReturnValue())
+        return sb.toString()
+    }
 }

@@ -7,4 +7,5 @@ class VoidType : Type {
 
     override fun getName() = "void"
     override fun isPrimitive() = false
+    override fun isVoid() = true
 }

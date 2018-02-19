@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.value.expr
 
+import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.value.Value
@@ -25,4 +27,8 @@ class ExprFactory {
     fun getCmp(opcode: CmpOpcode, lhv: Value, rhv: Value): Expr = CmpExpr(opcode, lhv, rhv)
 
     fun getUnary(opcode: UnaryOpcode, arrayRef: Value): Expr = UnaryExpr(opcode, arrayRef)
+
+    fun getCall(type: Type, method: Method, klass: Class, args: Array<Value>): Expr = CallExpr(type, method, klass, args)
+
+    fun getCall(type: Type, method: Method, klass: Class, obj: Value, args: Array<Value>): Expr = CallExpr(type, method, klass, obj, args)
 }

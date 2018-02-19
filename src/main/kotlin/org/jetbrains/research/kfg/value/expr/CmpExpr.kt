@@ -15,9 +15,20 @@ enum class CmpOpcode {
     CMPL
 }
 
+fun CmpOpcode.print(): String = when (this) {
+    CmpOpcode.EQ -> "=="
+    CmpOpcode.NE -> "!="
+    CmpOpcode.LT -> "<"
+    CmpOpcode.GT -> ">"
+    CmpOpcode.LE -> "<="
+    CmpOpcode.GE -> ">="
+    CmpOpcode.CMPG -> "cmpg"
+    CmpOpcode.CMPL -> "cmpl"
+}
+
 class CmpExpr(val opcode: CmpOpcode, lhv: Value, rhv: Value) : Expr(TypeFactory.instance.getIntType(), arrayOf(lhv, rhv)) {
     init {
         if (!lhv.type.equals(rhv.type)) throw InvalidOperandException("Cmp value with different types: ${lhv.type} ${rhv.type}")
     }
-    override fun getName() = "${operands[0]} ${opcode.name} ${operands[1]}"
+    override fun getName() = "${operands[0]} ${opcode.print()} ${operands[1]}"
 }

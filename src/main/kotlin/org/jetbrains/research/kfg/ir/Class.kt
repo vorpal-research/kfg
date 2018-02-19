@@ -5,11 +5,14 @@ import org.jetbrains.research.kfg.value.Field
 class Class {
     val name: String
     val packageName: String
-    val superClass: Class?
-    val modifiers: Int
+    var superClass: Class?
+    var modifiers: Int
     val fields = mutableListOf<Field>()
     val interfaces = mutableListOf<Class>()
     val methods = mutableListOf<Method>()
+
+    constructor(fullName: String) : this(fullName, null, 0)
+    constructor(name: String, packageName: String) : this(name, packageName, null, 0)
 
     constructor(fullName: String, superClass: Class?, modifiers: Int) {
         this.name = fullName.substringAfterLast('.')
@@ -26,4 +29,14 @@ class Class {
     }
 
     fun getMethod(name: String) = methods.find { it.name == name }
+
+    fun createOrGet(name: String, desc: String): Method {
+        val mt = getMethod(name)
+        if (mt != null) return mt
+        else {
+            val new = Method(name, this, 0, desc)
+            methods.add(new)
+            return new
+        }
+    }
 }

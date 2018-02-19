@@ -4,5 +4,5 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.value.Value
 
 class NewArrayExpr(type: Type, count: Value) : Expr(type, arrayOf(count)) {
-    override fun getName() = "new $type[${operands[0]}]"
+    override fun getName() = "new ${type.getName()}[${operands[0]}]"
 }
