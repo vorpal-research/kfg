@@ -1,6 +1,5 @@
 package org.jetbrains.research.kfg.builder
 
-import org.jetbrains.research.kfg.InvalidOperandException
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ClassManager
 import org.jetbrains.research.kfg.ir.Method
@@ -8,43 +7,44 @@ import org.jetbrains.research.kfg.type.parseDesc
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.value.Field
 import org.jetbrains.research.kfg.value.ValueFactory
-import org.objectweb.asm.*
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
-class ClassBuilder(val cn: ClassNode) : ClassVisitor(Opcodes.ASM5) {
+class ClassBuilder(val cn: ClassNode) {
     val currentClass: Class
     val CM = ClassManager.instance
     val VF = ValueFactory.instance
 
     init {
         currentClass = CM.createOrGet(cn.name)
-        if (cn.superName != null) currentClass.superClass = CM.createOrGet(cn.superName)
     }
 
-    override fun visitField(access: Int, name: String, desc: String, signature: String?, value: Any?): FieldVisitor? {
-        val type = parseDesc(desc)
-        val `val` = when (value) {
-            Int -> VF.getIntConstant(value as Int)
-            Float -> VF.getFloatConstant(value as Float)
-            Long -> VF.getLongConstant(value as Long)
-            Double -> VF.getDoubleConstant(value as Double)
-            String -> VF.getStringConstant(value as String)
+    private fun visitField(fn: FieldNode) {
+        val type = parseDesc(fn.desc)
+        val `val` = when (fn.value) {
+            Int -> VF.getIntConstant(fn.value as Int)
+            Float -> VF.getFloatConstant(fn.value as Float)
+            Long -> VF.getLongConstant(fn.value as Long)
+            Double -> VF.getDoubleConstant(fn.value as Double)
+            String -> VF.getStringConstant(fn.value as String)
             else -> null
         }
         val field =
-                if (`val` != null) VF.getField(name, currentClass, type, `val`)
-                else VF.getField(name, currentClass, type)
+                if (`val` != null) VF.getField(fn.name, currentClass, type, `val`)
+                else VF.getField(fn.name, currentClass, type)
         currentClass.fields.add(field as Field)
-        return null
     }
 
-    override fun visitMethod(access: Int, name: String, desc: String,
-                    signature: String?, exceptions: Array<String>?): MethodVisitor? {
-        super.visitMethod(access, name, desc, signature, exceptions)
-        val methodType = parseMethodDesc(desc)
-        val method = Method(name, currentClass, access, methodType.first, methodType.second)
-        return MethodBuilder(method, desc, exceptions?.map { it.toString() }?.toTypedArray() ?: arrayOf())
+    private fun visitMethod(mn: MethodNode) {
+        val methodType = parseMethodDesc(mn.desc)
+        val method = Method(mn.name, currentClass, mn.access, methodType.first, methodType.second)
+        MethodBuilder(method, mn).convert()
+    }
+
+    fun doit() {
+        if (cn.superName != null) currentClass.superClass = CM.createOrGet(cn.superName)
+        cn.fields.forEach { visitField(it as FieldNode) }
+        cn.methods.forEach { visitMethod(it as MethodNode) }
     }
 }

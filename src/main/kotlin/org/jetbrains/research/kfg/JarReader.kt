@@ -9,11 +9,6 @@ import java.net.URL
 import java.util.jar.JarFile
 import java.util.jar.JarEntry
 import java.util.HashMap
-import java.util.ArrayList
-
-
-
-
 
 class JarReader(val name: String) {
     val jar = JarFile(name)
@@ -44,8 +39,7 @@ class JarReader(val name: String) {
     fun doit() {
         val entries = jar.entries()
         for (it in parseJar(jar)) {
-            val cn = it.value
-            cn.accept(ClassBuilder(cn))
+            ClassBuilder(it.value).doit()
         }
         ClassManager.instance.classes.forEach {
             println("${it.value.packageName} ${it.value.name}")
