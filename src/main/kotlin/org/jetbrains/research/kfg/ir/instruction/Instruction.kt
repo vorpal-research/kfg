@@ -8,4 +8,6 @@ abstract class Instruction (val operands: Array<Value>) {
 
     abstract fun print(): String
     override fun toString() = print()
+
+    open fun isTerminate() = false
 }

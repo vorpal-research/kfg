@@ -39,4 +39,15 @@ class Class {
             return new
         }
     }
+
+    fun isPublic() = isPublic(modifiers)
+    fun isPrivate() = isPrivate(modifiers)
+    fun isProtected() = isProtected(modifiers)
+    fun isFinal() = isFinal(modifiers)
+    fun isSuper() = isSuper(modifiers)
+    fun isInterface() = isInterface(modifiers)
+    fun isAbstract() = isAbstract(modifiers)
+    fun isSynthetic() = isSynthetic(modifiers)
+    fun isAnnotation() = isAnnotation(modifiers)
+    fun isEnum() = isEnum(modifiers)
 }

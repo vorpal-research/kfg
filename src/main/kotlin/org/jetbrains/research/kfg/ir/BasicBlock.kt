@@ -21,8 +21,13 @@ class BasicBlock {
     fun addHandler(exc: Type, bb: BasicBlock) {
         exceptionHandlers[exc] = bb
     }
+    fun addInstruction(inst: Instruction) = instructions.add(inst)
 
     fun isEmpty() = instructions.isEmpty()
+    fun isNotEmpty() = !isEmpty()
+
+    fun front() = instructions.first()
+    fun back() = instructions.last()
 
     override fun toString(): String {
         val sb = StringBuilder()

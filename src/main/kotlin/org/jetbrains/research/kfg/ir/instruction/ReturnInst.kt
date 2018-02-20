@@ -10,6 +10,7 @@ class ReturnInst : Instruction {
     fun getReturnType() = operands[0].type
     fun getReturnValue() = operands[0]
 
+    override fun isTerminate() = true
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("return ")

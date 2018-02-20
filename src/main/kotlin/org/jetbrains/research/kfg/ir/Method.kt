@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
+import org.objectweb.asm.Opcodes
 
 class Method{
     val name: String
@@ -29,6 +30,10 @@ class Method{
     }
 
     fun addBasicBlock(bb: BasicBlock) = basicBlocks.add(bb)
+    fun addIfNotContains(bb: BasicBlock) {
+        if (!basicBlocks.contains(bb)) basicBlocks.add(bb)
+    }
+
     fun getBlockRange(from: BasicBlock, to: BasicBlock): List<BasicBlock> {
         val start = basicBlocks.indexOf(from)
         val end = basicBlocks.indexOf(to)
@@ -50,4 +55,17 @@ class Method{
         basicBlocks.forEach { sb.appendln(it) }
         return sb.toString()
     }
+
+    fun isPublic() = isPublic(modifiers)
+    fun isPrivate() = isPrivate(modifiers)
+    fun isProtected() = isProtected(modifiers)
+    fun isStatic()= isStatic(modifiers)
+    fun isFinal() = isFinal(modifiers)
+    fun isSynchronized() = isSynchronized(modifiers)
+    fun isBridge() = isBridge(modifiers)
+    fun isVarArg() = isVarargs(modifiers)
+    fun isNative() = isNative(modifiers)
+    fun isAbstract() = isAbstract(modifiers)
+    fun isStrict() = isStrict(modifiers)
+    fun isSynthetic() = isSynthetic(modifiers)
 }
