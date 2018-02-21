@@ -2,7 +2,6 @@ package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.objectweb.asm.Opcodes
 
 class Method{
     val name: String
