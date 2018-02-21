@@ -17,11 +17,17 @@ class BasicBlock {
     }
 
     fun addSuccessor(bb: BasicBlock) = successors.add(bb)
+    fun addSuccessors(vararg bbs: BasicBlock) = successors.addAll(bbs)
     fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
+    fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
     fun addHandler(exc: Type, bb: BasicBlock) {
         exceptionHandlers[exc] = bb
     }
-    fun addInstruction(inst: Instruction) = instructions.add(inst)
+
+    fun addInstruction(inst: Instruction){
+        instructions.add(inst)
+        inst.bb = this
+    }
 
     fun isEmpty() = instructions.isEmpty()
     fun isNotEmpty() = !isEmpty()
@@ -31,7 +37,10 @@ class BasicBlock {
 
     override fun toString(): String {
         val sb = StringBuilder()
-        sb.appendln("$name:")
+        sb.append("$name: \t")
+        predecessors.take(1).forEach { sb.append(it.name) }
+        predecessors.drop(1).forEach { sb.append(", ${it.name}") }
+        sb.appendln()
         instructions.forEach {
             sb.appendln("\t$it")
         }

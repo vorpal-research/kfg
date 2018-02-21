@@ -1,9 +1,6 @@
 package org.jetbrains.research.kfg.builder
 
-import org.jetbrains.research.kfg.InvalidOpcodeException
-import org.jetbrains.research.kfg.InvalidOperandException
-import org.jetbrains.research.kfg.InvalidTypeDescException
-import org.jetbrains.research.kfg.UnexpectedOpcodeException
+import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.ClassManager
 import org.jetbrains.research.kfg.ir.Method
@@ -22,43 +19,67 @@ import org.objectweb.asm.tree.*
 import java.util.*
 
 class MethodBuilder(val method: Method, val mn: MethodNode)
-    : JSRInlinerAdapter(Opcodes.ASM5, mn, method.modifiers, method.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
+    : JSRInlinerAdapter(Opcodes.ASM5, mn, mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
     val CM = ClassManager.instance
     val TF = TypeFactory.instance
     val VF = ValueFactory.instance
     val EF = VF.exprFactory
     val IF = InstructionFactory.instance
 
-    private val locals = mutableMapOf<Int, Value>()
-    private val labels = mutableMapOf<LabelNode, BasicBlock>()
-    private val stack = Stack<Value>()
-    private var currentBlock = BasicBlock("entry", method)
-    private var numLocals = mn.maxLocals
-    private var bbc = 0
+    inner class StackFrame {
+        val inputs = mutableSetOf<BasicBlock>()
+        private var out: MutableList<Value>? = null
 
-    private fun newLocal(type: Type): Value = VF.getLocal(numLocals++, type)
+        fun contains(bb: BasicBlock) = inputs.contains(bb)
+        fun add(bb: BasicBlock) {
+            inputs.add(bb)
+        }
 
-    private fun addInst(i: Instruction) {
-        currentBlock.instructions.add(i)
-        i.bb = currentBlock
-    }
-
-    private fun getBasicBlockByLabel(lbl: LabelNode): BasicBlock {
-        if (labels.contains(lbl)) {
-            return labels[lbl]!!
-        } else {
-            val bb = BasicBlock("%bb${bbc++}", method)
-            labels[lbl] = bb
-            return bb
+        fun reserve(): List<Value> {
+            if (out == null) {
+                val newOut = mutableListOf<Value>()
+                val currentStack = stack.toTypedArray()
+                currentStack.mapTo(newOut) { newLocal(it.type) }
+                out = newOut
+            }
+            return out?.toList() ?: throw UnexpectedException("Stack frame has no reserved values")
         }
     }
 
-    private fun addBasicBlock(bb: BasicBlock) {
-        method.addIfNotContains(currentBlock)
-        currentBlock = bb
+    private val locals = mutableMapOf<Int, Value>()
+    private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
+    private val frames = mutableSetOf<StackFrame>()
+    private val stack = Stack<Value>()
+    private var numLocals = mn.maxLocals
+
+    private fun getFrameUnsafe(bb: BasicBlock): StackFrame? {
+        return frames.firstOrNull { it.contains(bb) }
     }
 
-    private fun convertConst(opcode: Int) {
+    private fun getFrame(bb: BasicBlock): StackFrame {
+        val unsf = getFrameUnsafe(bb)
+        if (unsf != null) return unsf
+        val sf = StackFrame()
+        sf.add(bb)
+        frames.add(sf)
+        return sf
+    }
+
+    private fun reserveStack(bb: BasicBlock) {
+        val sf = getFrame(bb)
+        val reserved = sf.reserve()
+        for (`var` in reserved) {
+            bb.addInstruction(IF.getAssign(`var`, stack.pop()))
+        }
+        reserved.reversed().forEach { stack.push(it) }
+    }
+
+    private fun newLocal(type: Type): Value = VF.getLocal(numLocals++, type)
+
+    private fun getBasicBlock(insn: AbstractInsnNode) = nodeToBlock[insn] ?: throw UnexpectedException("Unknown node $insn")
+
+    private fun convertConst(insn: InsnNode) {
+        val opcode = insn.opcode
         val cnst = when {
             opcode == ACONST_NULL -> VF.getNullConstant()
             opcode in ICONST_0..ICONST_5 -> VF.getIntConstant(opcode - ICONST_0)
@@ -70,20 +91,22 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         stack.push(cnst)
     }
 
-    private fun convertArrayLoad(opcode: Int) {
+    private fun convertArrayLoad(insn: InsnNode) {
         val index = stack.pop()
         val arrayRef = stack.pop()
         stack.push(EF.getArrayLoad(arrayRef, index))
     }
 
-    private fun convertArrayStore(opcode: Int) {
+    private fun convertArrayStore(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val value = stack.pop()
         val index = stack.pop()
         val array = stack.pop()
-        addInst(IF.getStore(array, index, value))
+        bb.addInstruction(IF.getStore(array, index, value))
     }
 
-    private fun convertPop(opcode: Int) {
+    private fun convertPop(insn: InsnNode) {
+        val opcode = insn.opcode
         when (opcode) {
             POP -> stack.pop()
             POP2 -> {
@@ -94,7 +117,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
-    private fun convertDup(opcode: Int) {
+    private fun convertDup(insn: InsnNode) {
+        val opcode = insn.opcode
         when (opcode) {
             DUP -> stack.push(stack.peek())
             DUP_X1 -> {
@@ -149,7 +173,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                     stack.push(val1)
                 }
             }
-            DUP2_X2 ->  {
+            DUP2_X2 -> {
                 val val1 = stack.pop()
                 if (val1.type.isDWord()) {
                     val val2 = stack.pop()
@@ -174,33 +198,33 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
-    private fun convertSwap(opcode: Int) {
+    private fun convertSwap(insn: InsnNode) {
         val top = stack.pop()
         val bot = stack.pop()
         stack.push(top)
         stack.push(bot)
     }
 
-    private fun convertBinary(opcode: Int) {
+    private fun convertBinary(insn: InsnNode) {
         val lhv = stack.pop()
         val rhv = stack.pop()
-        val binOp = toBinaryOpcode(opcode)
+        val binOp = toBinaryOpcode(insn.opcode)
         stack.push(EF.getBinary(binOp, lhv, rhv))
     }
 
-    private fun convertUnary(opcode: Int) {
+    private fun convertUnary(insn: InsnNode) {
         val array = stack.pop()
-        val op = when (opcode) {
-            in INEG .. DNEG -> UnaryOpcode.NEG
+        val op = when (insn.opcode) {
+            in INEG..DNEG -> UnaryOpcode.NEG
             ARRAYLENGTH -> UnaryOpcode.LENGTH
-            else -> throw InvalidOperandException("Unary opcode $opcode")
+            else -> throw InvalidOperandException("Unary opcode ${insn.opcode}")
         }
         stack.push(EF.getUnary(op, array))
     }
 
-    private fun convertCast(opcode: Int) {
+    private fun convertCast(insn: InsnNode) {
         val op = stack.pop()
-        val type = when (opcode) {
+        val type = when (insn.opcode) {
             in arrayOf(I2L, F2L, D2L) -> TF.getLongType()
             in arrayOf(I2F, L2F, D2F) -> TF.getFloatType()
             in arrayOf(I2D, L2D, F2D) -> TF.getDoubleType()
@@ -208,75 +232,80 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             I2B -> TF.getByteType()
             I2C -> TF.getCharType()
             I2S -> TF.getShortType()
-            else -> throw UnexpectedOpcodeException("Cast opcode $opcode")
+            else -> throw UnexpectedOpcodeException("Cast opcode ${insn.opcode}")
         }
         stack.push(EF.getCast(type, op))
     }
 
-    private fun convertCmp(opcode: Int) {
+    private fun convertCmp(insn: InsnNode) {
         val lhv = stack.pop()
         val rhv = stack.pop()
-        val op = toCmpOpcode(opcode)
+        val op = toCmpOpcode(insn.opcode)
         stack.push(EF.getCmp(op, lhv, rhv))
     }
 
-    private fun convertReturn(opcode: Int) {
-        if (opcode == RETURN) {
-            addInst(IF.getReturn())
+    private fun convertReturn(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
+        if (insn.opcode == RETURN) {
+            bb.addInstruction(IF.getReturn())
         } else {
             val retval = stack.pop()
-            addInst(IF.getReturn(retval))
+            bb.addInstruction(IF.getReturn(retval))
         }
     }
 
-    private fun convertLocalLoad(opcode: Int, `var`: Int) {
-        stack.push(locals[`var`])
-    }
-
-    private fun convertLocalStore(opcode: Int, `var`: Int) {
-        val obj = stack.pop()
-        val local = locals.getOrPut(`var`, { newLocal(obj.type) })
-        addInst(IF.getAssign(local, obj))
-    }
-
-    private fun convertMonitor(opcode: Int) {
+    private fun convertMonitor(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val owner = stack.pop()
-        when (opcode) {
-            MONITORENTER -> addInst(IF.getEnterMonitor(owner))
-            MONITOREXIT -> addInst(IF.getExitMonitor(owner))
-            else -> throw UnexpectedOpcodeException("Monitor opcode $opcode")
+        when (insn.opcode) {
+            MONITORENTER -> bb.addInstruction(IF.getEnterMonitor(owner))
+            MONITOREXIT -> bb.addInstruction(IF.getExitMonitor(owner))
+            else -> throw UnexpectedOpcodeException("Monitor opcode ${insn.opcode}")
         }
     }
 
-    private fun convertThrow(opcode: Int) {
+    private fun convertThrow(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val throwable = stack.pop()
-        addInst(IF.getThrow(throwable))
+        bb.addInstruction(IF.getThrow(throwable))
+    }
+
+    private fun convertLocalLoad(insn: VarInsnNode) {
+        stack.push(locals[insn.`var`])
+    }
+
+    private fun convertLocalStore(insn: VarInsnNode) {
+        val bb = getBasicBlock(insn)
+        val obj = stack.pop()
+        val local = locals.getOrPut(insn.`var`, { newLocal(obj.type) })
+        bb.addInstruction(IF.getAssign(local, obj))
     }
 
     private fun convertInsn(insn: InsnNode) {
-        val opcode = insn.opcode
-        when (opcode) {
-            NOP -> {}
-            in ACONST_NULL..DCONST_1 -> convertConst(opcode)
-            in IALOAD..SALOAD -> convertArrayLoad(opcode)
-            in IASTORE..SASTORE -> convertArrayStore(opcode)
-            in POP .. POP2 -> convertPop(opcode)
-            in DUP .. DUP2_X2 -> convertDup(opcode)
-            SWAP -> convertSwap(opcode)
-            in IADD .. DREM -> convertBinary(opcode)
-            in INEG .. DNEG -> convertUnary(opcode)
-            in ISHL .. LXOR -> convertBinary(opcode)
-            in I2L .. I2S -> convertCast(opcode)
-            in LCMP .. DCMPG -> convertCmp(opcode)
-            in IRETURN .. RETURN -> convertReturn(opcode)
-            ARRAYLENGTH -> convertUnary(opcode)
-            ATHROW -> convertThrow(opcode)
-            in MONITORENTER .. MONITOREXIT -> convertMonitor(opcode)
-            else -> throw UnexpectedOpcodeException("Insn opcode $opcode")
+        when (insn.opcode) {
+            NOP -> {
+            }
+            in ACONST_NULL..DCONST_1 -> convertConst(insn)
+            in IALOAD..SALOAD -> convertArrayLoad(insn)
+            in IASTORE..SASTORE -> convertArrayStore(insn)
+            in POP..POP2 -> convertPop(insn)
+            in DUP..DUP2_X2 -> convertDup(insn)
+            SWAP -> convertSwap(insn)
+            in IADD..DREM -> convertBinary(insn)
+            in INEG..DNEG -> convertUnary(insn)
+            in ISHL..LXOR -> convertBinary(insn)
+            in I2L..I2S -> convertCast(insn)
+            in LCMP..DCMPG -> convertCmp(insn)
+            in IRETURN..RETURN -> convertReturn(insn)
+            ARRAYLENGTH -> convertUnary(insn)
+            ATHROW -> convertThrow(insn)
+            in MONITORENTER..MONITOREXIT -> convertMonitor(insn)
+            else -> throw UnexpectedOpcodeException("Insn opcode ${insn.opcode}")
         }
     }
 
     private fun convertIntInsn(insn: IntInsnNode) {
+        val bb = getBasicBlock(insn)
         val opcode = insn.opcode
         val operand = insn.operand
         when (opcode) {
@@ -287,7 +316,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 val count = stack.pop()
                 val rhv = EF.getNewArray(type, count)
                 val lhv = newLocal(type)
-                addInst(IF.getAssign(lhv, rhv))
+                bb.addInstruction(IF.getAssign(lhv, rhv))
                 stack.push(lhv)
             }
             else -> throw UnexpectedOpcodeException("IntInsn opcode $opcode")
@@ -295,17 +324,16 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertVarInsn(insn: VarInsnNode) {
-        val opcode = insn.opcode
-        val `var` = insn.`var`
-        when (opcode) {
-            in ISTORE .. ASTORE -> convertLocalStore(opcode, `var`)
-            in ILOAD .. ALOAD -> convertLocalLoad(opcode, `var`)
+        when (insn.opcode) {
+            in ISTORE..ASTORE -> convertLocalStore(insn)
+            in ILOAD..ALOAD -> convertLocalLoad(insn)
             RET -> TODO()
-            else -> throw UnexpectedOpcodeException("VarInsn opcode $opcode")
+            else -> throw UnexpectedOpcodeException("VarInsn opcode ${insn.opcode}")
         }
     }
 
     private fun convertTypeInsn(insn: TypeInsnNode) {
+        val bb = getBasicBlock(insn)
         val opcode = insn.opcode
         val type = try {
             parseDesc(insn.desc)
@@ -316,14 +344,14 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             NEW -> {
                 val rhv = EF.getNew(type)
                 val lhv = newLocal(type)
-                addInst(IF.getAssign(lhv, rhv))
+                bb.addInstruction(IF.getAssign(lhv, rhv))
                 stack.push(lhv)
             }
             ANEWARRAY -> {
                 val count = stack.pop()
                 val rhv = EF.getNewArray(type, count)
                 val lhv = newLocal(rhv.type)
-                addInst(IF.getAssign(lhv, rhv))
+                bb.addInstruction(IF.getAssign(lhv, rhv))
                 stack.push(lhv)
             }
             CHECKCAST -> {
@@ -339,6 +367,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertFieldInsn(insn: FieldInsnNode) {
+        val bb = getBasicBlock(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(insn.desc)
         val klass = CM.createOrGet(insn.owner)
@@ -349,7 +378,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             PUTSTATIC -> {
                 val field = VF.getField(insn.name, klass, fieldType)
                 val value = stack.pop()
-                addInst(IF.getAssign(field, value))
+                bb.addInstruction(IF.getAssign(field, value))
             }
             GETFIELD -> {
                 val obj = stack.pop()
@@ -359,12 +388,13 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 val value = stack.pop()
                 val obj = stack.pop()
                 val field = VF.getField(insn.name, klass, fieldType, obj)
-                addInst(IF.getAssign(field, value))
+                bb.addInstruction(IF.getAssign(field, value))
             }
         }
     }
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
+        val bb = getBasicBlock(insn)
         val klass = CM.createOrGet(insn.owner)
         val method = klass.createOrGet(insn.name, insn.desc)
         val args = mutableListOf<Value>()
@@ -381,10 +411,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
         }
         if (returnType.isVoid()) {
-            addInst(IF.getCall(call))
+            bb.addInstruction(IF.getCall(call))
         } else {
             val lhv = newLocal(returnType)
-            addInst(IF.getCall(lhv, call))
+            bb.addInstruction(IF.getCall(lhv, call))
             stack.push(lhv)
         }
     }
@@ -393,48 +423,45 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         super.visitInvokeDynamicInsn(name, desc, insn.bsm, insn.bsmArgs)
 
         val klass = CM.createOrGet(insn.bsm.name)
-        val method = klass.getMethod(name) ?: throw InvalidOperandException("Unknown method $name of class ${insn.bsm.owner}")
+        val method = klass.getMethod(name)
+                ?: throw InvalidOperandException("Unknown method $name of class ${insn.bsm.owner}")
         TODO()
     }
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
-        val trueSuccessor = getBasicBlockByLabel(insn.label)
-        val nextInsn = insn.next
-        val falseSuccessor =
-                if (nextInsn is LabelNode) getBasicBlockByLabel(nextInsn)
-                else BasicBlock("%bb${bbc++}", method)
+        val bb = getBasicBlock(insn)
+        val falseSuccessor = getBasicBlock(insn.next)
+        val trueSuccessor = getBasicBlock(insn.label)
 
         if (insn.opcode == GOTO) {
-            addInst(IF.getJump(trueSuccessor))
-            currentBlock.addSuccessor(trueSuccessor)
-            trueSuccessor.addPredecessor(currentBlock)
+            reserveStack(bb)
+            bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
             val lhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
             val cond = when (insn.opcode) {
-                in IFEQ .. IFLE -> EF.getCmp(opc, lhv, VF.getZeroConstant(lhv.type))
-                in IF_ICMPEQ .. IF_ACMPNE -> EF.getCmp(opc, lhv, stack.pop())
-                in IFNULL .. IFNONNULL -> EF.getCmp(opc, lhv, VF.getNullConstant())
+                in IFEQ..IFLE -> EF.getCmp(opc, lhv, VF.getZeroConstant(lhv.type))
+                in IF_ICMPEQ..IF_ACMPNE -> EF.getCmp(opc, lhv, stack.pop())
+                in IFNULL..IFNONNULL -> EF.getCmp(opc, lhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
-            addInst(IF.getBranch(cond, trueSuccessor, falseSuccessor))
-            currentBlock.addSuccessor(trueSuccessor)
-            trueSuccessor.addPredecessor(currentBlock)
-            currentBlock.addSuccessor(falseSuccessor)
-            falseSuccessor.addPredecessor(currentBlock)
+            reserveStack(bb)
+            bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
         }
-
-        addBasicBlock(falseSuccessor)
     }
 
     private fun convertLabel(lbl: LabelNode) {
-        val next = getBasicBlockByLabel(lbl)
-        if (currentBlock.isNotEmpty() && !currentBlock.back().isTerminate() && currentBlock.successors.isEmpty()) {
-            addInst(IF.getJump(next))
-            currentBlock.addSuccessor(next)
-            next.addPredecessor(currentBlock)
+        val bb = getBasicBlock(lbl)
+        val prev = getBasicBlock(lbl.previous)
+        // if we came to this label not by jump, but just by consistently executing instructions
+        if (!(lbl.previous is JumpInsnNode && lbl.previous.opcode == GOTO) &&
+                !(lbl.previous is InsnNode && lbl.previous.opcode in IRETURN..RETURN) &&
+                !(lbl.previous is InsnNode && lbl.previous.opcode == ATHROW)) {
+            reserveStack(prev)
+            prev.addInstruction(IF.getJump(bb))
+            bb.addPredecessor(prev)
+            prev.addSuccessor(bb)
         }
-        addBasicBlock(next)
     }
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
@@ -458,9 +485,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertIincInsn(insn: IincInsnNode) {
+        val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
         val rhv = EF.getBinary(BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
-        addInst(IF.getAssign(lhv, rhv))
+        bb.addInstruction(IF.getAssign(lhv, rhv))
     }
 
     private fun convertTableSwitchInsn(insn: TableSwitchInsnNode) {
@@ -468,12 +496,13 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertLookupSwitchInsn(insn: LookupSwitchInsnNode) {
-        val default = getBasicBlockByLabel(insn.dflt)
+        val bb = getBasicBlock(insn)
+        val default = getBasicBlock(insn.dflt)
         val branches = mutableMapOf<Value, BasicBlock>()
-        for (i in 0 .. insn.keys.size) {
-            branches[VF.getIntConstant(insn.keys[i] as Int)] = getBasicBlockByLabel(insn.labels[i] as LabelNode)
+        for (i in 0..insn.keys.size) {
+            branches[VF.getIntConstant(insn.keys[i] as Int)] = getBasicBlock(insn.labels[i] as LabelNode)
         }
-        addInst(IF.getSwitch(default, branches))
+        bb.addInstruction(IF.getSwitch(default, branches))
     }
 
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
@@ -483,11 +512,43 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertTryCatchBlock(insn: TryCatchBlockNode) {
-        val from = getBasicBlockByLabel(insn.start)
-        val to = getBasicBlockByLabel(insn.end)
-        val hndlr = getBasicBlockByLabel(insn.handler)
+        val from = getBasicBlock(insn.start)
+        val to = getBasicBlock(insn.end)
+        val hndlr = getBasicBlock(insn.handler)
         val tp = TF.getRefType(insn.type)
         method.getBlockRange(from, to).forEach { it.addHandler(tp, hndlr) }
+    }
+
+    private fun buildCFG() {
+        var bbc = 0
+        var bb = BasicBlock("%bb${bbc++}", method)
+        for (insn in mn.instructions) {
+            if (insn is LabelNode) {
+                bb = nodeToBlock.getOrPut(insn, { BasicBlock("%bb${bbc++}", method) })
+                val prev = nodeToBlock[insn.previous]
+                if (insn.previous is JumpInsnNode && insn.previous.opcode == GOTO) {}
+                else if (insn.previous is InsnNode && insn.previous.opcode in IRETURN..RETURN) {}
+                else if (insn.previous is InsnNode && insn.previous.opcode == ATHROW) {}
+                else {
+                    bb.addPredecessor(prev!!)
+                    prev.addSuccessor(bb)
+                }
+
+            } else {
+                bb = nodeToBlock.getOrPut(insn as AbstractInsnNode, { bb })
+                if (insn is JumpInsnNode) {
+                    if (insn.opcode != GOTO) {
+                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BasicBlock("%bb${bbc++}", method) })
+                        bb.addSuccessor(falseSuccessor)
+                        falseSuccessor.addPredecessor(bb)
+                    }
+                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BasicBlock("%bb${bbc++}", method) })
+                    bb.addSuccessor(trueSuccessor)
+                    trueSuccessor.addPredecessor(bb)
+                }
+            }
+            method.addIfNotContains(bb)
+        }
     }
 
     fun convert() {
@@ -497,6 +558,16 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             locals[indx] = VF.getLocal(indx++, it)
         }
 
+        buildCFG()
+        println(method.print())
+        println()
+        for (it in method.basicBlocks.reversed()) {
+            if (it.predecessors.isEmpty()) continue
+            val sfl = it.predecessors.map { getFrameUnsafe(it) }.filterNotNull()
+            if (sfl.size > 1) throw UnexpectedException("BB successors belong to different frames")
+            val sf = sfl.firstOrNull() ?: getFrame(it.predecessors.first())
+            sf.inputs.addAll(it.predecessors)
+        }
         for (insn in mn.instructions) {
             when (insn) {
                 is InsnNode -> convertInsn(insn)
@@ -517,8 +588,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 else -> throw UnexpectedOpcodeException("Unknown insn: ${(insn as AbstractInsnNode).opcode}")
             }
         }
-
-        method.addIfNotContains(currentBlock)
 
         println(method.print())
         println()
