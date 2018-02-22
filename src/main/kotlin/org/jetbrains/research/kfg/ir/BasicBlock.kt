@@ -6,10 +6,11 @@ import org.jetbrains.research.kfg.type.Type
 class BasicBlock {
     val name: String
     val method: Method
+    var isExceptionHandler = false
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
-    val exceptionHandlers = mutableMapOf<Type, BasicBlock>()
+    val exceptionHandlers = mutableMapOf<BasicBlock, Type>()
 
     constructor(name: String, method: Method) {
         this.name = name
@@ -20,8 +21,8 @@ class BasicBlock {
     fun addSuccessors(vararg bbs: BasicBlock) = successors.addAll(bbs)
     fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
     fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
-    fun addHandler(exc: Type, bb: BasicBlock) {
-        exceptionHandlers[exc] = bb
+    fun addHandler(bb: BasicBlock, exc: Type) {
+        exceptionHandlers[bb] = exc
     }
 
     fun addInstruction(inst: Instruction){
