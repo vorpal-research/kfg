@@ -41,8 +41,5 @@ class JarReader(val name: String) {
         for (it in parseJar(jar)) {
             ClassBuilder(it.value).doit()
         }
-        ClassManager.instance.classes.forEach {
-            println("${it.value.packageName} ${it.value.name}")
-        }
     }
 }
