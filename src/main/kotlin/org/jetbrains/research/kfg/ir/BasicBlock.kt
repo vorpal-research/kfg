@@ -2,15 +2,16 @@ package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.ir.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.type.TypeFactory
+import java.rmi.UnexpectedException
 
-class BasicBlock {
+abstract class BasicBlock {
     val name: String
     val method: Method
-    var isExceptionHandler = false
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
-    val exceptionHandlers = mutableMapOf<BasicBlock, Type>()
+    val handlers = mutableListOf<CatchBlock>()
 
     constructor(name: String, method: Method) {
         this.name = name
@@ -21,11 +22,9 @@ class BasicBlock {
     fun addSuccessors(vararg bbs: BasicBlock) = successors.addAll(bbs)
     fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
     fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
-    fun addHandler(bb: BasicBlock, exc: Type) {
-        exceptionHandlers[bb] = exc
-    }
+    fun addHandler(handle: CatchBlock) = handlers.add(handle)
 
-    fun addInstruction(inst: Instruction){
+    fun addInstruction(inst: Instruction) {
         instructions.add(inst)
         inst.bb = this
     }
@@ -36,7 +35,19 @@ class BasicBlock {
     fun front() = instructions.first()
     fun back() = instructions.last()
 
-    override fun toString(): String {
+    override fun toString() = print()
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) return false
+        if (other !is BasicBlock) return false
+        return this.method == other.method && this.name == other.name
+    }
+
+    abstract fun print(): String
+}
+
+class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
+    override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
         predecessors.take(1).forEach { sb.append(it.name) }
@@ -48,9 +59,35 @@ class BasicBlock {
         return sb.toString()
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (other == null) return false
-        if (other !is BasicBlock) return false
-        return this.method == other.method && this.name == other.name
+    fun toCatchBlock(type: Type): CatchBlock {
+        val catch = CatchBlock(name, method, type)
+        if (predecessors.isNotEmpty()) throw UnexpectedException("Catch block unexpectedly have predecessors")
+        catch.successors.addAll(successors)
+        catch.instructions.addAll(instructions)
+        catch.handlers.addAll(handlers)
+        return catch
+    }
+}
+
+class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(name, method) {
+    val throwers = mutableListOf<BasicBlock>()
+
+    fun addThrower(bb: BasicBlock) = throwers.add(bb)
+    fun addThrowers(vararg blocks: BasicBlock) = throwers.addAll(blocks)
+
+    override fun print(): String {
+        val sb = StringBuilder()
+        sb.append("$name: \tcatches from ")
+        throwers.take(1).forEach { sb.append(it.name) }
+        throwers.drop(1).forEach { sb.append(", ${it.name}") }
+        sb.appendln()
+        instructions.forEach {
+            sb.appendln("\t$it")
+        }
+        return sb.toString()
+    }
+
+    companion object {
+        val defaultException = TypeFactory.instance.getRefType("java/lang/Throwable")
     }
 }

@@ -10,6 +10,7 @@ class Method{
     val arguments: Array<Type>
     val retType: Type
     val basicBlocks = mutableListOf<BasicBlock>()
+    val catchBlocks = mutableListOf<BasicBlock>()
 
     constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type) {
         this.name = name
@@ -32,6 +33,8 @@ class Method{
     fun addIfNotContains(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) basicBlocks.add(bb)
     }
+
+    fun addCatchBlock(bb: BasicBlock) = catchBlocks.add(bb)
 
     fun getBlockRange(from: BasicBlock, to: BasicBlock): List<BasicBlock> {
         val start = basicBlocks.indexOf(from)

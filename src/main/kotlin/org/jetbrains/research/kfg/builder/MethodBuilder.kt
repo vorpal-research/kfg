@@ -1,9 +1,7 @@
 package org.jetbrains.research.kfg.builder
 
 import org.jetbrains.research.kfg.*
-import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.ClassManager
-import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.instruction.Instruction
 import org.jetbrains.research.kfg.ir.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.Type
@@ -476,6 +474,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             prev.addSuccessor(bb)
         }
         recoverStack(bb)
+        if (bb is CatchBlock) {
+            stack.push(EF.getCatch(bb.exception))
+        }
     }
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
@@ -525,26 +526,18 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         stack.push(newLocal(type))
     }
 
-    private fun convertTryCatchBlock(insn: TryCatchBlockNode) {
-        val from = getBasicBlock(insn.start)
-        val to = getBasicBlock(insn.end)
-        val hndlr = getBasicBlock(insn.handler)
-        hndlr.isExceptionHandler = true
-        val tp = TF.getRefType(insn.type ?: "java/lang/Throwable")
-        method.getBlockRange(from, to).forEach {
-            it.addHandler(hndlr, tp)
-            hndlr.addPredecessor(it)
-        }
-    }
-
     private fun buildCFG() {
         var bbc = 0
-        var bb = BasicBlock("%bb${bbc++}", method)
+        for (insn in mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
+            val type = if (insn.type != null) TF.getRefType(insn.type) else CatchBlock.defaultException
+            nodeToBlock[insn.handler] = CatchBlock("%bb${bbc++}", method, type)
+        }
+        var bb: BasicBlock = BodyBlock("%bb${bbc++}", method)
         for (insn in mn.instructions) {
             if (insn is LabelNode) {
                 if (insn.previous == null) bb = nodeToBlock.getOrPut(insn, { bb })
                 else {
-                    bb = nodeToBlock.getOrPut(insn, { BasicBlock("%bb${bbc++}", method) })
+                    bb = nodeToBlock.getOrPut(insn, { BodyBlock("%bb${bbc++}", method) })
                     if (!isTerminateInst(insn.previous)) {
                         val prev = nodeToBlock[insn.previous]
                         bb.addPredecessor(prev!!)
@@ -555,16 +548,27 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 bb = nodeToBlock.getOrPut(insn as AbstractInsnNode, { bb })
                 if (insn is JumpInsnNode) {
                     if (insn.opcode != GOTO) {
-                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BasicBlock("%bb${bbc++}", method) })
+                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BodyBlock("%bb${bbc++}", method) })
                         bb.addSuccessor(falseSuccessor)
                         falseSuccessor.addPredecessor(bb)
                     }
-                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BasicBlock("%bb${bbc++}", method) })
+                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock("%bb${bbc++}", method) })
                     bb.addSuccessor(trueSuccessor)
                     trueSuccessor.addPredecessor(bb)
                 }
             }
             method.addIfNotContains(bb)
+        }
+        for (insn in mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
+            val handle = getBasicBlock(insn.handler) as CatchBlock
+            nodeToBlock[insn.handler] = handle
+            val from = getBasicBlock(insn.start)
+            val to = getBasicBlock(insn.end)
+            method.getBlockRange(from, to).forEach {
+                handle.addThrower(it)
+                it.addHandler(handle)
+            }
+            method.addCatchBlock(handle)
         }
     }
 
@@ -575,15 +579,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             locals[indx] = VF.getLocal(indx++, it)
         }
 
-        println("Building $method")
         buildCFG()
-        for (it in mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
-            convertTryCatchBlock(it)
-        }
-        println(method.print())
         for (it in method.basicBlocks.reversed()) {
             if (it.predecessors.isEmpty()) continue
-            if (it.isExceptionHandler) continue
+            if (it is CatchBlock) continue
             val sfl = it.predecessors.map { getFrameUnsafe(it) }.filterNotNull()
             if (sfl.size > 1) throw UnexpectedException("BB successors belong to different frames")
             val sf = sfl.firstOrNull() ?: getFrame(it.predecessors.first())
@@ -605,7 +604,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
                 is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
                 is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
-                is TryCatchBlockNode -> convertTryCatchBlock(insn)
                 else -> throw UnexpectedOpcodeException("Unknown insn: ${(insn as AbstractInsnNode).opcode}")
             }
         }
