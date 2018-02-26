@@ -14,7 +14,7 @@ class ExprFactory {
         return ArrayLoadExpr(type, arrayRef, index)
     }
 
-    fun getNewArray(compType: Type, count: Value): Expr = NewArrayExpr(TypeFactory.instance.getArrayType(compType), count)
+    fun getNewArray(compType: Type, count: Value): Expr = NewArrayExpr(compType, count)
     fun getNew(type: Type): Expr = NewExpr(type)
     fun getCheckCast(type: Type, obj: Value): Expr = CheckCastExpr(type, obj)
     fun getInstanceOf(obj: Value): Expr = InstanceOfExpr(obj)

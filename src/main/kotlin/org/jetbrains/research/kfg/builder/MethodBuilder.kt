@@ -25,6 +25,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     inner class StackFrame {
         val inputs = mutableSetOf<BasicBlock>()
+        val trackedLocals = mutableSetOf<Int>()
+        val localsMap = mutableMapOf<Int, MutableMap<BasicBlock, Value>>()
+        val stackMap = mutableMapOf<Value, MutableMap<BasicBlock, Value>>()
         private var out: MutableList<Value>? = null
 
         fun contains(bb: BasicBlock) = inputs.contains(bb)
@@ -66,17 +69,37 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val sf = getFrame(bb)
         val reserved = sf.reserve()
         for (`var` in reserved) {
-            bb.addInstruction(IF.getAssign(`var`, stack.pop()))
+            if (!sf.stackMap.contains(`var`)) sf.stackMap[`var`] = mutableMapOf()
+            val indx = sf.stackMap[`var`]!!.size
+            val lhv = VF.getArgument("${`var`.getName()}.$indx", method, `var`.type)
+            bb.addInstruction(IF.getAssign(lhv, stack.pop()))
+            sf.stackMap[`var`]!![bb] = lhv
         }
         reserved.reversed().forEach { stack.push(it) }
+        for (it in sf.trackedLocals) {
+            if (!sf.localsMap.contains(it)) sf.localsMap[it] = mutableMapOf()
+            sf.localsMap[it]!![bb] = locals[it]!!
+        }
     }
 
     private fun recoverStack(bb: BasicBlock) {
         if (bb.predecessors.isEmpty()) return
         val sf = getFrame(bb.predecessors.first())
         stack.clear()
-        for (`var` in sf.reserve())
-            stack.push(`var`)
+//        for (`var` in sf.reserve())
+//            stack.push(`var`)
+        for (it in sf.trackedLocals) {
+            if (sf.localsMap[it]!!.values.toSet().size > 1) {
+                val lhv = newLocal(sf.localsMap[it]!!.values.first().type)
+                bb.addInstruction(IF.getPhi(lhv, sf.localsMap[it]!!))
+                locals[it] = lhv
+            }
+        }
+        for (it in sf.stackMap) {
+            val lhv = it.key
+            bb.addInstruction(IF.getPhi(lhv, it.value))
+            stack.push(lhv)
+        }
     }
 
     private fun isTerminateInst(insn: AbstractInsnNode): Boolean {
@@ -588,6 +611,32 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
+    private fun checkLocals() {
+        val readsMap = mutableMapOf<BasicBlock, MutableMap<Int, Boolean>>()
+        for (insn in mn.instructions) {
+            val bb = getBasicBlock(insn as AbstractInsnNode)
+            if (!readsMap.contains(bb)) readsMap.put(bb, mutableMapOf())
+            if (insn is VarInsnNode) {
+                when (insn.opcode) {
+                    in ISTORE..ASTORE -> {
+                        readsMap[bb]!![insn.`var`] = false
+                    }
+                    in ILOAD..ALOAD -> {
+                        val vm = readsMap[bb]!!
+                        if (!vm.containsKey(insn.`var`)) vm[insn.`var`] = true
+                        else if (vm[insn.`var`] == true) {}
+                        else vm[insn.`var`] = false
+                    }
+                    else -> {}
+                }
+            }
+        }
+        for (bb in method.basicBlocks) {
+            val readVals = readsMap[bb]!!.map { if (it.value) it.key else null }.filterNotNull()
+            if (bb.predecessors.isNotEmpty()) getFrame(bb.predecessors.first()).trackedLocals.addAll(readVals)
+        }
+    }
+
     fun convert() {
         var localIndx = 0
         var argIndx = 0
@@ -598,6 +647,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
         buildCFG()
         buildFramesMap()
+        checkLocals()
 
         for (insn in mn.instructions) {
             when (insn) {

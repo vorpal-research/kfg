@@ -27,4 +27,5 @@ class InstructionFactory private constructor() {
     fun getThrow(throwable: Value): Instruction = ThrowInst(throwable)
     fun getCall(callExpr: Value): Instruction = CallInst(callExpr)
     fun getCall(lhv: Value, callExpr: Value): Instruction = CallInst(lhv, callExpr)
+    fun getPhi(lhv: Value, incomings: Map<BasicBlock, Value>): Instruction = PhiInst(lhv, incomings)
 }
