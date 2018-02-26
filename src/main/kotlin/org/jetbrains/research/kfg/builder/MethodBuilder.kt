@@ -351,7 +351,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val type = try {
             parseDesc(insn.desc)
         } catch (e: InvalidTypeDescException) {
-            TF.getRefType(desc)
+            TF.getRefType(insn.desc)
         }
         when (opcode) {
             NEW -> {
@@ -433,8 +433,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
-        super.visitInvokeDynamicInsn(name, desc, insn.bsm, insn.bsmArgs)
-
         val klass = CM.createOrGet(insn.bsm.name)
         val method = klass.getMethod(name)
                 ?: throw InvalidOperandException("Unknown method $name of class ${insn.bsm.owner}")
@@ -572,14 +570,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
-    fun convert() {
-        var indx = 0
-        if (!method.isStatic()) locals[indx] = VF.getLocal(indx++, TF.getRefType(method.classRef))
-        for (it in method.arguments) {
-            locals[indx] = VF.getLocal(indx++, it)
-        }
-
-        buildCFG()
+    private fun buildFramesMap() {
         for (it in method.basicBlocks.reversed()) {
             if (it.predecessors.isEmpty()) continue
             if (it is CatchBlock) continue
@@ -588,6 +579,18 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             val sf = sfl.firstOrNull() ?: getFrame(it.predecessors.first())
             sf.inputs.addAll(it.predecessors)
         }
+    }
+
+    fun convert() {
+        var indx = 0
+        if (!method.isStatic()) locals[indx] = VF.getLocal(indx++, TF.getRefType(method.classRef))
+        for (it in method.arguments) {
+            locals[indx] = VF.getLocal(indx++, it)
+        }
+
+        buildCFG()
+        buildFramesMap()
+
         for (insn in mn.instructions) {
             when (insn) {
                 is InsnNode -> convertInsn(insn)
