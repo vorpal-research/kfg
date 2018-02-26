@@ -1,11 +1,8 @@
 package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.builder.ClassBuilder
-import org.jetbrains.research.kfg.ir.ClassManager
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.*
-import java.net.URL
 import java.util.jar.JarFile
 import java.util.jar.JarEntry
 import java.util.HashMap
@@ -37,7 +34,6 @@ class JarReader(val name: String) {
     }
 
     fun doit() {
-        val entries = jar.entries()
         for (it in parseJar(jar)) {
             ClassBuilder(it.value).doit()
         }
