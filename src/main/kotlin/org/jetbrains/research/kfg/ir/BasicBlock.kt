@@ -50,22 +50,13 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
-        predecessors.take(1).forEach { sb.append(it.name) }
+        predecessors.take(1).forEach { sb.append("//predecessors ${it.name}") }
         predecessors.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
         instructions.forEach {
             sb.appendln("\t$it")
         }
         return sb.toString()
-    }
-
-    fun toCatchBlock(type: Type): CatchBlock {
-        val catch = CatchBlock(name, method, type)
-        if (predecessors.isNotEmpty()) throw UnexpectedException("Catch block unexpectedly have predecessors")
-        catch.successors.addAll(successors)
-        catch.instructions.addAll(instructions)
-        catch.handlers.addAll(handlers)
-        return catch
     }
 }
 
@@ -77,8 +68,8 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
 
     override fun print(): String {
         val sb = StringBuilder()
-        sb.append("$name: \tcatches from ")
-        throwers.take(1).forEach { sb.append(it.name) }
+        sb.append("$name: \t")
+        throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
         throwers.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
         instructions.forEach {
