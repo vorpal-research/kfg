@@ -59,7 +59,7 @@ class Method{
         sb.appendln(getDesc())
         basicBlocks.take(1).forEach { sb.appendln(it) }
         basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
-        basicBlocks.takeLast(1).forEach { sb.append("\n$it") }
+        basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
         return sb.toString()
     }
 
