@@ -3,6 +3,15 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 
+fun createMethodDesc(name: String, klass: Class, args: Array<Type>, retType: Type): String {
+    val sb = StringBuilder()
+    sb.append("${retType.getName()} ${klass.name}::$name(")
+    args.dropLast(1).forEach { sb.append("${it.getName()}, ") }
+    args.takeLast(1).forEach { sb.append(it.getName()) }
+    sb.append(")")
+    return sb.toString()
+}
+
 class Method{
     val name: String
     val classRef: Class
@@ -42,19 +51,15 @@ class Method{
         return basicBlocks.subList(start, end)
     }
 
-    override fun toString(): String {
-        val sb = StringBuilder()
-        sb.append("${retType.getName()} ${classRef.name}::$name(")
-        arguments.dropLast(1).forEach { sb.append("${it.getName()}, ") }
-        arguments.takeLast(1).forEach { sb.append(it.getName()) }
-        sb.append(")")
-        return sb.toString()
-    }
+    fun getDesc() = createMethodDesc(name, classRef, arguments, retType)
+    override fun toString() = getDesc()
 
     fun print(): String {
         val sb = StringBuilder()
-        sb.appendln(toString())
-        basicBlocks.forEach { sb.appendln(it) }
+        sb.appendln(getDesc())
+        basicBlocks.take(1).forEach { sb.appendln(it) }
+        basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
+        basicBlocks.takeLast(1).forEach { sb.append("\n$it") }
         return sb.toString()
     }
 

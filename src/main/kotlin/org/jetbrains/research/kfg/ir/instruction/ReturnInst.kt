@@ -14,7 +14,7 @@ class ReturnInst : Instruction {
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("return ")
-        if (hasReturnValue()) sb.appendln(getReturnValue())
+        if (hasReturnValue()) sb.append(getReturnValue())
         return sb.toString()
     }
 }

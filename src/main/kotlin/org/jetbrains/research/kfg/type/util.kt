@@ -44,9 +44,8 @@ fun parsePrimaryType(opcode: Int): Type {
 }
 
 fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
-    val tf = TypeFactory.instance
     val args = mutableListOf<Type>()
-    val pattern= Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z\\/]+;))")
+    val pattern= Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9\\/]+;))")
     val matcher = pattern.matcher(desc)
     while (matcher.find()) {
         args.add(parseDesc(matcher.group(0)))

@@ -53,9 +53,8 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
         predecessors.take(1).forEach { sb.append("//predecessors ${it.name}") }
         predecessors.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
-        instructions.forEach {
-            sb.appendln("\t$it")
-        }
+        instructions.take(1).forEach { sb.append("\t$it") }
+        instructions.drop(1).forEach { sb.append("\n\t$it") }
         return sb.toString()
     }
 }
@@ -72,9 +71,8 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
         throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
         throwers.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
-        instructions.forEach {
-            sb.appendln("\t$it")
-        }
+        instructions.take(1).forEach { sb.append("\t$it") }
+        instructions.drop(1).forEach { sb.append("\n\t$it") }
         return sb.toString()
     }
 

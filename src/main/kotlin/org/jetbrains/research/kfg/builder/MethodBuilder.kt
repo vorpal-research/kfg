@@ -2,7 +2,6 @@ package org.jetbrains.research.kfg.builder
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.*
-import org.jetbrains.research.kfg.ir.instruction.Instruction
 import org.jetbrains.research.kfg.ir.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
@@ -48,7 +47,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
     private val frames = mutableSetOf<StackFrame>()
     private val stack = Stack<Value>()
-    private var numLocals = mn.maxLocals
+    private var numLocals = 0
 
     private fun getFrameUnsafe(bb: BasicBlock): StackFrame? {
         return frames.firstOrNull { it.contains(bb) }
@@ -93,12 +92,13 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     private fun convertConst(insn: InsnNode) {
         val opcode = insn.opcode
-        val cnst = when {
-            opcode == ACONST_NULL -> VF.getNullConstant()
-            opcode in ICONST_0..ICONST_5 -> VF.getIntConstant(opcode - ICONST_0)
-            opcode in LCONST_0..LCONST_1 -> VF.getLongConstant((opcode - LCONST_0).toLong())
-            opcode in FCONST_0..FCONST_2 -> VF.getFloatConstant((opcode - FCONST_0).toFloat())
-            opcode in DCONST_0..DCONST_1 -> VF.getDoubleConstant((opcode - DCONST_0).toDouble())
+        val cnst = when (opcode) {
+            ACONST_NULL -> VF.getNullConstant()
+            ICONST_M1 -> VF.getIntConstant(-1)
+            in ICONST_0..ICONST_5 -> VF.getIntConstant(opcode - ICONST_0)
+            in LCONST_0..LCONST_1 -> VF.getLongConstant((opcode - LCONST_0).toLong())
+            in FCONST_0..FCONST_2 -> VF.getFloatConstant((opcode - FCONST_0).toFloat())
+            in DCONST_0..DCONST_1 -> VF.getDoubleConstant((opcode - DCONST_0).toDouble())
             else -> throw UnexpectedOpcodeException("Unknown const $opcode")
         }
         stack.push(cnst)
@@ -290,7 +290,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun convertLocalStore(insn: VarInsnNode) {
         val bb = getBasicBlock(insn)
         val obj = stack.pop()
-        val local = locals.getOrPut(insn.`var`, { newLocal(obj.type) })
+        val local = newLocal(obj.type)
+        locals[insn.`var`] = local
         bb.addInstruction(IF.getAssign(local, obj))
     }
 
@@ -328,7 +329,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 val type = parsePrimaryType(operand)
                 val count = stack.pop()
                 val rhv = EF.getNewArray(type, count)
-                val lhv = newLocal(type)
+                val lhv = newLocal(rhv.type)
                 bb.addInstruction(IF.getAssign(lhv, rhv))
                 stack.push(lhv)
             }
@@ -409,7 +410,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = getBasicBlock(insn)
         val klass = CM.createOrGet(insn.owner)
-        val method = klass.createOrGet(insn.name, insn.desc)
+        val method = klass.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
         method.arguments.forEach {
             args.add(stack.pop())
@@ -434,8 +435,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
         val klass = CM.createOrGet(insn.bsm.name)
-        val method = klass.getMethod(name)
-                ?: throw InvalidOperandException("Unknown method $name of class ${insn.bsm.owner}")
+        val method = klass.getMethod(insn.name, insn.desc)
         TODO()
     }
 
@@ -489,8 +489,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             is org.objectweb.asm.Handle -> {
                 val klass = CM.getClassByName(cst.owner)
                         ?: throw InvalidOperandException("Class ${cst.owner}")
-                val method = klass.getMethod(cst.name)
-                        ?: throw InvalidOperandException("Method ${cst.name} in ${cst.owner}")
+                val method = klass.getMethod(cst.name, cst.desc)
                 stack.push(VF.getMethodConstant(method))
             }
             else -> throw InvalidOperandException("Unknown object $cst")
@@ -501,21 +500,29 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
         val rhv = EF.getBinary(BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
-        bb.addInstruction(IF.getAssign(lhv, rhv))
+        val newLhv = newLocal(lhv.type)
+        bb.addInstruction(IF.getAssign(newLhv, rhv))
     }
 
     private fun convertTableSwitchInsn(insn: TableSwitchInsnNode) {
-        TODO()
+        val bb = getBasicBlock(insn)
+        val index = stack.pop()
+        val min = VF.getIntConstant(insn.min)
+        val max = VF.getIntConstant(insn.max)
+        val default = getBasicBlock(insn.dflt)
+        val branches = insn.labels.map { getBasicBlock(it as AbstractInsnNode) }.toTypedArray()
+        bb.addInstruction(IF.getTableSwitch(index, min, max, default, branches))
     }
 
     private fun convertLookupSwitchInsn(insn: LookupSwitchInsnNode) {
         val bb = getBasicBlock(insn)
         val default = getBasicBlock(insn.dflt)
         val branches = mutableMapOf<Value, BasicBlock>()
-        for (i in 0..insn.keys.size) {
+        val key = stack.pop()
+        for (i in 0..(insn.keys.size - 1)) {
             branches[VF.getIntConstant(insn.keys[i] as Int)] = getBasicBlock(insn.labels[i] as LabelNode)
         }
-        bb.addInstruction(IF.getSwitch(default, branches))
+        bb.addInstruction(IF.getSwitch(key, default, branches))
     }
 
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
@@ -582,10 +589,11 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     fun convert() {
-        var indx = 0
-        if (!method.isStatic()) locals[indx] = VF.getLocal(indx++, TF.getRefType(method.classRef))
+        var localIndx = 0
+        var argIndx = 0
+        if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.classRef))
         for (it in method.arguments) {
-            locals[indx] = VF.getLocal(indx++, it)
+            locals[localIndx++] = VF.getArgument("arg$${argIndx++}", method, it)
         }
 
         buildCFG()

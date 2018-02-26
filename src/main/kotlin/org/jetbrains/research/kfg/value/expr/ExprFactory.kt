@@ -5,6 +5,7 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.instruction.Instruction
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.value.Value
 
 class ExprFactory {
@@ -13,7 +14,7 @@ class ExprFactory {
         return ArrayLoadExpr(type, arrayRef, index)
     }
 
-    fun getNewArray(type: Type, count: Value): Expr = NewArrayExpr(type, count)
+    fun getNewArray(compType: Type, count: Value): Expr = NewArrayExpr(TypeFactory.instance.getArrayType(compType), count)
     fun getNew(type: Type): Expr = NewExpr(type)
     fun getCheckCast(type: Type, obj: Value): Expr = CheckCastExpr(type, obj)
     fun getInstanceOf(obj: Value): Expr = InstanceOfExpr(obj)

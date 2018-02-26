@@ -27,8 +27,5 @@ fun CmpOpcode.print(): String = when (this) {
 }
 
 class CmpExpr(val opcode: CmpOpcode, lhv: Value, rhv: Value) : Expr(TypeFactory.instance.getIntType(), arrayOf(lhv, rhv)) {
-    init {
-        if (!lhv.type.equals(rhv.type)) throw InvalidOperandException("Cmp value with different types: ${lhv.type} ${rhv.type}")
-    }
     override fun getName() = "${operands[0]} ${opcode.print()} ${operands[1]}"
 }

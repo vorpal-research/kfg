@@ -13,6 +13,8 @@ class ValueFactory private constructor() {
         val instance = ValueFactory()
     }
 
+    fun getThis(type: Type): Value = ThisRef(type)
+    fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
     fun getLocal(indx: Int, type: Type): Value = Local(indx, type)
     fun getField(name: String, klass: Class, type: Type): Value = Field(name, klass, type)
     fun getField(name: String, klass: Class, type: Type, obj: Value) = Field(name, klass, type, obj)
