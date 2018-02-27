@@ -1,7 +1,6 @@
-package org.jetbrains.research.kfg.value.expr
+package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.InvalidOperandException
-import org.jetbrains.research.kfg.value.Value
+import org.jetbrains.research.kfg.ir.value.Value
 
 enum class BinaryOpcode {
     ADD,
@@ -31,6 +30,11 @@ fun BinaryOpcode.print(): String = when (this) {
     BinaryOpcode.XOR -> "^"
 }
 
-class BinaryExpr(val opcode: BinaryOpcode, lhv: Value, rhv: Value) : Expr(lhv.type, arrayOf(lhv, rhv)) {
-    override fun getName() = "${operands[0]} ${opcode.print()} ${operands[1]}"
+class BinaryInst(name: String, val opcode: BinaryOpcode, lhv: Value, rhv: Value)
+    : Instruction(name, lhv.type, arrayOf(lhv, rhv)) {
+
+    fun getLhv() = operands[0]
+    fun getRhv() = operands[1]
+
+    override fun print()= "$name = ${getLhv()} ${opcode.print()} ${getRhv()}"
 }

@@ -2,14 +2,14 @@ package org.jetbrains.research.kfg.builder
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.*
-import org.jetbrains.research.kfg.ir.instruction.InstructionFactory
+import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseDesc
 import org.jetbrains.research.kfg.type.parsePrimaryType
-import org.jetbrains.research.kfg.value.*
-import org.jetbrains.research.kfg.value.expr.BinaryOpcode
-import org.jetbrains.research.kfg.value.expr.UnaryOpcode
+import org.jetbrains.research.kfg.ir.value.*
+import org.jetbrains.research.kfg.ir.value.instruction.BinaryOpcode
+import org.jetbrains.research.kfg.ir.value.instruction.UnaryOpcode
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
@@ -20,7 +20,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     val CM = ClassManager.instance
     val TF = TypeFactory.instance
     val VF = ValueFactory.instance
-    val EF = VF.exprFactory
     val IF = InstructionFactory.instance
 
     inner class StackFrame {
@@ -70,9 +69,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val reserved = sf.reserve()
         for (`var` in reserved) {
             val stackMap = sf.stackMap.getOrPut(`var`, { mutableMapOf() })
-            val lhv = VF.getArgument("${`var`.getName()}.${stackMap.size}", method, `var`.type)
-            bb.addInstruction(IF.getAssign(lhv, stack.pop()))
-            stackMap[bb] = lhv
+            stackMap[bb] = stack.pop()
         }
         reserved.reversed().forEach { stack.push(it) }
         for (it in sf.trackedLocals) {
@@ -89,15 +86,15 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             val localMap = sf.localsMap[it] ?: throw UnexpectedException("Locals map is null for ${bb.name}")
             val valueSet = localMap.values.toSet()
             if (valueSet.size > 1) {
-                val lhv = newLocal(valueSet.first().type)
-                bb.addInstruction(IF.getPhi(lhv, localMap))
-                locals[it] = lhv
+                val phi = IF.getPhi("%${numLocals++}", valueSet.first().type, localMap)
+                bb.addInstruction(phi)
+                locals[it] = phi
             }
         }
         for (it in sf.stackMap) {
-            val lhv = it.key
-            bb.addInstruction(IF.getPhi(lhv, it.value))
-            stack.push(lhv)
+            val phi = IF.getPhi("%${numLocals++}", it.value.values.first().type, it.value)
+            bb.addInstruction(phi)
+            stack.push(phi)
         }
     }
 
@@ -127,9 +124,12 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertArrayLoad(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val index = stack.pop()
         val arrayRef = stack.pop()
-        stack.push(EF.getArrayLoad(arrayRef, index))
+        val inst = IF.getArrayLoad("%${numLocals++}", arrayRef, index)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun convertArrayStore(insn: InsnNode) {
@@ -137,7 +137,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val value = stack.pop()
         val index = stack.pop()
         val array = stack.pop()
-        bb.addInstruction(IF.getStore(array, index, value))
+        bb.addInstruction(IF.getArrayStore(array, index, value))
     }
 
     private fun convertPop(insn: InsnNode) {
@@ -241,23 +241,30 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertBinary(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val binOp = toBinaryOpcode(insn.opcode)
-        stack.push(EF.getBinary(binOp, lhv, rhv))
+        val inst = IF.getBinary("%${numLocals++}", binOp, lhv, rhv)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun convertUnary(insn: InsnNode) {
-        val array = stack.pop()
+        val bb = getBasicBlock(insn)
+        val operand = stack.pop()
         val op = when (insn.opcode) {
             in INEG..DNEG -> UnaryOpcode.NEG
             ARRAYLENGTH -> UnaryOpcode.LENGTH
             else -> throw InvalidOperandException("Unary opcode ${insn.opcode}")
         }
-        stack.push(EF.getUnary(op, array))
+        val inst = IF.getUnary("%${numLocals++}", op, operand)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun convertCast(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val op = stack.pop()
         val type = when (insn.opcode) {
             in arrayOf(I2L, F2L, D2L) -> TF.getLongType()
@@ -269,14 +276,19 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             I2S -> TF.getShortType()
             else -> throw UnexpectedOpcodeException("Cast opcode ${insn.opcode}")
         }
-        stack.push(EF.getCast(type, op))
+        val inst = IF.getCast("%${numLocals++}", type, op)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun convertCmp(insn: InsnNode) {
+        val bb = getBasicBlock(insn)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val op = toCmpOpcode(insn.opcode)
-        stack.push(EF.getCmp(op, lhv, rhv))
+        val inst = IF.getCmp("%${numLocals++}", op, lhv, rhv)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun convertReturn(insn: InsnNode) {
@@ -310,11 +322,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertLocalStore(insn: VarInsnNode) {
-        val bb = getBasicBlock(insn)
-        val obj = stack.pop()
-        val local = newLocal(obj.type)
-        locals[insn.`var`] = local
-        bb.addInstruction(IF.getAssign(local, obj))
+        locals[insn.`var`] = stack.pop()
     }
 
     private fun convertInsn(insn: InsnNode) {
@@ -350,10 +358,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             NEWARRAY -> {
                 val type = parsePrimaryType(operand)
                 val count = stack.pop()
-                val rhv = EF.getNewArray(type, count)
-                val lhv = newLocal(rhv.type)
-                bb.addInstruction(IF.getAssign(lhv, rhv))
-                stack.push(lhv)
+                val inst = IF.getNewArray("%${numLocals++}", type, count)
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             else -> throw UnexpectedOpcodeException("IntInsn opcode $opcode")
         }
@@ -378,25 +385,27 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
         when (opcode) {
             NEW -> {
-                val rhv = EF.getNew(type)
-                val lhv = newLocal(type)
-                bb.addInstruction(IF.getAssign(lhv, rhv))
-                stack.push(lhv)
+                val inst = IF.getNew("%${numLocals++}", type)
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             ANEWARRAY -> {
                 val count = stack.pop()
-                val rhv = EF.getNewArray(type, count)
-                val lhv = newLocal(rhv.type)
-                bb.addInstruction(IF.getAssign(lhv, rhv))
-                stack.push(lhv)
+                val inst = IF.getNewArray("%${numLocals++}", type, count)
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             CHECKCAST -> {
                 val castable = stack.pop()
-                stack.push(EF.getCheckCast(type, castable))
+                val inst = IF.getCast("%${numLocals++}", type, castable)
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             INSTANCEOF -> {
                 val obj = stack.pop()
-                stack.push(EF.getInstanceOf(obj))
+                val inst = IF.getInstanceOf("%${numLocals++}", type, obj)
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             else -> InvalidOpcodeException("$opcode in TypeInsn")
         }
@@ -409,22 +418,26 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val klass = CM.createOrGet(insn.owner)
         when (opcode) {
             GETSTATIC -> {
-                stack.push(VF.getField(insn.name, klass, fieldType))
+                val inst = IF.getFieldLoad("%${numLocals++}", VF.getField(insn.name, klass, fieldType))
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             PUTSTATIC -> {
                 val field = VF.getField(insn.name, klass, fieldType)
                 val value = stack.pop()
-                bb.addInstruction(IF.getAssign(field, value))
+                bb.addInstruction(IF.getFieldStore(field, value))
             }
             GETFIELD -> {
                 val obj = stack.pop()
-                stack.push(VF.getField(insn.name, klass, fieldType, obj))
+                val inst = IF.getFieldLoad("%${numLocals++}", VF.getField(insn.name, klass, fieldType))
+                bb.addInstruction(inst)
+                stack.push(inst)
             }
             PUTFIELD -> {
                 val value = stack.pop()
                 val obj = stack.pop()
                 val field = VF.getField(insn.name, klass, fieldType, obj)
-                bb.addInstruction(IF.getAssign(field, value))
+                bb.addInstruction(IF.getFieldStore(field, value))
             }
         }
     }
@@ -438,20 +451,29 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             args.add(stack.pop())
         }
         val returnType = method.retType
-        val call = when (insn.opcode) {
-            INVOKESTATIC -> EF.getCall(returnType, method, klass, args.toTypedArray())
-            in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
-                val obj = stack.pop()
-                EF.getCall(returnType, method, klass, obj, args.toTypedArray())
-            }
-            else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
-        }
-        if (returnType.isVoid()) {
-            bb.addInstruction(IF.getCall(call))
-        } else {
-            val lhv = newLocal(returnType)
-            bb.addInstruction(IF.getCall(lhv, call))
-            stack.push(lhv)
+        val call =
+                if (returnType.isVoid()) {
+                    when (insn.opcode) {
+                        INVOKESTATIC -> IF.getCall(method, klass, args.toTypedArray())
+                        in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
+                            val obj = stack.pop()
+                            IF.getCall(method, klass, obj, args.toTypedArray())
+                        }
+                        else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
+                    }
+                } else {
+                    when (insn.opcode) {
+                        INVOKESTATIC -> IF.getCall("%${numLocals++}", method, klass, args.toTypedArray())
+                        in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
+                            val obj = stack.pop()
+                            IF.getCall("%${numLocals++}", method, klass, obj, args.toTypedArray())
+                        }
+                        else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
+                    }
+                }
+        bb.addInstruction(call)
+        if (!returnType.isVoid()) {
+            stack.push(call)
         }
     }
 
@@ -470,15 +492,17 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             reserveStack(bb)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
+            val name = "%${numLocals++}"
             val lhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
             val cond = when (insn.opcode) {
-                in IFEQ..IFLE -> EF.getCmp(opc, lhv, VF.getZeroConstant(lhv.type))
-                in IF_ICMPEQ..IF_ACMPNE -> EF.getCmp(opc, lhv, stack.pop())
-                in IFNULL..IFNONNULL -> EF.getCmp(opc, lhv, VF.getNullConstant())
+                in IFEQ..IFLE -> IF.getCmp(name, opc, lhv, VF.getZeroConstant(lhv.type))
+                in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, opc, lhv, stack.pop())
+                in IFNULL..IFNONNULL -> IF.getCmp(name, opc, lhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
             reserveStack(bb)
+            bb.addInstruction(cond)
             bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
         }
     }
@@ -495,7 +519,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
         recoverStack(bb)
         if (bb is CatchBlock) {
-            stack.push(EF.getCatch(bb.exception))
+            val inst = IF.getCatch("%${numLocals++}", bb.exception)
+            bb.addInstruction(inst)
+            stack.push(inst)
         }
     }
 
@@ -521,9 +547,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
-        val rhv = EF.getBinary(BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
-        val newLhv = newLocal(lhv.type)
-        bb.addInstruction(IF.getAssign(newLhv, rhv))
+        val rhv = IF.getBinary("%${numLocals++}", BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
+        bb.addInstruction(rhv)
     }
 
     private fun convertTableSwitchInsn(insn: TableSwitchInsnNode) {

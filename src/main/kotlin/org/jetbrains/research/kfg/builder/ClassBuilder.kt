@@ -5,8 +5,8 @@ import org.jetbrains.research.kfg.ir.ClassManager
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.parseDesc
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.jetbrains.research.kfg.value.Field
-import org.jetbrains.research.kfg.value.ValueFactory
+import org.jetbrains.research.kfg.ir.value.Field
+import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
