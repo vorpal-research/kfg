@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.ValueName
 
 enum class BinaryOpcode {
     ADD,
@@ -30,7 +31,7 @@ fun BinaryOpcode.print(): String = when (this) {
     BinaryOpcode.XOR -> "^"
 }
 
-class BinaryInst(name: String, val opcode: BinaryOpcode, lhv: Value, rhv: Value)
+class BinaryInst(name: ValueName, val opcode: BinaryOpcode, lhv: Value, rhv: Value)
     : Instruction(name, lhv.type, arrayOf(lhv, rhv)) {
 
     fun getLhv() = operands[0]

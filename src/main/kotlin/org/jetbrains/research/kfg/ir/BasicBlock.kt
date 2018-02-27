@@ -5,18 +5,11 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import java.rmi.UnexpectedException
 
-abstract class BasicBlock {
-    val name: String
-    val method: Method
+abstract class BasicBlock(val name: String, val method: Method): Iterable<Instruction> {
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
     val handlers = mutableListOf<CatchBlock>()
-
-    constructor(name: String, method: Method) {
-        this.name = name
-        this.method = method
-    }
 
     fun addSuccessor(bb: BasicBlock) = successors.add(bb)
     fun addSuccessors(vararg bbs: BasicBlock) = successors.addAll(bbs)
@@ -44,6 +37,8 @@ abstract class BasicBlock {
     }
 
     abstract fun print(): String
+
+    override fun iterator() = instructions.iterator()
 }
 
 class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
