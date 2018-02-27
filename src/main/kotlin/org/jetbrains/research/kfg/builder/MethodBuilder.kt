@@ -2,14 +2,9 @@ package org.jetbrains.research.kfg.builder
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.*
-import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
-import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.type.parseDesc
-import org.jetbrains.research.kfg.type.parsePrimaryType
 import org.jetbrains.research.kfg.ir.value.*
-import org.jetbrains.research.kfg.ir.value.instruction.BinaryOpcode
-import org.jetbrains.research.kfg.ir.value.instruction.UnaryOpcode
+import org.jetbrains.research.kfg.ir.value.instruction.*
+import org.jetbrains.research.kfg.type.*
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
@@ -20,6 +15,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     val CM = ClassManager.instance
     val TF = TypeFactory.instance
     val VF = ValueFactory.instance
+    val ST = method.slottracker
     val IF = InstructionFactory.instance
 
     inner class StackFrame {
@@ -38,7 +34,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             if (out == null) {
                 val newOut = mutableListOf<Value>()
                 val currentStack = stack.toTypedArray()
-                currentStack.mapTo(newOut) { newLocal(it.type) }
+                currentStack.mapTo(newOut) { VF.getLocal(ST.getNextSlot(), it.type) }
                 out = newOut
             }
             return out?.toList() ?: throw UnexpectedException("Stack frame has no reserved values")
@@ -49,7 +45,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
     private val frames = mutableSetOf<StackFrame>()
     private val stack = Stack<Value>()
-    private var numLocals = 0
 
     private fun getFrameUnsafe(bb: BasicBlock): StackFrame? {
         return frames.firstOrNull { it.contains(bb) }
@@ -86,13 +81,13 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             val localMap = sf.localsMap[it] ?: throw UnexpectedException("Locals map is null for ${bb.name}")
             val valueSet = localMap.values.toSet()
             if (valueSet.size > 1) {
-                val phi = IF.getPhi("%${numLocals++}", valueSet.first().type, localMap)
+                val phi = IF.getPhi(ST.getNextSlot(), valueSet.first().type, localMap)
                 bb.addInstruction(phi)
                 locals[it] = phi
             }
         }
         for (it in sf.stackMap) {
-            val phi = IF.getPhi("%${numLocals++}", it.value.values.first().type, it.value)
+            val phi = IF.getPhi(ST.getNextSlot(), it.value.values.first().type, it.value)
             bb.addInstruction(phi)
             stack.push(phi)
         }
@@ -104,8 +99,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         if (insn is InsnNode && insn.opcode == ATHROW) return true
         return false
     }
-
-    private fun newLocal(type: Type): Value = VF.getLocal(numLocals++, type)
 
     private fun getBasicBlock(insn: AbstractInsnNode) = nodeToBlock[insn] ?: throw UnexpectedException("Unknown node $insn")
 
@@ -127,7 +120,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val bb = getBasicBlock(insn)
         val index = stack.pop()
         val arrayRef = stack.pop()
-        val inst = IF.getArrayLoad("%${numLocals++}", arrayRef, index)
+        val inst = IF.getArrayLoad(ST.getNextSlot(), arrayRef, index)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -245,7 +238,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val binOp = toBinaryOpcode(insn.opcode)
-        val inst = IF.getBinary("%${numLocals++}", binOp, lhv, rhv)
+        val inst = IF.getBinary(ST.getNextSlot(), binOp, lhv, rhv)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -258,7 +251,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             ARRAYLENGTH -> UnaryOpcode.LENGTH
             else -> throw InvalidOperandException("Unary opcode ${insn.opcode}")
         }
-        val inst = IF.getUnary("%${numLocals++}", op, operand)
+        val inst = IF.getUnary(ST.getNextSlot(), op, operand)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -276,7 +269,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             I2S -> TF.getShortType()
             else -> throw UnexpectedOpcodeException("Cast opcode ${insn.opcode}")
         }
-        val inst = IF.getCast("%${numLocals++}", type, op)
+        val inst = IF.getCast(ST.getNextSlot(), type, op)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -286,7 +279,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val op = toCmpOpcode(insn.opcode)
-        val inst = IF.getCmp("%${numLocals++}", op, lhv, rhv)
+        val inst = IF.getCmp(ST.getNextSlot(), op, lhv, rhv)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -358,7 +351,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             NEWARRAY -> {
                 val type = parsePrimaryType(operand)
                 val count = stack.pop()
-                val inst = IF.getNewArray("%${numLocals++}", type, count)
+                val inst = IF.getNewArray(ST.getNextSlot(), type, count)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
@@ -385,25 +378,25 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
         when (opcode) {
             NEW -> {
-                val inst = IF.getNew("%${numLocals++}", type)
+                val inst = IF.getNew(ST.getNextSlot(), type)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             ANEWARRAY -> {
                 val count = stack.pop()
-                val inst = IF.getNewArray("%${numLocals++}", type, count)
+                val inst = IF.getNewArray(ST.getNextSlot(), type, count)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             CHECKCAST -> {
                 val castable = stack.pop()
-                val inst = IF.getCast("%${numLocals++}", type, castable)
+                val inst = IF.getCast(ST.getNextSlot(), type, castable)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             INSTANCEOF -> {
                 val obj = stack.pop()
-                val inst = IF.getInstanceOf("%${numLocals++}", type, obj)
+                val inst = IF.getInstanceOf(ST.getNextSlot(), type, obj)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
@@ -418,7 +411,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val klass = CM.createOrGet(insn.owner)
         when (opcode) {
             GETSTATIC -> {
-                val inst = IF.getFieldLoad("%${numLocals++}", VF.getField(insn.name, klass, fieldType))
+                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, klass, fieldType))
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
@@ -429,7 +422,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             }
             GETFIELD -> {
                 val obj = stack.pop()
-                val inst = IF.getFieldLoad("%${numLocals++}", VF.getField(insn.name, klass, fieldType))
+                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, klass, fieldType))
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
@@ -463,10 +456,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                     }
                 } else {
                     when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall("%${numLocals++}", method, klass, args.toTypedArray())
+                        INVOKESTATIC -> IF.getCall(ST.getNextSlot(), method, klass, args.toTypedArray())
                         in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                             val obj = stack.pop()
-                            IF.getCall("%${numLocals++}", method, klass, obj, args.toTypedArray())
+                            IF.getCall(ST.getNextSlot(), method, klass, obj, args.toTypedArray())
                         }
                         else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
                     }
@@ -492,7 +485,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             reserveStack(bb)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
-            val name = "%${numLocals++}"
+            val name = ST.getNextSlot()
             val lhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
             val cond = when (insn.opcode) {
@@ -519,7 +512,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
         recoverStack(bb)
         if (bb is CatchBlock) {
-            val inst = IF.getCatch("%${numLocals++}", bb.exception)
+            val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
             bb.addInstruction(inst)
             stack.push(inst)
         }
@@ -547,7 +540,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
-        val rhv = IF.getBinary("%${numLocals++}", BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
+        val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
         bb.addInstruction(rhv)
     }
 
@@ -573,9 +566,12 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
+        val bb = getBasicBlock(insn)
         super.visitMultiANewArrayInsn(insn.desc, insn.dims)
-        val type = parseDesc(insn.desc)
-        stack.push(newLocal(type))
+        val type = parseDesc(insn.desc) as ArrayType
+        val inst = IF.getMultiNewArray(ST.getNextSlot(), type, insn.dims)
+        bb.addInstruction(inst)
+        stack.push(inst)
     }
 
     private fun buildCFG() {
@@ -659,10 +655,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     fun convert() {
         var localIndx = 0
-        var argIndx = 0
         if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.classRef))
-        for (it in method.arguments) {
-            locals[localIndx++] = VF.getArgument("arg$${argIndx++}", method, it)
+        for ((indx, it) in method.arguments.withIndex()) {
+            locals[localIndx++] = VF.getArgument("arg$$indx", method, it)
         }
 
         buildCFG()

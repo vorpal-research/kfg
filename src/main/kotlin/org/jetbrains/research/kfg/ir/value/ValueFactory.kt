@@ -12,7 +12,7 @@ class ValueFactory private constructor() {
 
     fun getThis(type: Type): Value = ThisRef(type)
     fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
-    fun getLocal(indx: Int, type: Type): Value = Local(indx, type)
+    fun getLocal(slot: Slot, type: Type): Value = Local(slot, type)
     fun getField(name: String, klass: Class, type: Type): Value = Field(name, klass, type)
     fun getField(name: String, klass: Class, type: Type, obj: Value) = Field(name, klass, type, obj)
     // constants

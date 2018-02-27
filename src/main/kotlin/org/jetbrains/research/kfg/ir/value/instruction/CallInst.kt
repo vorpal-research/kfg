@@ -2,7 +2,9 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.ValueName
 
 class CallInst : Instruction {
     val method: Method
@@ -10,27 +12,27 @@ class CallInst : Instruction {
     val isStatic: Boolean
 
     constructor(method: Method, klass: Class, args: Array<Value>)
-            : super("", method.retType, args) {
+            : super(UndefinedName.instance, method.retType, args) {
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
     constructor(method: Method, klass: Class, obj: Value, args: Array<Value>)
-            : super("", method.retType, arrayOf(obj).plus(args)) {
+            : super(UndefinedName.instance, method.retType, arrayOf(obj).plus(args)) {
         this.method = method
         this.klass = klass
         this.isStatic = false
     }
 
-    constructor(name: String, method: Method, klass: Class, args: Array<Value>)
+    constructor(name: ValueName, method: Method, klass: Class, args: Array<Value>)
             : super(name, method.retType, args) {
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
-    constructor(name: String, method: Method, klass: Class, obj: Value, args: Array<Value>)
+    constructor(name: ValueName, method: Method, klass: Class, obj: Value, args: Array<Value>)
             : super(name, method.retType, arrayOf(obj).plus(args)) {
         this.method = method
         this.klass = klass

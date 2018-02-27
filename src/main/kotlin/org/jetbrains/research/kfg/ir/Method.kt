@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 
@@ -12,7 +13,8 @@ fun createMethodDesc(name: String, klass: Class, args: Array<Type>, retType: Typ
     return sb.toString()
 }
 
-class Method{
+class Method: Iterable<BasicBlock> {
+
     val name: String
     val classRef: Class
     val modifiers: Int
@@ -20,6 +22,7 @@ class Method{
     val retType: Type
     val basicBlocks = mutableListOf<BasicBlock>()
     val catchBlocks = mutableListOf<BasicBlock>()
+    val slottracker = SlotTracker(this)
 
     constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type) {
         this.name = name
@@ -39,6 +42,7 @@ class Method{
     }
 
     fun addBasicBlock(bb: BasicBlock) = basicBlocks.add(bb)
+
     fun addIfNotContains(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) basicBlocks.add(bb)
     }
@@ -52,7 +56,6 @@ class Method{
     }
 
     fun getDesc() = createMethodDesc(name, classRef, arguments, retType)
-    override fun toString() = getDesc()
 
     fun print(): String {
         val sb = StringBuilder()
@@ -62,6 +65,9 @@ class Method{
         basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
         return sb.toString()
     }
+
+    override fun toString() = getDesc()
+    override fun iterator() = basicBlocks.iterator()
 
     fun isPublic() = isPublic(modifiers)
     fun isPrivate() = isPrivate(modifiers)

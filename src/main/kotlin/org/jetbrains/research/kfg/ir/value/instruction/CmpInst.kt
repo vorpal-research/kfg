@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.ValueName
 
 enum class CmpOpcode {
     EQ,
@@ -25,7 +26,7 @@ fun CmpOpcode.print(): String = when (this) {
     CmpOpcode.CMPL -> "cmpl"
 }
 
-class CmpInst(name: String, val opcode: CmpOpcode, lhv: Value, rhv: Value)
+class CmpInst(name: ValueName, val opcode: CmpOpcode, lhv: Value, rhv: Value)
     : Instruction(name, TypeFactory.instance.getIntType(), arrayOf(lhv, rhv)) {
 
     fun getLhv() = operands[0]

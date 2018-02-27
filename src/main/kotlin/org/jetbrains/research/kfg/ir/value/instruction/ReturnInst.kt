@@ -1,11 +1,12 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.ir.value.Value
 
-class ReturnInst : Instruction {
-    constructor() : super("", TypeFactory.instance.getVoidType(), arrayOf())
-    constructor(retval: Value) : super("", retval.type, arrayOf(retval))
+class ReturnInst : TerminateInst {
+    constructor() : super(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf())
+    constructor(retval: Value) : super(UndefinedName.instance, retval.type, arrayOf(retval))
 
     fun hasReturnValue() = operands.isNotEmpty()
     fun getReturnType() = operands[0].type

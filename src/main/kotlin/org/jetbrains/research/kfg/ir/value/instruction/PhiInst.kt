@@ -3,8 +3,9 @@ package org.jetbrains.research.kfg.ir.value.instruction
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.ValueName
 
-class PhiInst(name: String, type: Type, val incomings: Map<BasicBlock, Value>)
+class PhiInst(name: ValueName, type: Type, val incomings: Map<BasicBlock, Value>)
     : Instruction(name, type, incomings.values.toTypedArray()) {
     override fun print(): String {
         val sb = StringBuilder()
