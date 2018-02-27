@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.jetbrains.research.kfg.value.Field
+import org.jetbrains.research.kfg.ir.value.Field
 
 class Class {
     val name: String

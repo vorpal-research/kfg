@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.ir.instruction.Instruction
+import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import java.rmi.UnexpectedException
@@ -53,8 +53,8 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
         predecessors.take(1).forEach { sb.append("//predecessors ${it.name}") }
         predecessors.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
-        instructions.take(1).forEach { sb.append("\t$it") }
-        instructions.drop(1).forEach { sb.append("\n\t$it") }
+        instructions.take(1).forEach { sb.append("\t${it.print()}") }
+        instructions.drop(1).forEach { sb.append("\n\t${it.print()}") }
         return sb.toString()
     }
 }
@@ -71,8 +71,8 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
         throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
         throwers.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
-        instructions.take(1).forEach { sb.append("\t$it") }
-        instructions.drop(1).forEach { sb.append("\n\t$it") }
+        instructions.take(1).forEach { sb.append("\t${it.print()}") }
+        instructions.drop(1).forEach { sb.append("\n\t${it.print()}") }
         return sb.toString()
     }
 

@@ -1,10 +1,11 @@
-package org.jetbrains.research.kfg.ir.instruction
+package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.value.Value
+import org.jetbrains.research.kfg.type.TypeFactory
+import org.jetbrains.research.kfg.ir.value.Value
 
 class ReturnInst : Instruction {
-    constructor() : super(arrayOf())
-    constructor(retval: Value) : super(arrayOf(retval))
+    constructor() : super("", TypeFactory.instance.getVoidType(), arrayOf())
+    constructor(retval: Value) : super("", retval.type, arrayOf(retval))
 
     fun hasReturnValue() = operands.isNotEmpty()
     fun getReturnType() = operands[0].type
