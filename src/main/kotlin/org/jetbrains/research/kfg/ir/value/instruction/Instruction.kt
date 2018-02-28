@@ -1,12 +1,13 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
+import org.jetbrains.research.kfg.ir.value.User
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueName
 
-abstract class Instruction(name: ValueName, type: Type, val operands: Array<Value>)
-    : Value(name, type), Iterable<Value> {
+abstract class Instruction(name: ValueName, type: Type, operands: Array<Value>)
+    : User(name, type, operands), Iterable<Value> {
     var bb : BasicBlock? = null
 
     abstract fun print(): String

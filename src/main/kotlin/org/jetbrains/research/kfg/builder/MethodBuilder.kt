@@ -8,94 +8,71 @@ import org.jetbrains.research.kfg.type.*
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
+import org.slf4j.LoggerFactory
 import java.util.*
 
 class MethodBuilder(val method: Method, val mn: MethodNode)
     : JSRInlinerAdapter(Opcodes.ASM5, mn, mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
+    val log = LoggerFactory.getLogger(this.javaClass)
     val CM = ClassManager.instance
     val TF = TypeFactory.instance
     val VF = ValueFactory.instance
     val ST = method.slottracker
     val IF = InstructionFactory.instance
 
-    inner class StackFrame {
-        val inputs = mutableSetOf<BasicBlock>()
-        val trackedLocals = mutableSetOf<Int>()
-        val localsMap = mutableMapOf<Int, MutableMap<BasicBlock, Value>>()
-        val stackMap = mutableMapOf<Value, MutableMap<BasicBlock, Value>>()
-        private var out: MutableList<Value>? = null
+    inner class StackFrame(val bb: BasicBlock) {
+        val locals = mutableMapOf<Int, Value>()
+        private var stack: MutableList<Value>? = null
+        val modifiedLocals = mutableSetOf<Int>()
+        val readedLocals = mutableSetOf<Int>()
 
-        fun contains(bb: BasicBlock) = inputs.contains(bb)
-        fun add(bb: BasicBlock) {
-            inputs.add(bb)
+        val stackPhis = mutableListOf<PhiInst>()
+        val localPhis = mutableMapOf<Int, PhiInst>()
+
+        fun addStack(st: Stack<Value>) {
+            if (stack == null) stack = mutableListOf()
+            stack!!.addAll(st)
         }
 
-        fun reserve(): List<Value> {
-            if (out == null) {
-                val newOut = mutableListOf<Value>()
-                val currentStack = stack.toTypedArray()
-                currentStack.mapTo(newOut) { VF.getLocal(ST.getNextSlot(), it.type) }
-                out = newOut
-            }
-            return out?.toList() ?: throw UnexpectedException("Stack frame has no reserved values")
-        }
+        fun getStack(): List<Value>? = stack?.toList()
     }
 
     private val locals = mutableMapOf<Int, Value>()
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
-    private val frames = mutableSetOf<StackFrame>()
+    private val frames = mutableMapOf<BasicBlock, StackFrame>()
     private val stack = Stack<Value>()
 
-    private fun getFrameUnsafe(bb: BasicBlock): StackFrame? {
-        return frames.firstOrNull { it.contains(bb) }
-    }
+    private fun getFrame(bb: BasicBlock) = frames[bb]
+            ?: throw UnexpectedException("No frame for basic block ${bb.name}")
 
-    private fun getFrame(bb: BasicBlock): StackFrame {
-        val unsf = getFrameUnsafe(bb)
-        if (unsf != null) return unsf
-        val sf = StackFrame()
-        sf.add(bb)
-        frames.add(sf)
-        return sf
-    }
-
-    private fun reserveStack(bb: BasicBlock) {
+    private fun reserveState(bb: BasicBlock) {
         val sf = getFrame(bb)
-        val reserved = sf.reserve()
-        val stackCopy = stack.toTypedArray()
-        for ((indx, `var`) in reserved.withIndex()) {
-            val stackMap = sf.stackMap.getOrPut(`var`, { mutableMapOf() })
-            stackMap[bb] = stackCopy[indx]
-        }
-        for (it in sf.trackedLocals) {
-            val localMap = sf.localsMap.getOrPut(it, { mutableMapOf() })
-            localMap[bb] = locals[it] ?: throw UnexpectedException("Unknown local var $it in basick block ${bb.name}")
-        }
+        sf.addStack(stack)
+        sf.locals.putAll(locals)
     }
 
-    private fun recoverStack(bb: BasicBlock) {
+    private fun recoverState(bb: BasicBlock) {
         if (bb.predecessors.isEmpty()) return
-        val sf = getFrame(bb.predecessors.first())
+        val sf = getFrame(bb)
+        val predFrames = bb.predecessors.map { getFrame(it) }
         stack.clear()
-        for (it in sf.trackedLocals) {
-            val localMap = sf.localsMap[it] ?: throw UnexpectedException("Locals map is null for ${bb.name}")
-            val valueSet = localMap.values.toSet()
-            if (valueSet.size > 1) {
-                val phi = IF.getPhi(ST.getNextSlot(), valueSet.first().type, localMap)
-                bb.addInstruction(phi)
-                locals[it] = phi
-            }
+        val stacks = predFrames.mapNotNull { it.getStack() }
+        val stackSizes = stacks.map { it.size }.toSet()
+        if (stackSizes.size != 1)
+            throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
+        for (indx in 0 until stackSizes.first()) {
+            val type = stacks.map { it[indx] }.first().type
+            val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
+            bb.addInstruction(phi)
+            stack.push(phi)
+            sf.stackPhis.add(phi as PhiInst)
         }
-        for (`var` in sf.reserve()) {
-            val stackMap = sf.stackMap[`var`] ?: throw UnexpectedException("No stack map for $`var`")
-            val valueSet = stackMap.values.toSet()
-            if (valueSet.size > 1) {
-                val phi = IF.getPhi(`var`.name, valueSet.first().type, stackMap)
-                bb.addInstruction(phi)
-                stack.push(phi)
-            } else {
-                stack.push(valueSet.first())
-            }
+        for (local in sf.readedLocals) {
+            val type = predFrames.mapNotNull { it.locals[local] }.first().type
+            val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
+            bb.addInstruction(phi)
+            locals[local] = phi
+            sf.localPhis[local] = phi as PhiInst
         }
     }
 
@@ -106,7 +83,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         return false
     }
 
-    private fun getBasicBlock(insn: AbstractInsnNode) = nodeToBlock[insn] ?: throw UnexpectedException("Unknown node $insn")
+    private fun getBasicBlock(insn: AbstractInsnNode) = nodeToBlock[insn]
+            ?: throw UnexpectedException("Unknown node $insn")
 
     private fun convertConst(insn: InsnNode) {
         val opcode = insn.opcode
@@ -488,7 +466,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val trueSuccessor = getBasicBlock(insn.label)
 
         if (insn.opcode == GOTO) {
-            reserveStack(bb)
+            reserveState(bb)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
             val name = ST.getNextSlot()
@@ -500,7 +478,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 in IFNULL..IFNONNULL -> IF.getCmp(name, opc, lhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
-            reserveStack(bb)
+            reserveState(bb)
             bb.addInstruction(cond)
             bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
         }
@@ -511,12 +489,12 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         // if we came to this label not by jump, but just by consistently executing instructions
         if (lbl.previous != null && !isTerminateInst(lbl.previous)) {
             val prev = getBasicBlock(lbl.previous)
-            reserveStack(prev)
+            reserveState(prev)
             prev.addInstruction(IF.getJump(bb))
             bb.addPredecessor(prev)
             prev.addSuccessor(bb)
         }
-        recoverStack(bb)
+        recoverState(bb)
         if (bb is CatchBlock) {
             val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
             bb.addInstruction(inst)
@@ -547,6 +525,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
         val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
+        locals[insn.`var`] = rhv
         bb.addInstruction(rhv)
     }
 
@@ -609,6 +588,24 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                     val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock("%bb${bbc++}", method) })
                     bb.addSuccessor(trueSuccessor)
                     trueSuccessor.addPredecessor(bb)
+                } else if (insn is TableSwitchInsnNode) {
+                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("%bb${bbc++}", method) })
+                    bb.addSuccessors(default)
+                    default.addPredecessor(bb)
+                    for (lbl in insn.labels as MutableList<LabelNode>) {
+                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("%bb${bbc++}", method) })
+                        bb.addSuccessors(lblBB)
+                        lblBB.addPredecessor(bb)
+                    }
+                } else if (insn is LookupSwitchInsnNode) {
+                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("%bb${bbc++}", method) })
+                    bb.addSuccessors(default)
+                    default.addPredecessor(bb)
+                    for (lbl in insn.labels as MutableList<LabelNode>) {
+                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("%bb${bbc++}", method) })
+                        bb.addSuccessors(lblBB)
+                        lblBB.addPredecessor(bb)
+                    }
                 }
             }
             method.addIfNotContains(bb)
@@ -627,35 +624,80 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun buildFramesMap() {
-        for (it in method.basicBlocks.reversed()) {
-            if (it.predecessors.isEmpty()) continue
-            if (it is CatchBlock) continue
-            val sfl = it.predecessors.map { getFrameUnsafe(it) }.filterNotNull()
-            if (sfl.size > 1) throw UnexpectedException("BB successors belong to different frames")
-            val sf = sfl.firstOrNull() ?: getFrame(it.predecessors.first())
-            sf.inputs.addAll(it.predecessors)
-        }
-    }
-
-    private fun checkLocals() {
+        val modifiesMap = mutableMapOf<BasicBlock, MutableSet<Int>>()
         val readsMap = mutableMapOf<BasicBlock, MutableMap<Int, Boolean>>()
         for (insn in mn.instructions) {
             val bb = getBasicBlock(insn as AbstractInsnNode)
-            val bbMap = readsMap.getOrPut(bb, { mutableMapOf() })
+            val modifiesSet = modifiesMap.getOrPut(bb, { mutableSetOf() })
+            val readMap = readsMap.getOrPut(bb, { mutableMapOf() })
             if (insn is VarInsnNode) {
                 when (insn.opcode) {
-                    in ISTORE..ASTORE -> if (!bbMap.containsKey(insn.`var`)) bbMap[insn.`var`] = false
-                    in ILOAD..ALOAD -> {
-                        if (!bbMap.containsKey(insn.`var`)) bbMap[insn.`var`] = true
+                    in ISTORE..ASTORE -> {
+                        modifiesSet.add(insn.`var`)
+                        if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = false
                     }
-                    else -> {}
+                    in ILOAD..ALOAD -> {
+                        if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = true
+                    }
+                    else -> {
+                    }
                 }
             }
         }
         for (bb in method.basicBlocks) {
-            val bbMap = readsMap[bb] ?: throw UnexpectedException("No read map for basic block ${bb.name}")
-            val readVals = bbMap.map { if (it.value) it.key else null }.filterNotNull()
-            if (bb.predecessors.isNotEmpty()) getFrame(bb.predecessors.first()).trackedLocals.addAll(readVals)
+            val readsMap = readsMap[bb] ?: throw UnexpectedException("No read map for basic block ${bb.name}")
+            val modifies = modifiesMap[bb] ?: throw UnexpectedException("No modifies map for basic block ${bb.name}")
+            val reads = readsMap.map { if (it.value) it.key else null }.filterNotNull()
+            val sf = StackFrame(bb)
+            sf.readedLocals.addAll(reads)
+            sf.modifiedLocals.addAll(modifies)
+            frames[bb] = sf
+        }
+    }
+
+    private fun buildPhiInstructions() {
+        for (it in frames) {
+            val bb = it.key
+            if (bb.predecessors.isEmpty()) continue
+
+            val sf = it.value
+            val predFrames = bb.predecessors.map { getFrame(it) }
+            val stacks = predFrames.map { it.getStack() }
+                    .map {
+                        if (it == null) throw UnexpectedException("Not all ${bb.name} predecessors have defined stack")
+                        else it
+                    }
+            val stackSizes = stacks.map { it.size }.toSet()
+            if (stackSizes.size != 1)
+                throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
+
+            for ((indx, phi) in sf.stackPhis.withIndex()) {
+                val incomings = predFrames.map { Pair(it.bb, it.getStack()!![indx]) }.toMap()
+                if (incomings.values.toSet().size > 1) {
+                    val newPhi = IF.getPhi(phi.name, phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    bb.replace(phi, newPhi)
+                } else {
+                    phi.replaceAllUsesWith(incomings.values.first())
+                    bb.remove(phi)
+                }
+            }
+
+            for ((local, phi) in sf.localPhis) {
+                val incomings = predFrames
+                        .map {
+                            Pair(it.bb, it.locals[local]
+                                    ?: throw UnexpectedException("No local $local defined for ${bb.name}"))
+                        }.toMap()
+                if (incomings.values.toSet().size > 1) {
+                    val newPhi = IF.getPhi(phi.name, phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    bb.replace(phi, newPhi)
+                } else {
+                    phi.replaceAllUsesWith(incomings.values.first())
+                    bb.remove(phi)
+                }
+            }
         }
     }
 
@@ -666,9 +708,12 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             locals[localIndx++] = VF.getArgument("arg$$indx", method, it)
         }
 
+        log.debug("Building cfg for method $method")
+        log.debug("Bytecode: ")
+        log.debug(printBytecode(mn))
+
         buildCFG()
         buildFramesMap()
-        checkLocals()
 
         for (insn in mn.instructions) {
             when (insn) {
@@ -689,5 +734,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 else -> throw UnexpectedOpcodeException("Unknown insn: ${(insn as AbstractInsnNode).opcode}")
             }
         }
+
+        buildPhiInstructions()
+        log.debug(method.print())
     }
 }

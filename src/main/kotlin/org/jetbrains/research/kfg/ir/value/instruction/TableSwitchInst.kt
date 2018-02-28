@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.ir.value.Value
 
 class TableSwitchInst(index: Value, min: Value, max: Value, val default: BasicBlock, val branches: Array<BasicBlock>)
-    : Instruction(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf(index, min, max)) {
+    : TerminateInst(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf(index, min, max)) {
     override fun print(): String {
         val sb = StringBuilder()
         sb.appendln("tableswitch (${operands[0].name}) {}")
