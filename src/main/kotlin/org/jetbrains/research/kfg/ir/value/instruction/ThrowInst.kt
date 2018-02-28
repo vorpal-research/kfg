@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.ir.value.Value
 
-class ThrowInst(exc: Value) : Instruction(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf(exc)) {
+class ThrowInst(exc: Value) : TerminateInst(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf(exc)) {
     fun getThrowable() = operands[0]
 
     override fun print() = "throw ${getThrowable()}"

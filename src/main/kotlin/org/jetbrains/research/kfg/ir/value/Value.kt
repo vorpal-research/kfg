@@ -42,20 +42,35 @@ class SlotTracker(val method: Method) {
         var count = 0
         for (inst in method.flatten()) {
             for (value in inst)
-                if (value.name is Slot) slots.getOrPut(value.name, {count++ })
-            if (inst.name is Slot) slots.getOrPut(inst.name, {count++ })
+                if (value.name is Slot) slots.getOrPut(value.name, { count++ })
+            if (inst.name is Slot) slots.getOrPut(inst.name, { count++ })
         }
     }
 }
 
 abstract class Value(val name: ValueName, val type: Type) {
     val TF = TypeFactory.instance
+    private val users = mutableSetOf<User>()
 
     constructor(name: String, type: Type) : this(StrName(name), type)
 
     fun isNameDefined() = name is UndefinedName
     fun hasRealName() = name is StrName
     override fun toString() = name.toString()
+
+    fun addUser(user: User) {
+        users.add(user)
+    }
+
+    fun removeUser(user: User) {
+        users.remove(user)
+    }
+
+    fun getUsers(): List<User> = users.toList()
+
+    fun replaceAllUsesWith(to: Value) {
+        getUsers().forEach { it.replaceUsesOf(this, to) }
+    }
 }
 
 class Argument(argName: String, val method: Method, type: Type) : Value(argName, type)

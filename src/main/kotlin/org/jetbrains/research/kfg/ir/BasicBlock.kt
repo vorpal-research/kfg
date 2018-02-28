@@ -22,6 +22,17 @@ abstract class BasicBlock(val name: String, val method: Method): Iterable<Instru
         inst.bb = this
     }
 
+    fun remove(inst: Instruction) {
+        instructions.remove(inst)
+    }
+
+    fun replace(from: Instruction, to: Instruction){
+        (0 until instructions.size).filter { instructions[it] == from }.forEach {
+            instructions[it] = to
+            to.bb = this
+        }
+    }
+
     fun isEmpty() = instructions.isEmpty()
     fun isNotEmpty() = !isEmpty()
 
