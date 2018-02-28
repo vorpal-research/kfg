@@ -39,6 +39,7 @@ class ClassBuilder(val cn: ClassNode) {
     private fun visitMethod(mn: MethodNode) {
         val methodType = parseMethodDesc(mn.desc)
         val method = Method(mn.name, currentClass, mn.access, methodType.first, methodType.second)
+        currentClass.methods.put(method.getDesc(), method)
         MethodBuilder(method, mn).convert()
     }
 

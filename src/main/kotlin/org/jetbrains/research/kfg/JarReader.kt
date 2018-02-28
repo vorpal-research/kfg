@@ -9,10 +9,9 @@ import java.util.HashMap
 
 class JarReader(val name: String) {
     val jar = JarFile(name)
+    val classes = mutableMapOf<String, ClassNode>()
 
-    fun parseJar(jar: JarFile): Map<String, ClassNode> {
-        val classes = HashMap<String, ClassNode>()
-
+    init {
         try {
             val enumeration = jar.entries()
             while (enumeration.hasMoreElements()) {
@@ -27,14 +26,12 @@ class JarReader(val name: String) {
 
             }
             jar.close()
-            return classes
         } catch (ex: Exception) {
-            return mutableMapOf()
         }
     }
 
     fun doit() {
-        for (it in parseJar(jar)) {
+        for (it in classes) {
             ClassBuilder(it.value).doit()
         }
     }
