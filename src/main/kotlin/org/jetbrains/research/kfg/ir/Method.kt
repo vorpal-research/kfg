@@ -14,7 +14,6 @@ fun createMethodDesc(name: String, klass: Class, args: Array<Type>, retType: Typ
 }
 
 class Method: Iterable<BasicBlock> {
-
     val name: String
     val classRef: Class
     val modifiers: Int

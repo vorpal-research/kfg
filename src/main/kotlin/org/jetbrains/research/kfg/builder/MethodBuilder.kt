@@ -62,11 +62,11 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun reserveStack(bb: BasicBlock) {
         val sf = getFrame(bb)
         val reserved = sf.reserve()
-        for (`var` in reserved) {
+        val stackCopy = stack.toTypedArray()
+        for ((indx, `var`) in reserved.withIndex()) {
             val stackMap = sf.stackMap.getOrPut(`var`, { mutableMapOf() })
-            stackMap[bb] = stack.pop()
+            stackMap[bb] = stackCopy[indx]
         }
-        reserved.reversed().forEach { stack.push(it) }
         for (it in sf.trackedLocals) {
             val localMap = sf.localsMap.getOrPut(it, { mutableMapOf() })
             localMap[bb] = locals[it] ?: throw UnexpectedException("Unknown local var $it in basick block ${bb.name}")
@@ -86,10 +86,16 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 locals[it] = phi
             }
         }
-        for (it in sf.stackMap) {
-            val phi = IF.getPhi(ST.getNextSlot(), it.value.values.first().type, it.value)
-            bb.addInstruction(phi)
-            stack.push(phi)
+        for (`var` in sf.reserve()) {
+            val stackMap = sf.stackMap[`var`] ?: throw UnexpectedException("No stack map for $`var`")
+            val valueSet = stackMap.values.toSet()
+            if (valueSet.size > 1) {
+                val phi = IF.getPhi(`var`.name, valueSet.first().type, stackMap)
+                bb.addInstruction(phi)
+                stack.push(phi)
+            } else {
+                stack.push(valueSet.first())
+            }
         }
     }
 
@@ -683,8 +689,5 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                 else -> throw UnexpectedOpcodeException("Unknown insn: ${(insn as AbstractInsnNode).opcode}")
             }
         }
-
-        println(method.print())
-        println()
     }
 }
