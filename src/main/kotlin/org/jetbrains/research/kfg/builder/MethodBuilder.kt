@@ -8,17 +8,11 @@ import org.jetbrains.research.kfg.type.*
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
-import org.slf4j.LoggerFactory
 import java.util.*
 
 class MethodBuilder(val method: Method, val mn: MethodNode)
     : JSRInlinerAdapter(Opcodes.ASM5, mn, mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
-    val log = LoggerFactory.getLogger(this.javaClass)
-    val CM = ClassManager.instance
-    val TF = TypeFactory.instance
-    val VF = ValueFactory.instance
     val ST = method.slottracker
-    val IF = InstructionFactory.instance
 
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
@@ -386,7 +380,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val bb = getBasicBlock(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(insn.desc)
-        val klass = CM.createOrGet(insn.owner)
+        val klass = CM.getByName(insn.owner)
         when (opcode) {
             GETSTATIC -> {
                 val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, klass, fieldType))
@@ -415,7 +409,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = getBasicBlock(insn)
-        val klass = CM.createOrGet(insn.owner)
+        val klass = CM.getByName(insn.owner)
         val method = klass.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
         method.arguments.forEach {
@@ -449,7 +443,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     }
 
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
-        val klass = CM.createOrGet(insn.bsm.name)
+        val klass = CM.getByName(insn.bsm.name)
         val method = klass.getMethod(insn.name, insn.desc)
         TODO()
     }
@@ -506,8 +500,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             is String -> stack.push(VF.getStringConstant(cst))
             is org.objectweb.asm.Type -> stack.push(VF.getClassConstant(cst.descriptor))
             is org.objectweb.asm.Handle -> {
-                val klass = CM.getClassByName(cst.owner)
-                        ?: throw InvalidOperandException("Class ${cst.owner}")
+                val klass = CM.getByName(cst.owner)
                 val method = klass.getMethod(cst.name, cst.desc)
                 stack.push(VF.getMethodConstant(method))
             }
@@ -633,7 +626,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                     in ILOAD..ALOAD -> {
                         if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = true
                     }
-                    else -> {}
+                    else -> {
+                    }
                 }
             }
         }
@@ -699,10 +693,6 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             else ++localIndx
         }
 
-        log.debug("Building cfg for method $method")
-        log.debug("Bytecode: ")
-        log.debug(printBytecode(mn))
-
         buildCFG()
         buildFramesMap()
 
@@ -740,6 +730,5 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
 
         buildPhiInstructions()
-        log.debug(method.print())
     }
 }

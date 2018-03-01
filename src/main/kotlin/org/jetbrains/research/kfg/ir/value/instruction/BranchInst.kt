@@ -1,12 +1,12 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.value.UndefinedName
-import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.ir.value.Value
 
 class BranchInst(cond: Value, val trueSuccessor: BasicBlock, val falseSuccessor: BasicBlock)
-    : Instruction(UndefinedName.instance, TypeFactory.instance.getVoidType(), arrayOf(cond)) {
+    : Instruction(UndefinedName.instance, TF.getVoidType(), arrayOf(cond)) {
     fun getCond() = operands[0]
 
     override fun isTerminate() = true

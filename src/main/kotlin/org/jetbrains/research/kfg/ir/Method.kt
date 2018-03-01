@@ -16,19 +16,21 @@ fun createMethodDesc(name: String, klass: Class, args: Array<Type>, retType: Typ
 class Method: Iterable<BasicBlock> {
     val name: String
     val classRef: Class
-    val modifiers: Int
     val arguments: Array<Type>
     val retType: Type
     val basicBlocks = mutableListOf<BasicBlock>()
     val catchBlocks = mutableListOf<BasicBlock>()
     val slottracker = SlotTracker(this)
+    var modifiers: Int
+    var builded = false
 
-    constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type) {
+    constructor(name: String, classRef: Class, desc: String) {
         this.name = name
         this.classRef = classRef
-        this.modifiers = modifiers
-        this.arguments = arguments
-        this.retType = retType
+        this.modifiers = -1
+        val pr = parseMethodDesc(desc)
+        this.arguments = pr.first
+        this.retType = pr.second
     }
 
     constructor(name: String, classRef: Class, modifiers: Int, desc: String) {
@@ -38,6 +40,14 @@ class Method: Iterable<BasicBlock> {
         val pr = parseMethodDesc(desc)
         this.arguments = pr.first
         this.retType = pr.second
+    }
+
+    constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type) {
+        this.name = name
+        this.classRef = classRef
+        this.modifiers = modifiers
+        this.arguments = arguments
+        this.retType = retType
     }
 
     fun getEntry() = basicBlocks.first()

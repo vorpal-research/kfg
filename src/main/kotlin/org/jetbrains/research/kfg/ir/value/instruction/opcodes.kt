@@ -2,8 +2,56 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import jdk.internal.org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
-import org.jetbrains.research.kfg.ir.value.instruction.BinaryOpcode
-import org.jetbrains.research.kfg.ir.value.instruction.CmpOpcode
+
+enum class BinaryOpcode {
+    ADD,
+    SUB,
+    MUL,
+    DIV,
+    REM,
+    SHL,
+    SHR,
+    USHR,
+    AND,
+    OR,
+    XOR
+}
+
+enum class CmpOpcode {
+    EQ,
+    NE,
+    LT,
+    GT,
+    LE,
+    GE,
+    CMPG,
+    CMPL
+}
+
+fun CmpOpcode.print(): String = when (this) {
+    CmpOpcode.EQ -> "=="
+    CmpOpcode.NE -> "!="
+    CmpOpcode.LT -> "<"
+    CmpOpcode.GT -> ">"
+    CmpOpcode.LE -> "<="
+    CmpOpcode.GE -> ">="
+    CmpOpcode.CMPG -> "cmpg"
+    CmpOpcode.CMPL -> "cmpl"
+}
+
+fun BinaryOpcode.print(): String = when (this) {
+    BinaryOpcode.ADD -> "+"
+    BinaryOpcode.SUB -> "-"
+    BinaryOpcode.MUL -> "*"
+    BinaryOpcode.DIV -> "/"
+    BinaryOpcode.REM -> "%"
+    BinaryOpcode.SHL -> "<<"
+    BinaryOpcode.SHR -> ">>"
+    BinaryOpcode.USHR -> "u>>"
+    BinaryOpcode.AND -> "&&"
+    BinaryOpcode.OR -> "||"
+    BinaryOpcode.XOR -> "^"
+}
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
     in Opcodes.IADD .. Opcodes.DADD -> BinaryOpcode.ADD

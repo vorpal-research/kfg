@@ -1,9 +1,22 @@
 package org.jetbrains.research.kfg
 
-import org.slf4j.LoggerFactory
+import org.objectweb.asm.tree.MethodNode
 
 fun main(args: Array<String>) {
-    val log = LoggerFactory.getLogger("org.jetbrains.research.kfg.Main")
-    val jr = JarReader(args[0])
-    jr.doit()
+    CM.init(args[0])
+
+    val keys = CM.classNodes.keys.toTypedArray()
+    for (name in keys) {
+        println("Visiting class $name")
+        val cn = CM.get(name)
+        val klass = CM.build(cn)
+        for (mn in cn.methods as MutableList<MethodNode>) {
+            println("Visiting method ${mn.name}")
+            println("Bytecode: ")
+            println(mn.printBytecode())
+            println(klass.getMethod(mn.name, mn.desc).print())
+            println()
+        }
+        println()
+    }
 }

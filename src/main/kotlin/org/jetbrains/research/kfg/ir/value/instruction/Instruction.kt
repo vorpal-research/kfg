@@ -1,7 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.value.Usable
 import org.jetbrains.research.kfg.ir.value.User
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.ir.value.Value
