@@ -11,27 +11,28 @@ import java.io.StringWriter
 private val printer = Textifier()
 private val mp = TraceMethodVisitor(printer)
 
-fun printBytecode(cn: ClassNode): String {
+fun ClassNode.printBytecode(): String {
     val sb = StringBuilder()
-    sb.appendln("Class ${cn.name}")
-    val methods = cn.methods as MutableList<MethodNode>
+    sb.appendln("Class ${this.name}")
+    val methods = this.methods as MutableList<MethodNode>
     for (mn in methods) {
-        sb.appendln(printBytecode(mn))
+        sb.appendln(mn.printBytecode())
     }
     return sb.toString()
 }
 
-fun printBytecode(mn: MethodNode): String {
+fun MethodNode.printBytecode(): String {
     val sb = StringBuilder()
-    sb.appendln(mn.name)
-    for (insn in mn.instructions) {
-        sb.append(printAbstractInsn(insn as AbstractInsnNode))
+    sb.appendln(this.name)
+    for (insn in this.instructions) {
+        val ain = insn as AbstractInsnNode
+        sb.append(ain.printBytecode())
     }
     return sb.toString()
 }
 
-fun printAbstractInsn(insn: AbstractInsnNode): String {
-    insn.accept(mp)
+fun AbstractInsnNode.printBytecode(): String {
+    this.accept(mp)
     val sw = StringWriter()
     printer.print(PrintWriter(sw))
     printer.getText().clear()

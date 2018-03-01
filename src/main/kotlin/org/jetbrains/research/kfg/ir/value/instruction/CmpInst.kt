@@ -1,33 +1,11 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.type.TypeFactory
+import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueName
 
-enum class CmpOpcode {
-    EQ,
-    NE,
-    LT,
-    GT,
-    LE,
-    GE,
-    CMPG,
-    CMPL
-}
-
-fun CmpOpcode.print(): String = when (this) {
-    CmpOpcode.EQ -> "=="
-    CmpOpcode.NE -> "!="
-    CmpOpcode.LT -> "<"
-    CmpOpcode.GT -> ">"
-    CmpOpcode.LE -> "<="
-    CmpOpcode.GE -> ">="
-    CmpOpcode.CMPG -> "cmpg"
-    CmpOpcode.CMPL -> "cmpl"
-}
-
 class CmpInst(name: ValueName, val opcode: CmpOpcode, lhv: Value, rhv: Value)
-    : Instruction(name, TypeFactory.instance.getIntType(), arrayOf(lhv, rhv)) {
+    : Instruction(name, TF.getIntType(), arrayOf(lhv, rhv)) {
 
     fun getLhv() = operands[0]
     fun getRhv() = operands[1]

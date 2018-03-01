@@ -1,9 +1,8 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.type.TypeFactory
-import java.rmi.UnexpectedException
 
 abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction> {
     val predecessors = mutableSetOf<BasicBlock>()
@@ -83,6 +82,6 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
     }
 
     companion object {
-        val defaultException = TypeFactory.instance.getRefType("java/lang/Throwable")
+        val defaultException = TF.getRefType("java/lang/Throwable")
     }
 }

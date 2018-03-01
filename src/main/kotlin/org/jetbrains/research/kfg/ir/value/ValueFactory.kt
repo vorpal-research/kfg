@@ -35,4 +35,13 @@ class ValueFactory private constructor() {
         is Reference -> getNullConstant()
         else -> throw UnexpectedException("Unknown type: ${type.getName()}")
     }
+
+    fun getConstant(value: Any): Value? = when (value) {
+        is Int -> getIntConstant(value)
+        is Float -> getFloatConstant(value)
+        is Long -> getLongConstant(value)
+        is Double -> getDoubleConstant(value)
+        is String -> getStringConstant(value)
+        else -> null
+    }
 }

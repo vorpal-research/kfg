@@ -49,7 +49,6 @@ class SlotTracker(val method: Method) {
 }
 
 abstract class Value(val name: ValueName, val type: Type) : Usable<Value> {
-    val TF = TypeFactory.instance
     private val users = mutableSetOf<User<Value>>()
 
     constructor(name: String, type: Type) : this(StrName(name), type)
