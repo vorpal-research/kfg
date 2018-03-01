@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import java.rmi.UnexpectedException
 
-abstract class BasicBlock(val name: String, val method: Method): Iterable<Instruction> {
+abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction> {
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
@@ -19,7 +19,7 @@ abstract class BasicBlock(val name: String, val method: Method): Iterable<Instru
 
     fun addInstruction(inst: Instruction) {
         instructions.add(inst)
-        inst.bb = this
+        inst.parent = this
     }
 
     fun remove(inst: Instruction) {
@@ -29,7 +29,7 @@ abstract class BasicBlock(val name: String, val method: Method): Iterable<Instru
     fun replace(from: Instruction, to: Instruction){
         (0 until instructions.size).filter { instructions[it] == from }.forEach {
             instructions[it] = to
-            to.bb = this
+            to.parent = this
         }
     }
 
@@ -44,7 +44,7 @@ abstract class BasicBlock(val name: String, val method: Method): Iterable<Instru
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
         if (other !is BasicBlock) return false
-        return this.method == other.method && this.name == other.name
+        return this.parent == other.parent && this.name == other.name
     }
 
     abstract fun print(): String

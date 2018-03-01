@@ -21,23 +21,16 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     val IF = InstructionFactory.instance
 
     inner class StackFrame(val bb: BasicBlock) {
-        val locals = mutableMapOf<Int, Value>()
-        private var stack: MutableList<Value>? = null
+        val locals = LocalArray()
+        val stack = mutableListOf<Value>()
         val modifiedLocals = mutableSetOf<Int>()
         val readedLocals = mutableSetOf<Int>()
 
         val stackPhis = mutableListOf<PhiInst>()
         val localPhis = mutableMapOf<Int, PhiInst>()
-
-        fun addStack(st: Stack<Value>) {
-            if (stack == null) stack = mutableListOf()
-            stack!!.addAll(st)
-        }
-
-        fun getStack(): List<Value>? = stack?.toList()
     }
 
-    private val locals = mutableMapOf<Int, Value>()
+    private val locals = LocalArray()
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
     private val frames = mutableMapOf<BasicBlock, StackFrame>()
     private val stack = Stack<Value>()
@@ -47,7 +40,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     private fun reserveState(bb: BasicBlock) {
         val sf = getFrame(bb)
-        sf.addStack(stack)
+        sf.stack.addAll(stack)
         sf.locals.putAll(locals)
     }
 
@@ -56,11 +49,12 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val sf = getFrame(bb)
         val predFrames = bb.predecessors.map { getFrame(it) }
         stack.clear()
-        val stacks = predFrames.mapNotNull { it.getStack() }
+        val stacks = predFrames.map { it.stack }
         val stackSizes = stacks.map { it.size }.toSet()
-        if (stackSizes.size != 1)
+        if (stackSizes.size > 2)
             throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
-        for (indx in 0 until stackSizes.first()) {
+        val stackSize = stackSizes.max()!!
+        for (indx in 0 until stackSize) {
             val type = stacks.map { it[indx] }.first().type
             val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
             bb.addInstruction(phi)
@@ -639,15 +633,14 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
                     in ILOAD..ALOAD -> {
                         if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = true
                     }
-                    else -> {
-                    }
+                    else -> {}
                 }
             }
         }
         for (bb in method.basicBlocks) {
-            val readsMap = readsMap[bb] ?: throw UnexpectedException("No read map for basic block ${bb.name}")
+            val readMap = readsMap[bb] ?: throw UnexpectedException("No read map for basic block ${bb.name}")
             val modifies = modifiesMap[bb] ?: throw UnexpectedException("No modifies map for basic block ${bb.name}")
-            val reads = readsMap.map { if (it.value) it.key else null }.filterNotNull()
+            val reads = readMap.map { if (it.value) it.key else null }.filterNotNull()
             val sf = StackFrame(bb)
             sf.readedLocals.addAll(reads)
             sf.modifiedLocals.addAll(modifies)
@@ -662,17 +655,13 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
             val sf = it.value
             val predFrames = bb.predecessors.map { getFrame(it) }
-            val stacks = predFrames.map { it.getStack() }
-                    .map {
-                        if (it == null) throw UnexpectedException("Not all ${bb.name} predecessors have defined stack")
-                        else it
-                    }
+            val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
             if (stackSizes.size != 1)
                 throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
 
             for ((indx, phi) in sf.stackPhis.withIndex()) {
-                val incomings = predFrames.map { Pair(it.bb, it.getStack()!![indx]) }.toMap()
+                val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
                 if (incomings.values.toSet().size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
@@ -704,8 +693,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     fun convert() {
         var localIndx = 0
         if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.classRef))
-        for ((indx, it) in method.arguments.withIndex()) {
-            locals[localIndx++] = VF.getArgument("arg$$indx", method, it)
+        for ((indx, type) in method.arguments.withIndex()) {
+            locals[localIndx] = VF.getArgument("arg$$indx", method, type)
+            if (type.isDWord()) localIndx += 2
+            else ++localIndx
         }
 
         log.debug("Building cfg for method $method")
@@ -714,6 +705,19 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
         buildCFG()
         buildFramesMap()
+
+        if (mn.instructions.first is LabelNode) {
+            val entry = BodyBlock("entry", method)
+            val oldEntry = method.getEntry()
+            entry.addInstruction(IF.getJump(oldEntry))
+            entry.addSuccessor(oldEntry)
+            oldEntry.addPredecessor(entry)
+            method.basicBlocks.add(0, entry)
+
+            val sf = StackFrame(entry)
+            sf.locals.putAll(locals)
+            frames[entry] = sf
+        }
 
         for (insn in mn.instructions) {
             when (insn) {

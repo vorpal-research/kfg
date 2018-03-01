@@ -48,9 +48,9 @@ class SlotTracker(val method: Method) {
     }
 }
 
-abstract class Value(val name: ValueName, val type: Type) {
+abstract class Value(val name: ValueName, val type: Type) : Usable<Value> {
     val TF = TypeFactory.instance
-    private val users = mutableSetOf<User>()
+    private val users = mutableSetOf<User<Value>>()
 
     constructor(name: String, type: Type) : this(StrName(name), type)
 
@@ -58,17 +58,17 @@ abstract class Value(val name: ValueName, val type: Type) {
     fun hasRealName() = name is StrName
     override fun toString() = name.toString()
 
-    fun addUser(user: User) {
+    override fun addUser(user: User<Value>) {
         users.add(user)
     }
 
-    fun removeUser(user: User) {
+    override fun removeUser(user: User<Value>) {
         users.remove(user)
     }
 
-    fun getUsers(): List<User> = users.toList()
+    override fun getUsers(): List<User<Value>> = users.toList()
 
-    fun replaceAllUsesWith(to: Value) {
+    override fun replaceAllUsesWith(to: Value) {
         getUsers().forEach { it.replaceUsesOf(this, to) }
     }
 }
