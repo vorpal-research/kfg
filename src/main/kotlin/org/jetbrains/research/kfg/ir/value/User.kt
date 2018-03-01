@@ -1,20 +1,12 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.type.Type
+interface Usable<T> {
+    fun addUser(user: User<T>)
+    fun removeUser(user: User<T>)
+    fun getUsers(): List<User<T>>
+    fun replaceAllUsesWith(to: T)
+}
 
-abstract class User(name: ValueName, type: Type, val operands: Array<Value>) : Value(name, type) {
-
-    init {
-        operands.forEach { it.addUser(this) }
-    }
-
-    fun replaceUsesOf(from: Value, to: Value) {
-        (0 until operands.size)
-                .filter { operands[it] == from }
-                .forEach {
-                    operands[it].removeUser(this)
-                    operands[it] = to
-                    to.addUser(this)
-                }
-    }
+interface User<T> {
+    fun replaceUsesOf(from: T, to: T)
 }

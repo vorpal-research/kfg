@@ -40,6 +40,7 @@ class Method: Iterable<BasicBlock> {
         this.retType = pr.second
     }
 
+    fun getEntry() = basicBlocks.first()
     fun addBasicBlock(bb: BasicBlock) = basicBlocks.add(bb)
 
     fun addIfNotContains(bb: BasicBlock) {

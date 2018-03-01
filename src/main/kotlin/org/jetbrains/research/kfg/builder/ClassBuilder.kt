@@ -40,7 +40,9 @@ class ClassBuilder(val cn: ClassNode) {
         val methodType = parseMethodDesc(mn.desc)
         val method = Method(mn.name, currentClass, mn.access, methodType.first, methodType.second)
         currentClass.methods.put(method.getDesc(), method)
-        MethodBuilder(method, mn).convert()
+        if (!method.isAbstract()) {
+            MethodBuilder(method, mn).convert()
+        }
     }
 
     fun doit() {
