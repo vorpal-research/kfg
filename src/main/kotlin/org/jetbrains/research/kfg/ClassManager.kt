@@ -41,22 +41,23 @@ class ClassManager private constructor() {
 
     fun init(jar: String) = classNodes.putAll(parseJar(jar))
 
+    fun add(cn: ClassNode) {
+        classNodes[cn.name] = cn
+    }
+
     fun get(name: String) = classNodes.getOrPut(name, {
         val cn = ClassNode()
         cn.name = name
         cn
     })
 
-    fun add(cn: ClassNode) {
-        classNodes[cn.name] = cn
-    }
+    fun get(cn: ClassNode) = classes.getOrPut(cn, { Class(cn.name) })
 
     fun getByName(name: String): Class {
         val cn = get(name)
         return get(cn)
     }
 
-    fun get(cn: ClassNode) = classes.getOrPut(cn, { Class(cn.name) })
     fun build(cn: ClassNode): Class {
         val `class` = get(cn)
         if (!`class`.builded) {
