@@ -13,8 +13,8 @@ class ValueFactory private constructor() {
     fun getThis(type: Type): Value = ThisRef(type)
     fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
     fun getLocal(slot: Slot, type: Type): Value = Local(slot, type)
-    fun getField(name: String, klass: Class, type: Type): Value = Field(name, klass, type)
-    fun getField(name: String, klass: Class, type: Type, obj: Value) = Field(name, klass, type, obj)
+    fun getField(name: String, `class`: Class, type: Type): Value = FieldValue(name, `class`, type)
+    fun getField(name: String, `class`: Class, type: Type, obj: Value) = FieldValue(name, `class`, type, obj)
     // constants
     fun getNullConstant(): Value = NullConstant.instance
     fun getBoolConstant(value: Boolean) = BoolConstant(value)
@@ -23,7 +23,7 @@ class ValueFactory private constructor() {
     fun getFloatConstant(value: Float): Value = FloatConstant(value)
     fun getDoubleConstant(value: Double): Value = DoubleConstant(value)
     fun getStringConstant(value: String): Value = StringConstant(value)
-    fun getClassConstant(desc: String): Value = ClassConstant(desc)
+    fun getClassConstant(desc: String): Value = ClassConstant(parseDesc(desc))
     fun getMethodConstant(method: Method): Value = MethodConstant(method)
 
     fun getZeroConstant(type: Type): Value = when(type) {
@@ -36,7 +36,7 @@ class ValueFactory private constructor() {
         else -> throw UnexpectedException("Unknown type: ${type.getName()}")
     }
 
-    fun getConstant(value: Any): Value? = when (value) {
+    fun getConstant(value: Any?): Value? = when (value) {
         is Int -> getIntConstant(value)
         is Float -> getFloatConstant(value)
         is Long -> getLongConstant(value)

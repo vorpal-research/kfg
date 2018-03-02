@@ -45,8 +45,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         stack.clear()
         val stacks = predFrames.map { it.stack }
         val stackSizes = stacks.map { it.size }.toSet()
-        if (stackSizes.size > 2)
-            throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
+        require(stackSizes.size <= 2, { "Stack sizes of ${bb.name} predecessors are different" })
         val stackSize = stackSizes.max()!!
         for (indx in 0 until stackSize) {
             val type = stacks.map { it[indx] }.first().type
@@ -380,28 +379,28 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         val bb = getBasicBlock(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(insn.desc)
-        val klass = CM.getByName(insn.owner)
+        val `class` = CM.getByName(insn.owner)
         when (opcode) {
             GETSTATIC -> {
-                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, klass, fieldType))
+                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, `class`, fieldType))
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             PUTSTATIC -> {
-                val field = VF.getField(insn.name, klass, fieldType)
+                val field = VF.getField(insn.name, `class`, fieldType)
                 val value = stack.pop()
                 bb.addInstruction(IF.getFieldStore(field, value))
             }
             GETFIELD -> {
                 val obj = stack.pop()
-                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, klass, fieldType))
+                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, `class`, fieldType, obj))
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             PUTFIELD -> {
                 val value = stack.pop()
                 val obj = stack.pop()
-                val field = VF.getField(insn.name, klass, fieldType, obj)
+                val field = VF.getField(insn.name, `class`, fieldType, obj)
                 bb.addInstruction(IF.getFieldStore(field, value))
             }
         }
@@ -409,29 +408,29 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = getBasicBlock(insn)
-        val klass = CM.getByName(insn.owner)
-        val method = klass.getMethod(insn.name, insn.desc)
+        val `class` = CM.getByName(insn.owner)
+        val method = `class`.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
-        method.arguments.forEach {
+        method.argTypes.forEach {
             args.add(stack.pop())
         }
         val returnType = method.retType
         val call =
                 if (returnType.isVoid()) {
                     when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(method, klass, args.toTypedArray())
+                        INVOKESTATIC -> IF.getCall(method, `class`, args.toTypedArray())
                         in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                             val obj = stack.pop()
-                            IF.getCall(method, klass, obj, args.toTypedArray())
+                            IF.getCall(method, `class`, obj, args.toTypedArray())
                         }
                         else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
                     }
                 } else {
                     when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(ST.getNextSlot(), method, klass, args.toTypedArray())
+                        INVOKESTATIC -> IF.getCall(ST.getNextSlot(), method, `class`, args.toTypedArray())
                         in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                             val obj = stack.pop()
-                            IF.getCall(ST.getNextSlot(), method, klass, obj, args.toTypedArray())
+                            IF.getCall(ST.getNextSlot(), method, `class`, obj, args.toTypedArray())
                         }
                         else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
                     }
@@ -442,11 +441,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
-    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
-        val klass = CM.getByName(insn.bsm.name)
-        val method = klass.getMethod(insn.name, insn.desc)
-        TODO()
-    }
+    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode): Nothing = TODO()
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
         val bb = getBasicBlock(insn)
@@ -500,8 +495,8 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             is String -> stack.push(VF.getStringConstant(cst))
             is org.objectweb.asm.Type -> stack.push(VF.getClassConstant(cst.descriptor))
             is org.objectweb.asm.Handle -> {
-                val klass = CM.getByName(cst.owner)
-                val method = klass.getMethod(cst.name, cst.desc)
+                val `class` = CM.getByName(cst.owner)
+                val method = `class`.getMethod(cst.name, cst.desc)
                 stack.push(VF.getMethodConstant(method))
             }
             else -> throw InvalidOperandException("Unknown object $cst")
@@ -651,8 +646,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             val predFrames = bb.predecessors.map { getFrame(it) }
             val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
-            if (stackSizes.size != 1)
-                throw UnexpectedException("Stack sizes of ${bb.name} predecessors are different")
+            require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
 
             for ((indx, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
@@ -684,10 +678,10 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
         }
     }
 
-    fun convert() {
+    fun build() {
         var localIndx = 0
-        if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.classRef))
-        for ((indx, type) in method.arguments.withIndex()) {
+        if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.`class`))
+        for ((indx, type) in method.argTypes.withIndex()) {
             locals[localIndx] = VF.getArgument("arg$$indx", method, type)
             if (type.isDWord()) localIndx += 2
             else ++localIndx

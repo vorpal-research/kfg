@@ -8,34 +8,34 @@ import org.jetbrains.research.kfg.ir.value.ValueName
 
 class CallInst : Instruction {
     val method: Method
-    val klass: Class
+    val `class`: Class
     val isStatic: Boolean
 
-    constructor(method: Method, klass: Class, args: Array<Value>)
+    constructor(method: Method, `class`: Class, args: Array<Value>)
             : super(UndefinedName.instance, method.retType, args) {
         this.method = method
-        this.klass = klass
+        this.`class` = `class`
         this.isStatic = true
     }
 
-    constructor(method: Method, klass: Class, obj: Value, args: Array<Value>)
+    constructor(method: Method, `class`: Class, obj: Value, args: Array<Value>)
             : super(UndefinedName.instance, method.retType, arrayOf(obj).plus(args)) {
         this.method = method
-        this.klass = klass
+        this.`class` = `class`
         this.isStatic = false
     }
 
-    constructor(name: ValueName, method: Method, klass: Class, args: Array<Value>)
+    constructor(name: ValueName, method: Method, `class`: Class, args: Array<Value>)
             : super(name, method.retType, args) {
         this.method = method
-        this.klass = klass
+        this.`class` = `class`
         this.isStatic = true
     }
 
-    constructor(name: ValueName, method: Method, klass: Class, obj: Value, args: Array<Value>)
+    constructor(name: ValueName, method: Method, `class`: Class, obj: Value, args: Array<Value>)
             : super(name, method.retType, arrayOf(obj).plus(args)) {
         this.method = method
-        this.klass = klass
+        this.`class` = `class`
         this.isStatic = false
     }
 
@@ -45,7 +45,7 @@ class CallInst : Instruction {
     override fun print(): String {
         val sb = StringBuilder()
         if (!type.isVoid()) sb.append("$name = ")
-        if (isStatic) sb.append(klass.name)
+        if (isStatic) sb.append(`class`.name)
         else sb.append(operands[0].name)
         sb.append(".${method.name}(")
         getArgs().dropLast(1).forEach { sb.append("$it, ") }

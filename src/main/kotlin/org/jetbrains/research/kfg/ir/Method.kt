@@ -4,49 +4,42 @@ import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 
-fun createMethodDesc(name: String, klass: Class, args: Array<Type>, retType: Type): String {
+fun createMethodDesc(name: String, `class`: Class, args: Array<Type>, retType: Type): String {
     val sb = StringBuilder()
-    sb.append("${retType.getName()} ${klass.name}::$name(")
+    sb.append("${retType.getName()} ${`class`.name}::$name(")
     args.dropLast(1).forEach { sb.append("${it.getName()}, ") }
     args.takeLast(1).forEach { sb.append(it.getName()) }
     sb.append(")")
     return sb.toString()
 }
 
-class Method: Iterable<BasicBlock> {
-    val name: String
-    val classRef: Class
-    val arguments: Array<Type>
+class Method : Node, Iterable<BasicBlock> {
+    val `class`: Class
+    val argTypes: Array<Type>
+    val parameters = mutableListOf<Parameter>()
     val retType: Type
     val basicBlocks = mutableListOf<BasicBlock>()
     val catchBlocks = mutableListOf<BasicBlock>()
     val slottracker = SlotTracker(this)
-    var modifiers: Int
-    var builded = false
 
-    constructor(name: String, classRef: Class, desc: String) {
-        this.name = name
-        this.classRef = classRef
-        this.modifiers = -1
+    constructor(name: String, classRef: Class, desc: String) : super(name) {
+        this.`class` = classRef
         val pr = parseMethodDesc(desc)
-        this.arguments = pr.first
+        this.argTypes = pr.first
         this.retType = pr.second
     }
 
-    constructor(name: String, classRef: Class, modifiers: Int, desc: String) {
-        this.name = name
-        this.classRef = classRef
-        this.modifiers = modifiers
+    constructor(name: String, classRef: Class, modifiers: Int, desc: String) : super(name, modifiers) {
+        this.`class` = classRef
         val pr = parseMethodDesc(desc)
-        this.arguments = pr.first
+        this.argTypes = pr.first
         this.retType = pr.second
     }
 
-    constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type) {
-        this.name = name
-        this.classRef = classRef
-        this.modifiers = modifiers
-        this.arguments = arguments
+    constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type)
+            : super(name, modifiers) {
+        this.`class` = classRef
+        this.argTypes = arguments
         this.retType = retType
     }
 
@@ -65,7 +58,7 @@ class Method: Iterable<BasicBlock> {
         return basicBlocks.subList(start, end)
     }
 
-    fun getDesc() = createMethodDesc(name, classRef, arguments, retType)
+    fun getDesc() = createMethodDesc(name, `class`, argTypes, retType)
 
     fun print(): String {
         val sb = StringBuilder()
@@ -78,17 +71,4 @@ class Method: Iterable<BasicBlock> {
 
     override fun toString() = getDesc()
     override fun iterator() = basicBlocks.iterator()
-
-    fun isPublic() = isPublic(modifiers)
-    fun isPrivate() = isPrivate(modifiers)
-    fun isProtected() = isProtected(modifiers)
-    fun isStatic()= isStatic(modifiers)
-    fun isFinal() = isFinal(modifiers)
-    fun isSynchronized() = isSynchronized(modifiers)
-    fun isBridge() = isBridge(modifiers)
-    fun isVarArg() = isVarargs(modifiers)
-    fun isNative() = isNative(modifiers)
-    fun isAbstract() = isAbstract(modifiers)
-    fun isStrict() = isStrict(modifiers)
-    fun isSynthetic() = isSynthetic(modifiers)
 }
