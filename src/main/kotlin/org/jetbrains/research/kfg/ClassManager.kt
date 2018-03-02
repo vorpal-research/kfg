@@ -64,6 +64,12 @@ class ClassManager private constructor() {
                 if (cn.superName != null) superClass = getByName(cn.superName)
                 modifiers = cn.access
 
+                if (cn.interfaces != null) cn.interfaces.forEach {
+                    it as String
+                    val `interface` = getByName(it)
+                    `class`.interfaces[it] = `interface`
+                }
+
                 addVisibleAnnotations(cn.visibleAnnotations as List<AnnotationNode>?)
                 addInvisibleAnnotations(cn.invisibleAnnotations as List<AnnotationNode>?)
                 addVisibleTypeAnnotations(cn.visibleTypeAnnotations as List<TypeAnnotationNode>?)

@@ -17,7 +17,7 @@ class InstructionFactory private constructor() {
     }
 
     fun getNewArray(name: ValueName, componentType: Type, count: Value): Instruction = NewArrayInst(name, componentType, count)
-    fun getMultiNewArray(name: ValueName, type: Type, dims: Int): Instruction = MultiNewArray(name, type, dims)
+    fun getMultiNewArray(name: ValueName, type: Type, dims: Int): Instruction = MultiNewArrayInst(name, type, dims)
     fun getArrayLoad(name: ValueName, arrayRef: Value, index: Value): Instruction = ArrayLoadInst(name, arrayRef, index)
     fun getArrayStore(array: Value, index: Value, value: Value): Instruction = ArrayStoreInst(array, index, value)
 
