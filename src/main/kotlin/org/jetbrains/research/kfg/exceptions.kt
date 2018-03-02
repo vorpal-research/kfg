@@ -1,7 +1,13 @@
 package org.jetbrains.research.kfg
 
-class InvalidTypeDescException(msg: String) : Exception(msg)
-class InvalidOpcodeException(msg: String) : Exception(msg)
-class UnexpectedOpcodeException(msg: String) : Exception(msg)
-class InvalidOperandException(msg: String) : Exception(msg)
-class UnexpectedException(msg: String) : Exception(msg)
+import org.jetbrains.research.kfg.ir.value.instruction.Instruction
+
+abstract class KfgException(msg: String) : Exception(msg)
+
+class InvalidTypeDescException(msg: String) : KfgException(msg)
+class InvalidOpcodeException(msg: String) : KfgException(msg)
+class UnexpectedOpcodeException(msg: String) : KfgException(msg)
+class InvalidOperandException(msg: String) : KfgException(msg)
+class UnexpectedException(msg: String) : KfgException(msg)
+
+class UnknownInst(val inst: Instruction) : KfgException(inst.print())

@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 
 class BranchInst(cond: Value, val trueSuccessor: BasicBlock, val falseSuccessor: BasicBlock)
-    : Instruction(UndefinedName.instance, TF.getVoidType(), arrayOf(cond)) {
+    : TerminateInst(UndefinedName.instance, TF.getVoidType(), arrayOf(cond)) {
     fun getCond() = operands[0]
 
     override fun isTerminate() = true

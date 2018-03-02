@@ -13,7 +13,7 @@ import org.objectweb.asm.tree.MethodNode
 class Class : Node {
     val packageName: String
     val fields = mutableMapOf<String, Field>()
-    val interfaces = mutableListOf<Class>()
+    val interfaces = mutableMapOf<String, Class>()
     val methods = mutableMapOf<String, Method>()
     var superClass: Class?
 
