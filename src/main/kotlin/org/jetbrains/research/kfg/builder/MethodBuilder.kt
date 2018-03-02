@@ -663,8 +663,9 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             for ((local, phi) in sf.localPhis) {
                 val incomings = predFrames
                         .map {
-                            Pair(it.bb, it.locals[local]
-                                    ?: throw UnexpectedException("No local $local defined for ${bb.name}"))
+                            val value = it.locals[local]
+                            require(value != null, { "No local $local defined for ${bb.name}" })
+                            Pair(it.bb, value!!)
                         }.toMap()
                 if (incomings.values.toSet().size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)

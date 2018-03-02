@@ -21,15 +21,6 @@ abstract class Node {
         this.modifiers = modifiers
     }
 
-    constructor(name: String, modifiers: Int,
-                visibleAnnotations: List<AnnotationNode>,
-                invisibleAnnotations: List<AnnotationNode>,
-                visibleTypeAnnotations: List<TypeAnnotationNode>,
-                invisibleTypeAnnotations: List<TypeAnnotationNode>) {
-        this.name = name
-        this.modifiers = modifiers
-    }
-
     fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>?) {
         if (visibleAnnotations != null) {
             this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(it.desc)) })
