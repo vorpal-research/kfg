@@ -6,8 +6,8 @@ interface Reference : Type {
     override fun isPrimitive() = false
 }
 
-class ClassType(val klass: Class) : Reference {
-    override fun getName() = klass.name
+class ClassType(val `class`: Class) : Reference {
+    override fun getName() = `class`.name
     override fun toString() = getName()
 }
 

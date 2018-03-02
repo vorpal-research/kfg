@@ -2,10 +2,9 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.builder.MethodBuilder
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.Parameter
 import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.*
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
@@ -52,28 +51,51 @@ class ClassManager private constructor() {
         classNodes[cn.name] = cn
     }
 
-    fun get(cn: ClassNode) = classes.getOrPut(cn, { Class(cn.name) })
-    fun build(cn: ClassNode): Class {
-        val klass = get(cn)
-        return if (klass.builded) klass else {
-            if (cn.superName != null) klass.superClass = getByName(cn.superName)
-            klass.modifiers = cn.access
-            cn.fields.forEach { val f = klass.getField(it as FieldNode) }
-            cn.methods.forEach {
-                it as MethodNode
-                val method = klass.getMethod(it)
-                if (!method.isAbstract() && !method.builded) {
-                    MethodBuilder(method, it).convert()
-                }
-                method.builded = true
-            }
-            klass.builded = true
-            klass
-        }
-    }
-
     fun getByName(name: String): Class {
         val cn = get(name)
         return get(cn)
+    }
+
+    fun get(cn: ClassNode) = classes.getOrPut(cn, { Class(cn.name) })
+    fun build(cn: ClassNode): Class {
+        val `class` = get(cn)
+        if (!`class`.builded) {
+            `class`.run {
+                if (cn.superName != null) superClass = getByName(cn.superName)
+                modifiers = cn.access
+
+                addVisibleAnnotations(cn.visibleAnnotations as List<AnnotationNode>?)
+                addInvisibleAnnotations(cn.invisibleAnnotations as List<AnnotationNode>?)
+                addVisibleTypeAnnotations(cn.visibleTypeAnnotations as List<TypeAnnotationNode>?)
+                addInvisibleTypeAnnotations(cn.invisibleTypeAnnotations as List<TypeAnnotationNode>?)
+
+                cn.fields.forEach { getField(it as FieldNode) }
+                cn.methods.forEach {
+                    it as MethodNode
+                    val method = getMethod(it)
+
+                    if (it.parameters != null) {
+                        it.parameters.withIndex().forEach { (indx, param) ->
+                            param as ParameterNode
+                            method.parameters.add(Parameter(param.name, method.argTypes[indx], param.access))
+                        }
+                    }
+
+                    method.run {
+                        addVisibleAnnotations(it.visibleAnnotations as List<AnnotationNode>?)
+                        addInvisibleAnnotations(it.invisibleAnnotations as List<AnnotationNode>?)
+                        addVisibleTypeAnnotations(it.visibleTypeAnnotations as List<TypeAnnotationNode>?)
+                        addInvisibleTypeAnnotations(it.invisibleTypeAnnotations as List<TypeAnnotationNode>?)
+                    }
+
+                    if (!method.isAbstract() && !method.builded) {
+                        MethodBuilder(method, it).build()
+                    }
+                    method.builded = true
+                }
+                builded = true
+            }
+        }
+        return `class`
     }
 }

@@ -42,10 +42,10 @@ class InstructionFactory private constructor() {
 
     fun getPhi(name: ValueName, type: Type, incomings: Map<BasicBlock, Value>): Instruction = PhiInst(name, type, incomings)
 
-    fun getCall(method: Method, klass: Class, args: Array<Value>): Instruction = CallInst(method, klass, args)
-    fun getCall(method: Method, klass: Class, obj: Value, args: Array<Value>): Instruction = CallInst(method, klass, obj, args)
-    fun getCall(name: ValueName, method: Method, klass: Class, args: Array<Value>): Instruction = CallInst(name, method, klass, args)
-    fun getCall(name: ValueName, method: Method, klass: Class, obj: Value, args: Array<Value>): Instruction = CallInst(name, method, klass, obj, args)
+    fun getCall(method: Method, `class`: Class, args: Array<Value>): Instruction = CallInst(method, `class`, args)
+    fun getCall(method: Method, `class`: Class, obj: Value, args: Array<Value>): Instruction = CallInst(method, `class`, obj, args)
+    fun getCall(name: ValueName, method: Method, `class`: Class, args: Array<Value>): Instruction = CallInst(name, method, `class`, args)
+    fun getCall(name: ValueName, method: Method, `class`: Class, obj: Value, args: Array<Value>): Instruction = CallInst(name, method, `class`, obj, args)
 
     fun getCatch(name: ValueName, type: Type): Instruction = CatchInst(name, type)
     fun getThrow(throwable: Value): Instruction = ThrowInst(throwable)
