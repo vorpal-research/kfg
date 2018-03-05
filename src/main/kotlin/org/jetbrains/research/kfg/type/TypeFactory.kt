@@ -24,7 +24,7 @@ class TypeFactory private constructor() {
     fun getFloatType(): Type = FloatType.instance
     fun getDoubleType(): Type = DoubleType.instance
     fun getRefType(cname: Class): Type = ClassType(cname)
-    fun getRefType(cname: String): Type = ClassType(CM.getByName(cname))
+    fun getRefType(cname: String): Type = getRefType(CM.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
     fun getNullType(): Type = NullType.instance
 }

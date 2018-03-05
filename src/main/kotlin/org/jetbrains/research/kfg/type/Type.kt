@@ -6,4 +6,6 @@ interface Type {
     fun isDWord() = false
     fun isVoid() = false
     fun isIntegral() = false
+    fun isReal() = false
+    fun isReference() = false
 }

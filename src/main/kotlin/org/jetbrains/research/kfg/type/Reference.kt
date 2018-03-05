@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.ir.Class
 
 interface Reference : Type {
     override fun isPrimitive() = false
+    override fun isReference() = true
 }
 
 class ClassType(val `class`: Class) : Reference {
