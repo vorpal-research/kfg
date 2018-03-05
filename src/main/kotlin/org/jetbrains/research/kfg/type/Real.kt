@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.type
 
 interface Real : Type {
     override fun isPrimitive() = true
+    override fun isReal() = true
 }
 
 class FloatType : Real {
