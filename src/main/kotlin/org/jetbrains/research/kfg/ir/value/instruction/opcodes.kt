@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import jdk.internal.org.objectweb.asm.Opcodes
+import org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
 
 enum class BinaryOpcode {
@@ -28,6 +28,20 @@ enum class CmpOpcode {
     CMPL
 }
 
+enum class CallOpcode {
+    VIRTUAL,
+    SPECIAL,
+    STATIC,
+    INTERFACE
+}
+
+fun CallOpcode.toAsmOpcode(): Int = when (this) {
+    CallOpcode.VIRTUAL -> Opcodes.INVOKEVIRTUAL
+    CallOpcode.SPECIAL -> Opcodes.INVOKESPECIAL
+    CallOpcode.STATIC -> Opcodes.INVOKESTATIC
+    CallOpcode.INTERFACE -> Opcodes.INVOKEINTERFACE
+}
+
 fun CmpOpcode.print(): String = when (this) {
     CmpOpcode.EQ -> "=="
     CmpOpcode.NE -> "!="
@@ -51,6 +65,28 @@ fun BinaryOpcode.print(): String = when (this) {
     BinaryOpcode.AND -> "&&"
     BinaryOpcode.OR -> "||"
     BinaryOpcode.XOR -> "^"
+}
+
+fun BinaryOpcode.toAsmOpcode(): Int = when (this) {
+    BinaryOpcode.ADD -> Opcodes.IADD
+    BinaryOpcode.SUB -> Opcodes.ISUB
+    BinaryOpcode.MUL -> Opcodes.IMUL
+    BinaryOpcode.DIV -> Opcodes.IDIV
+    BinaryOpcode.REM -> Opcodes.IREM
+    BinaryOpcode.SHL -> Opcodes.ISHL
+    BinaryOpcode.SHR -> Opcodes.ISHR
+    BinaryOpcode.USHR -> Opcodes.IUSHR
+    BinaryOpcode.AND -> Opcodes.IAND
+    BinaryOpcode.OR -> Opcodes.IOR
+    BinaryOpcode.XOR -> Opcodes.IXOR
+}
+
+fun toCallOpcode(opcode: Int): CallOpcode = when (opcode) {
+    Opcodes.INVOKEINTERFACE -> CallOpcode.INTERFACE
+    Opcodes.INVOKESTATIC -> CallOpcode.STATIC
+    Opcodes.INVOKESPECIAL -> CallOpcode.SPECIAL
+    Opcodes.INVOKEVIRTUAL -> CallOpcode.VIRTUAL
+    else -> throw UnexpectedOpcodeException("Call opcode $opcode")
 }
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {

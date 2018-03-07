@@ -10,12 +10,12 @@ open class NodeVisitor(val node: Node) {
             visibleAnnotations.forEach { visitVisibleAnnotation(it) }
             invisibleAnnotations.forEach { visitInvisibleAnnotation(it) }
             visibleTypeAnnotations.forEach { visitVisibleTypeAnnotation(it) }
-            invisibleTypeAnnotations.forEach { visitInisibleTypeAnnotation(it) }
+            invisibleTypeAnnotations.forEach { visitInvisibleTypeAnnotation(it) }
         }
     }
 
     open fun visitVisibleAnnotation(anno: Annotation) {}
     open fun visitInvisibleAnnotation(anno: Annotation) {}
     open fun visitVisibleTypeAnnotation(anno: TypeAnnotation) {}
-    open fun visitInisibleTypeAnnotation(anno: TypeAnnotation) {}
+    open fun visitInvisibleTypeAnnotation(anno: TypeAnnotation) {}
 }

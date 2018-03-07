@@ -42,6 +42,20 @@ fun parsePrimaryType(opcode: Int): Type {
     }
 }
 
+fun primaryTypeToInt(type: Type): Int {
+    return when (type) {
+        is CharType -> Opcodes.T_CHAR
+        is BoolType -> Opcodes.T_BOOLEAN
+        is ByteType -> Opcodes.T_BYTE
+        is DoubleType -> Opcodes.T_DOUBLE
+        is FloatType -> Opcodes.T_FLOAT
+        is IntType -> Opcodes.T_INT
+        is LongType -> Opcodes.T_LONG
+        is ShortType -> Opcodes.T_SHORT
+        else -> throw UnexpectedOpcodeException("${type.getName()} is not primary type")
+    }
+}
+
 fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
     val args = mutableListOf<Type>()
     val pattern= Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9\\/]+;))")

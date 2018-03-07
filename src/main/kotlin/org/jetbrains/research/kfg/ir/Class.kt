@@ -1,12 +1,8 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.VF
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.jetbrains.research.kfg.ir.value.FieldValue
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.type.parseDesc
-import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
@@ -51,4 +47,6 @@ class Class : Node {
         val fullDesc = createMethodDesc(name, this, pr.first, pr.second)
         return methods.getOrPut(fullDesc, { Method(name, this, desc) })
     }
+
+    override fun getAsmDesc() = "L${getFullname()};"
 }

@@ -62,7 +62,7 @@ class LocalArray : User<Value>, MutableMap<Int, Value> {
     }
 }
 
-class MethodBuilder(val method: Method, val mn: MethodNode)
+class CfgBuilder(val method: Method, val mn: MethodNode)
     : JSRInlinerAdapter(Opcodes.ASM5, mn, mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
     val ST = method.slottracker
 
@@ -467,22 +467,23 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
             args.add(stack.pop())
         }
         val returnType = method.retType
+        val opcode = toCallOpcode(insn.opcode)
         val call =
                 if (returnType.isVoid()) {
                     when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(method, `class`, args.toTypedArray())
+                        INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray())
                         in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                             val obj = stack.pop()
-                            IF.getCall(method, `class`, obj, args.toTypedArray())
+                            IF.getCall(opcode, method, `class`, obj, args.toTypedArray())
                         }
                         else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
                     }
                 } else {
                     when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(ST.getNextSlot(), method, `class`, args.toTypedArray())
+                        INVOKESTATIC -> IF.getCall(opcode, ST.getNextSlot(), method, `class`, args.toTypedArray())
                         in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                             val obj = stack.pop()
-                            IF.getCall(ST.getNextSlot(), method, `class`, obj, args.toTypedArray())
+                            IF.getCall(opcode, ST.getNextSlot(), method, `class`, obj, args.toTypedArray())
                         }
                         else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
                     }
@@ -587,7 +588,7 @@ class MethodBuilder(val method: Method, val mn: MethodNode)
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
         val bb = getBasicBlock(insn)
         super.visitMultiANewArrayInsn(insn.desc, insn.dims)
-        val type = parseDesc(insn.desc) as ArrayType
+        val type = parseDesc(insn.desc)
         val inst = IF.getMultiNewArray(ST.getNextSlot(), type, insn.dims)
         bb.addInstruction(inst)
         stack.push(inst)

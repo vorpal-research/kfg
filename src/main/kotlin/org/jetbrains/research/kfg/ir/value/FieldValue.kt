@@ -17,4 +17,6 @@ class FieldValue : Value {
         this.`object` = obj
         this.field = `class`.getField(name, type)
     }
+
+    fun isStatic() = `object` == null
 }

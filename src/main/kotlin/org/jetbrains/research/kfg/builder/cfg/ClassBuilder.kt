@@ -14,9 +14,11 @@ class ClassBuilder(val `class`: Class, val cn: ClassNode) {
             if (mn.parameters != null) {
                 mn.parameters.withIndex().forEach { (indx, param) ->
                     param as ParameterNode
-                    method.parameters.add(Parameter(param.name, method.argTypes[indx], param.access))
+                    method.parameters.add(Parameter(indx, param.name, method.argTypes[indx], param.access))
                 }
             }
+
+            mn.exceptions.forEach { method.exceptions.add(CM.getByName(it as String)) }
 
             method.run {
                 addVisibleAnnotations(mn.visibleAnnotations as List<AnnotationNode>?)
@@ -26,7 +28,7 @@ class ClassBuilder(val `class`: Class, val cn: ClassNode) {
             }
 
             if (!method.isAbstract()) {
-                MethodBuilder(method, mn).build()
+                CfgBuilder(method, mn).build()
             }
             method.builded = true
         }

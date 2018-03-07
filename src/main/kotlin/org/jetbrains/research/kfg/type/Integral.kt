@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.type
 
 interface Integral : Type {
-    override fun isPrimitive() = true
+    override fun isPrimary() = true
     override fun isIntegral() = true
 
     fun getWidth(): Int
@@ -14,6 +14,21 @@ interface Integral : Type {
     fun isChar() = false
 }
 
+class BoolType : Integral {
+    companion object {
+        val instance = BoolType()
+        const val width = 32
+        const val signed = false
+    }
+
+    override fun getWidth() = width
+    override fun isSigned() = signed
+    override fun getName() = "bool"
+    override fun toString() = getName()
+
+    override fun getAsmDesc() = "Z"
+}
+
 class ByteType : Integral {
     companion object {
         val instance = ByteType()
@@ -24,6 +39,7 @@ class ByteType : Integral {
     override fun getWidth() = width
     override fun isSigned() = signed
     override fun isByte() = true
+    override fun getAsmDesc() = "B"
 }
 
 class ShortType : Integral {
@@ -36,6 +52,7 @@ class ShortType : Integral {
     override fun getWidth() = width
     override fun isSigned() = signed
     override fun isShort() = true
+    override fun getAsmDesc() = "S"
 }
 
 class IntType : Integral {
@@ -48,6 +65,7 @@ class IntType : Integral {
     override fun getWidth() = width
     override fun isSigned() = signed
     override fun isInt() = true
+    override fun getAsmDesc() = "I"
 }
 
 class LongType : Integral {
@@ -61,6 +79,7 @@ class LongType : Integral {
     override fun isSigned() = signed
     override fun isLong() = true
     override fun isDWord() = true
+    override fun getAsmDesc() = "J"
 }
 
 class CharType : Integral {
@@ -73,4 +92,5 @@ class CharType : Integral {
     override fun getWidth() = width
     override fun isSigned() = signed
     override fun isChar() = true
+    override fun getAsmDesc() = "C"
 }

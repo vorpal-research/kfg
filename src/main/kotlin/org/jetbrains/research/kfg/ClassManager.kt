@@ -1,17 +1,14 @@
 package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.builder.cfg.ClassBuilder
-import org.jetbrains.research.kfg.builder.cfg.MethodBuilder
 import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.ir.Parameter
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.*
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 
-fun parseJar(name: String): Map<String, ClassNode> {
+fun parseJar(jar: JarFile): Map<String, ClassNode> {
     val classes = mutableMapOf<String, ClassNode>()
-    val jar = JarFile(name)
     val enumeration = jar.entries()
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
@@ -29,6 +26,7 @@ fun parseJar(name: String): Map<String, ClassNode> {
 }
 
 class ClassManager private constructor() {
+    val classToJar = mutableMapOf<String, JarFile>()
     val classNodes = mutableMapOf<String, ClassNode>()
     val classes = mutableMapOf<ClassNode, Class>()
 
@@ -40,7 +38,12 @@ class ClassManager private constructor() {
         val instance: ClassManager by lazy { Holder.instance }
     }
 
-    fun init(jar: String) = classNodes.putAll(parseJar(jar))
+    fun init(jarPath: String) {
+        val jar = JarFile(jarPath)
+        val jarClasses = parseJar(jar)
+        classNodes.putAll(jarClasses)
+        classToJar.putAll(jarClasses.map { Pair(it.key, jar) })
+    }
 
     fun add(cn: ClassNode) {
         classNodes[cn.name] = cn
@@ -59,5 +62,5 @@ class ClassManager private constructor() {
         return get(cn)
     }
 
-    fun getBuilded(cn: ClassNode)= ClassBuilder(get(cn), cn).build()
+    fun getBuilded(cn: ClassNode) = ClassBuilder(get(cn), cn).build()
 }
