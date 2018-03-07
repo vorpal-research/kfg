@@ -31,4 +31,6 @@ class Field : Node {
         this.type = type
         this.defaultValue = defalut
     }
+
+    override fun getAsmDesc() = type.getAsmDesc()
 }

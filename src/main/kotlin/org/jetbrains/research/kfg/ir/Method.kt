@@ -18,6 +18,7 @@ class Method : Node, Iterable<BasicBlock> {
     val argTypes: Array<Type>
     val parameters = mutableListOf<Parameter>()
     val retType: Type
+    val exceptions = mutableSetOf<Class>()
     val basicBlocks = mutableListOf<BasicBlock>()
     val catchBlocks = mutableListOf<BasicBlock>()
     val slottracker = SlotTracker(this)
@@ -66,6 +67,15 @@ class Method : Node, Iterable<BasicBlock> {
         basicBlocks.take(1).forEach { sb.appendln(it) }
         basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
         basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
+        return sb.toString()
+    }
+
+    override fun getAsmDesc(): String {
+        val sb = StringBuilder()
+        sb.append("(")
+        argTypes.forEach { type -> sb.append(type.getAsmDesc()) }
+        sb.append(")")
+        sb.append(retType.getAsmDesc())
         return sb.toString()
     }
 

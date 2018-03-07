@@ -45,6 +45,7 @@ abstract class Node {
         }
     }
 
+    abstract fun getAsmDesc(): String
 
     fun isPublic() = (modifiers and Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC
     fun isPrivate() = (modifiers and Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE

@@ -73,5 +73,4 @@ abstract class Value(val name: ValueName, val type: Type) : Usable<Value> {
 }
 
 class Argument(argName: String, val method: Method, type: Type) : Value(argName, type)
-class Local(slot: Slot, type: Type) : Value(slot, type)
 class ThisRef(type: Type) : Value("this", type)

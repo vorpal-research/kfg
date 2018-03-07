@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 
 abstract class KfgException(msg: String) : Exception(msg)
 
+class InvalidCallException(msg: String) : KfgException(msg)
 class InvalidTypeDescException(msg: String) : KfgException(msg)
 class UnexpectedOpcodeException(msg: String) : KfgException(msg)
 class InvalidOperandException(msg: String) : KfgException(msg)
