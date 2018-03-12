@@ -258,8 +258,8 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
 
     private fun convertBinary(insn: InsnNode) {
         val bb = getBasicBlock(insn)
-        val lhv = stack.pop()
         val rhv = stack.pop()
+        val lhv = stack.pop()
         val binOp = toBinaryOpcode(insn.opcode)
         val inst = IF.getBinary(ST.getNextSlot(), binOp, lhv, rhv)
         bb.addInstruction(inst)
@@ -464,7 +464,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
         method.argTypes.forEach {
-            args.add(stack.pop())
+            args.add(0, stack.pop())
         }
         val returnType = method.retType
         val opcode = toCallOpcode(insn.opcode)
@@ -506,12 +506,12 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
             val name = ST.getNextSlot()
-            val lhv = stack.pop()
+            val rhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
             val cond = when (insn.opcode) {
-                in IFEQ..IFLE -> IF.getCmp(name, opc, lhv, VF.getZeroConstant(lhv.type))
-                in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, opc, lhv, stack.pop())
-                in IFNULL..IFNONNULL -> IF.getCmp(name, opc, lhv, VF.getNullConstant())
+                in IFEQ..IFLE -> IF.getCmp(name, opc, VF.getZeroConstant(rhv.type), rhv)
+                in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, opc, stack.pop(), rhv)
+                in IFNULL..IFNONNULL -> IF.getCmp(name, opc, rhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
             reserveState(bb)
@@ -559,7 +559,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
-        val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.ADD, lhv, VF.getIntConstant(insn.incr))
+        val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.ADD, VF.getIntConstant(insn.incr), lhv)
         locals[insn.`var`] = rhv
         bb.addInstruction(rhv)
     }
