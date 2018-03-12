@@ -16,7 +16,7 @@ class CharConstant(val value: Char) : Constant(value.toString(), TF.getCharType(
 class FloatConstant(val value: Float) : Constant(value.toString(), TF.getFloatType())
 class DoubleConstant(val value: Double) : Constant(value.toString(), TF.getDoubleType())
 
-class ClassConstant(`class`: Type) : Constant("${`class`.getName()}.class", `class`)
+class ClassConstant(`class`: Type) : Constant("${`class`.name}.class", `class`)
 class StringConstant(val value: String) : Constant("\"$value\"", TF.getRefType("java.lang.String"))
 class MethodConstant(val method: Method) : Constant(method.name, TF.getRefType("java.lang.invoke.MethodHandle"))
 

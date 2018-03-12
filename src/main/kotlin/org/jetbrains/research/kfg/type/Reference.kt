@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.InvalidCallException
+import org.jetbrains.research.kfg.defaultHasCode
 import org.jetbrains.research.kfg.ir.Class
 
 interface Reference : Type {
@@ -9,23 +10,47 @@ interface Reference : Type {
 }
 
 class ClassType(val `class`: Class) : Reference {
-    override fun getName() = `class`.name
-    override fun toString() = getName()
-    override fun getAsmDesc() = "L${getName()};"
+    override val name = `class`.name
+
+    override fun toString() = name
+    override fun getAsmDesc() = "L${`class`.getFullname()};"
+
+    override fun hashCode() = defaultHasCode(`class`)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (this.javaClass != other?.javaClass) return false
+        other as ClassType
+        return this.`class` == other.`class`
+    }
 }
 
 class ArrayType(val component: Type) : Reference {
-    override fun getName() = "$component[]"
-    override fun toString() = getName()
+    override val name = "$component[]"
+    override fun toString() = name
     override fun getAsmDesc() = "[${component.getAsmDesc()}"
+
+    override fun hashCode() = defaultHasCode(component)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (this.javaClass != other?.javaClass) return false
+        other as ArrayType
+        return this.component == other.component
+    }
 }
 
 class NullType : Reference {
+    override val name = "null"
+
+    override fun toString() = name
+    override fun getAsmDesc() = throw InvalidCallException("Called getAsmDesc on NullType")
+
+    override fun hashCode() = defaultHasCode(name)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
+
     companion object {
         val instance = NullType()
     }
-
-    override fun getName() = "null"
-    override fun toString() = getName()
-    override fun getAsmDesc() = throw InvalidCallException("Called getAsmDesc on NullType")
 }

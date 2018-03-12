@@ -6,9 +6,9 @@ import org.jetbrains.research.kfg.type.parseMethodDesc
 
 fun createMethodDesc(name: String, `class`: Class, args: Array<Type>, retType: Type): String {
     val sb = StringBuilder()
-    sb.append("${retType.getName()} ${`class`.name}::$name(")
-    args.dropLast(1).forEach { sb.append("${it.getName()}, ") }
-    args.takeLast(1).forEach { sb.append(it.getName()) }
+    sb.append("${retType.name} ${`class`.name}::$name(")
+    args.dropLast(1).forEach { sb.append("${it.name}, ") }
+    args.takeLast(1).forEach { sb.append(it.name) }
     sb.append(")")
     return sb.toString()
 }

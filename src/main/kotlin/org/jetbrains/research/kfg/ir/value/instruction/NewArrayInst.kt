@@ -10,5 +10,5 @@ class NewArrayInst(name: ValueName, val compType: Type, count: Value)
 
     fun getCount() = operands[0]
 
-    override fun print() = "$name = new ${compType.getName()}[${getCount()}]"
+    override fun print() = "$name = new ${compType.name}[${getCount()}]"
 }

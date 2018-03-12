@@ -16,17 +16,28 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         mn.access = method.modifiers
         mn.name = method.name
         mn.desc = method.getAsmDesc()
-        mn.exceptions.addAll(method.exceptions.map { it.getAsmDesc() })
+        mn.exceptions = method.exceptions.map { it.getAsmDesc() }
         mn.visibleParameterAnnotations = arrayOfNulls(method.argTypes.size)
         mn.invisibleParameterAnnotations = arrayOfNulls(method.argTypes.size)
     }
 
+    override fun visit() {
+        super.visit()
+        val builder = AsmBuilder(method)
+        mn.instructions = builder.build()
+        mn.tryCatchBlocks = builder.buildTryCatchBlocks()
+        mn.maxLocals = builder.maxLocals
+        mn.maxStack = 10
+    }
+
     override fun visitVisibleAnnotation(anno: Annotation) {
+        if (mn.visibleAnnotations == null) mn.visibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         mn.visibleAnnotations.add(an)
     }
 
     override fun visitInvisibleAnnotation(anno: Annotation) {
+        if (mn.invisibleAnnotations == null) mn.invisibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         mn.invisibleAnnotations.add(an)
     }

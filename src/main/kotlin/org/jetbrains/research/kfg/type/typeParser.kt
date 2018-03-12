@@ -6,8 +6,6 @@ import org.jetbrains.research.kfg.UnexpectedOpcodeException
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
-fun toRealName(type: String) = type.replace('/', '.')
-
 fun parseDesc(desc: String): Type {
     return when (desc[0]) {
         'V' -> TF.getVoidType()
@@ -21,7 +19,7 @@ fun parseDesc(desc: String): Type {
         'D' -> TF.getDoubleType()
         'L' -> {
             if (desc.last() != ';') throw InvalidTypeDescException(desc)
-            TF.getRefType(toRealName(desc.substringBeforeLast(';')))
+            TF.getRefType(desc.substring(1).substringBeforeLast(';'))
         }
         '[' -> TF.getArrayType(parseDesc(desc.substring(1)))
         else -> throw InvalidTypeDescException(desc)
@@ -52,7 +50,7 @@ fun primaryTypeToInt(type: Type): Int {
         is IntType -> Opcodes.T_INT
         is LongType -> Opcodes.T_LONG
         is ShortType -> Opcodes.T_SHORT
-        else -> throw UnexpectedOpcodeException("${type.getName()} is not primary type")
+        else -> throw UnexpectedOpcodeException("${type.name} is not primary type")
     }
 }
 

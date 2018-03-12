@@ -16,8 +16,8 @@ class Class : Node {
     constructor(fullName: String) : this(fullName, null)
     constructor(name: String, packageName: String) : this(name, packageName, null)
 
-    constructor(fullName: String, superClass: Class?, modifiers: Int = 0) : super(fullName.substringAfterLast('.'), modifiers) {
-        this.packageName = fullName.substringBeforeLast('.')
+    constructor(fullName: String, superClass: Class?, modifiers: Int = 0) : super(fullName.substringAfterLast('/'), modifiers) {
+        this.packageName = fullName.substringBeforeLast('/')
         this.superClass = superClass
         this.modifiers = modifiers
     }
@@ -28,7 +28,7 @@ class Class : Node {
         this.modifiers = modifiers
     }
 
-    fun getFullname() = "$packageName.$name"
+    fun getFullname() = "$packageName/$name"
     private fun getMethodByDesc(desc: String) = methods[desc]
 
     fun getField(fn: FieldNode) = fields.getOrPut(fn.name, { Field(fn, this) })

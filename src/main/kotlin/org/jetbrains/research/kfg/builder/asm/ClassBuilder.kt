@@ -17,7 +17,7 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
     }
 
     override fun visitField(field: Field) {
-        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), "", field.defaultValue)
+        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), null, field.defaultValue)
         cn.fields.add(fn)
     }
 
@@ -26,15 +26,19 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
     }
 
     override fun visitMethod(method: Method) {
-        TODO()
+        val builder = MethodBuilder(method)
+        builder.visit()
+        cn.methods.add(builder.mn)
     }
 
     override fun visitVisibleAnnotation(anno: Annotation) {
+        if (cn.visibleAnnotations == null) cn.visibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         cn.visibleAnnotations.add(an)
     }
 
     override fun visitInvisibleAnnotation(anno: Annotation) {
+        if (cn.invisibleAnnotations == null) cn.invisibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         cn.invisibleAnnotations.add(an)
     }

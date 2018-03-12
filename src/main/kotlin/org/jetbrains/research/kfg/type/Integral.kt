@@ -1,11 +1,13 @@
 package org.jetbrains.research.kfg.type
 
+import org.jetbrains.research.kfg.defaultHasCode
+
 interface Integral : Type {
+    val width: Int
+    val signed: Boolean
+
     override fun isPrimary() = true
     override fun isIntegral() = true
-
-    fun getWidth(): Int
-    fun isSigned(): Boolean
 
     fun isByte() = false
     fun isShort() = false
@@ -17,80 +19,117 @@ interface Integral : Type {
 class BoolType : Integral {
     companion object {
         val instance = BoolType()
-        const val width = 32
-        const val signed = false
+        const val defaultWidth = 32
+        const val isSigned = false
     }
 
-    override fun getWidth() = width
-    override fun isSigned() = signed
-    override fun getName() = "bool"
-    override fun toString() = getName()
+    override val name = "bool"
+    override val width = defaultWidth
+    override val signed = isSigned
 
+    override fun toString() = name
     override fun getAsmDesc() = "Z"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
 
 class ByteType : Integral {
     companion object {
-        val instance = ByteType()
-        const val width = 8
-        const val signed = true
+        val instance = BoolType()
+        const val defaultWidth = 8
+        const val isSigned = true
     }
-    override fun getName() = "byte"
-    override fun getWidth() = width
-    override fun isSigned() = signed
+
+    override val name = "byte"
+    override val width = defaultWidth
+    override val signed = isSigned
     override fun isByte() = true
     override fun getAsmDesc() = "B"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
 
 class ShortType : Integral {
     companion object {
         val instance = ShortType()
-        const val width = 16
-        const val signed = true
+        const val defaultWidth = 16
+        const val isSigned = true
     }
-    override fun getName() = "short"
-    override fun getWidth() = width
-    override fun isSigned() = signed
+    override val name = "short"
+    override val width = defaultWidth
+    override val signed = isSigned
     override fun isShort() = true
     override fun getAsmDesc() = "S"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
 
 class IntType : Integral {
     companion object {
         val instance = IntType()
-        const val width = 32
-        const val signed = true
+        const val defaultWidth = 32
+        const val isSigned = true
     }
-    override fun getName() = "int"
-    override fun getWidth() = width
-    override fun isSigned() = signed
+    override val name = "int"
+    override val width = defaultWidth
+    override val signed = isSigned
     override fun isInt() = true
     override fun getAsmDesc() = "I"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
 
 class LongType : Integral {
     companion object {
         val instance = LongType()
-        const val width = 64
-        const val signed = true
+        const val defaultWidth = 64
+        const val isSigned = true
     }
-    override fun getName() = "long"
-    override fun getWidth() = width
-    override fun isSigned() = signed
+    override val name = "long"
+    override val width = defaultWidth
+    override val signed = isSigned
     override fun isLong() = true
     override fun isDWord() = true
     override fun getAsmDesc() = "J"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
 
 class CharType : Integral {
     companion object {
         val instance = CharType()
-        const val width = 16
-        const val signed = false
+        const val defaultWidth = 16
+        const val isSigned = false
     }
-    override fun getName() = "char"
-    override fun getWidth() = width
-    override fun isSigned() = signed
+    override val name = "char"
+    override val width = defaultWidth
+    override val signed = isSigned
     override fun isChar() = true
     override fun getAsmDesc() = "C"
+
+    override fun hashCode() = defaultHasCode(width, signed)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass != other?.javaClass
+    }
 }
