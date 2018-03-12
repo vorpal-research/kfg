@@ -7,5 +7,5 @@ import org.jetbrains.research.kfg.ir.value.ValueName
 class CastInst(name: ValueName, type: Type, obj: Value) : Instruction(name, type, arrayOf(obj)) {
     fun getOperand() = operands[0]
 
-    override fun print()= "$name = (${type.getName()}) ${getOperand()}"
+    override fun print()= "$name = (${type.name}) ${getOperand()}"
 }

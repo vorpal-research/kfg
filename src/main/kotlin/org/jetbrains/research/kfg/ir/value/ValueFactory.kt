@@ -32,7 +32,7 @@ class ValueFactory private constructor() {
         is FloatType -> getFloatConstant(0.0f)
         is DoubleType -> getDoubleConstant(0.0)
         is Reference -> getNullConstant()
-        else -> throw UnexpectedException("Unknown type: ${type.getName()}")
+        else -> throw UnexpectedException("Unknown type: ${type.name}")
     }
 
     fun getConstant(value: Any?): Value? = when (value) {

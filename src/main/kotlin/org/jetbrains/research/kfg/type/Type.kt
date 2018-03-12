@@ -1,7 +1,8 @@
 package org.jetbrains.research.kfg.type
 
 interface Type {
-    fun getName() : String
+    val name: String
+    
     fun isPrimary() : Boolean
     fun isDWord() = false
     fun isVoid() = false

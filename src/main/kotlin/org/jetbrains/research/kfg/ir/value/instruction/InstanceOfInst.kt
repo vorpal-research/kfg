@@ -11,5 +11,5 @@ class InstanceOfInst(name: ValueName, val targetType: Type, obj: Value)
 
     fun getOperand() = operands[0]
 
-    override fun print() = "$name = ${getOperand()} instanceOf ${targetType.getName()}"
+    override fun print() = "$name = ${getOperand()} instanceOf ${targetType.name}"
 }

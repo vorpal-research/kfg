@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value
 
+import org.jetbrains.research.kfg.defaultHasCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
@@ -8,6 +9,13 @@ import java.rmi.UnexpectedException
 sealed class ValueName
 class StrName(val value: String) : ValueName() {
     override fun toString() = value
+    override fun hashCode() = value.hashCode()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (this.javaClass != other?.javaClass) return false
+        other as StrName
+        return this.value == other.value
+    }
 }
 
 class Slot(private val st: SlotTracker) : ValueName() {
@@ -72,5 +80,24 @@ abstract class Value(val name: ValueName, val type: Type) : Usable<Value> {
     }
 }
 
-class Argument(argName: String, val method: Method, type: Type) : Value(argName, type)
-class ThisRef(type: Type) : Value("this", type)
+class Argument(argName: String, val method: Method, type: Type) : Value(argName, type) {
+    override fun hashCode() = defaultHasCode(name, type, method)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+        other as Argument
+        return this.name == other.name && this.type == other.type && this.method == other.method
+    }
+}
+
+class ThisRef(type: Type) : Value("this", type) {
+    override fun hashCode() = defaultHasCode(name, type)
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+        other as ThisRef
+        return this.type == other.type
+    }
+}
