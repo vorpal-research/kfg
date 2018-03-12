@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
 class Class : Node {
+    var version = 52
     val packageName: String
     val fields = mutableMapOf<String, Field>()
     val interfaces = mutableMapOf<String, Class>()

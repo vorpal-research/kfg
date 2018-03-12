@@ -59,6 +59,11 @@ class Method : Node, Iterable<BasicBlock> {
         return basicBlocks.subList(start, end)
     }
 
+    fun getNext(from: BasicBlock): BasicBlock {
+        val start = basicBlocks.indexOf(from)
+        return basicBlocks[start + 1]
+    }
+
     fun getDesc() = createMethodDesc(name, `class`, argTypes, retType)
 
     fun print(): String {

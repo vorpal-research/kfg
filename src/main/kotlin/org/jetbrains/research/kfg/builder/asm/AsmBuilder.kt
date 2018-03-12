@@ -35,7 +35,7 @@ fun typeToInt(type: Type) = when (type) {
 
 class AsmBuilder(method: Method) : MethodVisitor(method) {
     private val insnLists = mutableMapOf<BasicBlock, InsnList>()
-    private val terminateInsns = mutableMapOf<BasicBlock, AbstractInsnNode>()
+    private val terminateInsns = mutableMapOf<BasicBlock, InsnList>()
     private val labels = method.basicBlocks.map { Pair(it, LabelNode()) }.toMap()
     private val stack = mutableListOf<Value>()
     private val locals = mutableMapOf<Value, Int>()
@@ -55,6 +55,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     private fun getInsnList(bb: BasicBlock) = insnLists.getOrPut(bb, { InsnList() })
+    private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, { InsnList() })
     private fun stackPop() = stack.removeAt(stack.size - 1)
     private fun stackPush(value: Value) = stack.add(value)
     private fun stackSave(): Unit {
@@ -124,9 +125,15 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitBasicBlock(bb: BasicBlock) {
-        stackSave()
+        stack.clear()
         currentInsnList = getInsnList(bb)
         super.visitBasicBlock(bb)
+    }
+
+    override fun visitTerminateInst(inst: TerminateInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
+        super.visitTerminateInst(inst)
     }
 
     override fun visitArrayLoadInst(inst: ArrayLoadInst) {
@@ -162,7 +169,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitNewInst(inst: NewInst) {
-        val insn = TypeInsnNode(NEW, inst.type.getAsmDesc())
+        val insn = TypeInsnNode(NEW, inst.type.toInternalDesc())
         currentInsnList.add(insn)
         stackPush(inst)
     }
@@ -216,7 +223,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             }
             InsnNode(opcode)
         } else {
-            TypeInsnNode(CHECKCAST, targetType.getAsmDesc())
+            TypeInsnNode(CHECKCAST, targetType.toInternalDesc())
         }
         currentInsnList.add(insn)
         inst.operands.forEach { stackPop() }
@@ -239,7 +246,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val insn = if (component.isPrimary()) {
             IntInsnNode(NEWARRAY, primaryTypeToInt(component))
         } else {
-            TypeInsnNode(ANEWARRAY, component.getAsmDesc())
+            TypeInsnNode(ANEWARRAY, component.toInternalDesc())
         }
         currentInsnList.add(insn)
         inst.operands.forEach { stackPop() }
@@ -307,7 +314,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitInstanceOfInst(inst: InstanceOfInst) {
         addOperandsToStack(inst.operands)
-        val insn = TypeInsnNode(INSTANCEOF, inst.targetType.getAsmDesc())
+        val insn = TypeInsnNode(INSTANCEOF, inst.targetType.toInternalDesc())
         currentInsnList.add(insn)
         inst.operands.forEach { stackPop() }
         stackPush(inst)
@@ -337,52 +344,30 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val isBranch = !((inst.opcode in arrayOf(CmpOpcode.CMPG, CmpOpcode.CMPL))
                 || (inst.opcode == CmpOpcode.EQ && inst.getLhv().type is LongType))
         if (isBranch) {
-            val operands = mutableListOf(inst.getLhv())
-            val opcode = if (inst.getLhv().type == VF.getZeroConstant(inst.getLhv().type)) {
-                if (inst.getLhv().type is Reference) {
-                    when (inst.opcode) {
-                        CmpOpcode.EQ -> IFNULL
-                        CmpOpcode.NE -> IFNONNULL
-                        else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
-                    }
-                } else {
-                    when (inst.opcode) {
-                        CmpOpcode.EQ -> IFEQ
-                        CmpOpcode.NE -> IFNE
-                        CmpOpcode.LT -> IFLT
-                        CmpOpcode.GT -> IFGT
-                        CmpOpcode.LE -> IFLE
-                        CmpOpcode.GE -> IFGE
-                        else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
-                    }
+            val opcode = if (inst.getLhv().type is Reference) {
+                when (inst.opcode) {
+                    CmpOpcode.EQ -> IF_ACMPEQ
+                    CmpOpcode.NE -> IF_ACMPNE
+                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
                 }
             } else {
-                operands.add(inst.getRhv())
-                if (inst.getLhv().type is Reference) {
-                    when (inst.opcode) {
-                        CmpOpcode.EQ -> IF_ACMPEQ
-                        CmpOpcode.NE -> IF_ACMPNE
-                        else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
-                    }
-                } else {
-                    when (inst.opcode) {
-                        CmpOpcode.EQ -> IF_ICMPEQ
-                        CmpOpcode.NE -> IF_ICMPNE
-                        CmpOpcode.LT -> IF_ICMPLT
-                        CmpOpcode.GT -> IF_ICMPGT
-                        CmpOpcode.LE -> IF_ICMPLE
-                        CmpOpcode.GE -> IF_ICMPGE
-                        else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
-                    }
+                when (inst.opcode) {
+                    CmpOpcode.EQ -> IF_ICMPEQ
+                    CmpOpcode.NE -> IF_ICMPNE
+                    CmpOpcode.LT -> IF_ICMPLT
+                    CmpOpcode.GT -> IF_ICMPGT
+                    CmpOpcode.LE -> IF_ICMPLE
+                    CmpOpcode.GE -> IF_ICMPGE
+                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
                 }
             }
-            addOperandsToStack(operands.toTypedArray())
+            addOperandsToStack(inst.operands)
             require(inst.getUsers().size == 1, { "Unsupported usage of cmp inst" })
             require(inst.getUsers().first() is BranchInst, { "Unsupported usage of cmp inst" })
             val branch = inst.getUsers().first() as BranchInst
             val insn = JumpInsnNode(opcode, getLabel(branch.trueSuccessor))
             currentInsnList.add(insn)
-            operands.forEach { stackPop() }
+            inst.operands.forEach { stackPop() }
         } else {
             addOperandsToStack(inst.operands)
             val opcode = when (inst.opcode) {
@@ -417,7 +402,6 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val local = getLocalFor(inst)
         for ((bb, value) in inst.getIncomings()) {
             val bbInsns = getInsnList(bb)
-            val last = bbInsns.last
             val loadIncoming = when (value) {
                 is Constant -> convertConstantToInsn(value)
                 else -> {
@@ -426,9 +410,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                     VarInsnNode(opcode, lcl)
                 }
             }
-            bbInsns.insertBefore(last, loadIncoming)
+            bbInsns.add(loadIncoming)
             val insn = VarInsnNode(storeOpcode, local)
-            bbInsns.insertBefore(last, insn)
+            bbInsns.add(insn)
         }
     }
 
@@ -438,7 +422,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                 ?: throw UnexpectedException("Unknown thrower")
         val to = it.throwers.maxBy { method.basicBlocks.indexOf(it) }
                 ?: throw UnexpectedException("Unknown thrower")
-        TryCatchBlockNode(getLabel(from), getLabel(to), getLabel(it), it.exception.name)
+        TryCatchBlockNode(getLabel(from), getLabel(method.getNext(to)), getLabel(it), it.exception.toInternalDesc())
     }.toList()
 
     fun build(): InsnList {
@@ -448,6 +432,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         for (bb in method.basicBlocks) {
             insnList.add(getLabel(bb))
             insnList.add(getInsnList(bb))
+            insnList.add(getTerminateInsnList(bb))
         }
         return insnList
     }

@@ -2,8 +2,8 @@ package org.jetbrains.research.kfg.type
 
 interface Type {
     val name: String
-    
-    fun isPrimary() : Boolean
+
+    fun isPrimary(): Boolean
     fun isDWord() = false
     fun isVoid() = false
     fun isIntegral() = false
