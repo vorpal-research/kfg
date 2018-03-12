@@ -24,16 +24,6 @@ fun main(args: Array<String>) {
 
         val cb = ClassBuilder(`class`)
         cb.visit()
-
-        for (mn in cb.cn.methods as MutableList<MethodNode>) {
-            if (mn.name == "test1") {
-                println("Reversed method ${mn.name}")
-                println("Bytecode: ")
-                println(mn.printBytecode())
-                println(`class`.getMethod(mn.name, mn.desc).print())
-                println()
-            }
-        }
         val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
         val cca = CheckClassAdapter(cw)
         cb.cn.accept(cca)

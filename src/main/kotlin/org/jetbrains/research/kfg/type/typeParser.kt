@@ -2,9 +2,20 @@ package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.InvalidTypeDescException
 import org.jetbrains.research.kfg.TF
+import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
+
+fun Type.toInternalDesc(): String =
+        if (this.isPrimary()) this.getAsmDesc()
+        else if (this is ClassType) this.`class`.getFullname()
+        else if (this is ArrayType) {
+            val sub = if (component is ClassType) component.getAsmDesc()
+            else component.toInternalDesc()
+            "[$sub"
+        }
+        else throw UnexpectedException("Unknown type ${this.name}")
 
 fun parseDesc(desc: String): Type {
     return when (desc[0]) {

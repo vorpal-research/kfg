@@ -38,6 +38,7 @@ class ClassBuilder(val `class`: Class, val cn: ClassNode) {
     fun build(): Class {
         if (!`class`.builded) {
             `class`.run {
+                version = cn.version
                 if (cn.superName != null) superClass = CM.getByName(cn.superName)
                 modifiers = cn.access
 

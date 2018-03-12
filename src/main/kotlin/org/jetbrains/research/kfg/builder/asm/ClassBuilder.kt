@@ -14,6 +14,7 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
         cn.name = `class`.getFullname()
         cn.access = `class`.modifiers
         cn.superName = `class`.superClass?.getFullname()
+        cn.version = `class`.version
     }
 
     override fun visitField(field: Field) {
