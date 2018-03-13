@@ -16,6 +16,7 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         mn.access = method.modifiers
         mn.name = method.name
         mn.desc = method.getAsmDesc()
+        mn.signature = method.signature
         mn.exceptions = method.exceptions.map { it.getAsmDesc() }
         mn.visibleParameterAnnotations = arrayOfNulls(method.argTypes.size)
         mn.invisibleParameterAnnotations = arrayOfNulls(method.argTypes.size)

@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.TypeAnnotationNode
 
 abstract class Node {
     val name: String
+    var signature: String? = null
     var builded = false
     var modifiers: Int
     val visibleAnnotations = mutableListOf<Annotation>()
