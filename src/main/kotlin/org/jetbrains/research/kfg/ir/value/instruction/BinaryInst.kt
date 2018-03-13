@@ -9,5 +9,5 @@ class BinaryInst(name: ValueName, val opcode: BinaryOpcode, lhv: Value, rhv: Val
     fun getLhv() = operands[0]
     fun getRhv() = operands[1]
 
-    override fun print()= "$name = ${getLhv()} ${opcode.print()} ${getRhv()}"
+    override fun print()= "$name = ${getLhv()} $opcode ${getRhv()}"
 }

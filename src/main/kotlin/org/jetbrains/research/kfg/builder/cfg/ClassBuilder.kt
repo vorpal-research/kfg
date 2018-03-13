@@ -7,34 +7,6 @@ import org.jetbrains.research.kfg.ir.Parameter
 import org.objectweb.asm.tree.*
 
 class ClassBuilder(val `class`: Class, val cn: ClassNode) {
-    private fun buildMethod(mn: MethodNode): Method {
-        val method = `class`.getMethod(mn)
-
-        if (!method.builded) {
-            if (mn.parameters != null) {
-                mn.parameters.withIndex().forEach { (indx, param) ->
-                    param as ParameterNode
-                    method.parameters.add(Parameter(indx, param.name, method.argTypes[indx], param.access))
-                }
-            }
-
-            mn.exceptions.forEach { method.exceptions.add(CM.getByName(it as String)) }
-
-            method.run {
-                addVisibleAnnotations(mn.visibleAnnotations as List<AnnotationNode>?)
-                addInvisibleAnnotations(mn.invisibleAnnotations as List<AnnotationNode>?)
-                addVisibleTypeAnnotations(mn.visibleTypeAnnotations as List<TypeAnnotationNode>?)
-                addInvisibleTypeAnnotations(mn.invisibleTypeAnnotations as List<TypeAnnotationNode>?)
-            }
-
-            if (!method.isAbstract()) {
-                CfgBuilder(method, mn).build()
-            }
-            method.builded = true
-        }
-        return method
-    }
-
     fun build(): Class {
         if (!`class`.builded) {
             `class`.run {
@@ -54,7 +26,10 @@ class ClassBuilder(val `class`: Class, val cn: ClassNode) {
                 addInvisibleTypeAnnotations(cn.invisibleTypeAnnotations as List<TypeAnnotationNode>?)
 
                 cn.fields.forEach { getField(it as FieldNode) }
-                cn.methods.forEach { buildMethod(it as MethodNode) }
+                cn.methods.forEach {
+                    it as MethodNode
+                    MethodBuilder(getMethod(it), it).build()
+                }
                 builded = true
             }
         }

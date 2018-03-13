@@ -10,5 +10,5 @@ class CmpInst(name: ValueName, val opcode: CmpOpcode, lhv: Value, rhv: Value)
     fun getLhv() = operands[0]
     fun getRhv() = operands[1]
 
-    override fun print() = "$name = (${getLhv()} ${opcode.print()} ${getRhv()})"
+    override fun print() = "$name = (${getLhv()} $opcode ${getRhv()})"
 }

@@ -14,8 +14,9 @@ fun main(args: Array<String>) {
         println("Visiting class $name")
         val cn = CM.get(name)
         val `class` = CM.getBuilded(cn)
+        println("Class ${cn.name} signature ${cn.signature}")
         for (mn in cn.methods as MutableList<MethodNode>) {
-            println("Visiting method ${mn.name}")
+            println("Visiting method ${mn.name} ${mn.signature}")
             println("Bytecode: ")
             println(mn.printBytecode())
             println(`class`.getMethod(mn.name, mn.desc).print())

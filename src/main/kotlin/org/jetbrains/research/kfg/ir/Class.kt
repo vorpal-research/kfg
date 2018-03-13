@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.instruction.BinaryOpcode
 import org.jetbrains.research.kfg.type.Type
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
