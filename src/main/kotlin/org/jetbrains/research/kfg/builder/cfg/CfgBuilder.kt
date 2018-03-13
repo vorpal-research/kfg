@@ -559,7 +559,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = getBasicBlock(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
-        val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.ADD, VF.getIntConstant(insn.incr), lhv)
+        val rhv = IF.getBinary(ST.getNextSlot(), BinaryOpcode.Add(), VF.getIntConstant(insn.incr), lhv)
         locals[insn.`var`] = rhv
         bb.addInstruction(rhv)
     }

@@ -341,24 +341,24 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitCmpInst(inst: CmpInst) {
-        val isBranch = !((inst.opcode in arrayOf(CmpOpcode.CMPG, CmpOpcode.CMPL))
-                || (inst.opcode == CmpOpcode.EQ && inst.getLhv().type is LongType))
+        val isBranch = !((inst.opcode in arrayOf(CmpOpcode.Cmpg(), CmpOpcode.Cmpl()))
+                || (inst.opcode == CmpOpcode.Eq() && inst.getLhv().type is LongType))
         if (isBranch) {
             val opcode = if (inst.getLhv().type is Reference) {
                 when (inst.opcode) {
-                    CmpOpcode.EQ -> IF_ACMPEQ
-                    CmpOpcode.NE -> IF_ACMPNE
-                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
+                    CmpOpcode.Eq() -> IF_ACMPEQ
+                    CmpOpcode.Neq() -> IF_ACMPNE
+                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode}")
                 }
             } else {
                 when (inst.opcode) {
-                    CmpOpcode.EQ -> IF_ICMPEQ
-                    CmpOpcode.NE -> IF_ICMPNE
-                    CmpOpcode.LT -> IF_ICMPLT
-                    CmpOpcode.GT -> IF_ICMPGT
-                    CmpOpcode.LE -> IF_ICMPLE
-                    CmpOpcode.GE -> IF_ICMPGE
-                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode.print()}")
+                    is CmpOpcode.Eq -> IF_ICMPEQ
+                    is CmpOpcode.Neq -> IF_ICMPNE
+                    is CmpOpcode.Lt -> IF_ICMPLT
+                    is CmpOpcode.Gt -> IF_ICMPGT
+                    is CmpOpcode.Le -> IF_ICMPLE
+                    is CmpOpcode.Ge -> IF_ICMPGE
+                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode}")
                 }
             }
             addOperandsToStack(inst.operands)
@@ -371,13 +371,13 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         } else {
             addOperandsToStack(inst.operands)
             val opcode = when (inst.opcode) {
-                CmpOpcode.EQ -> LCMP
-                CmpOpcode.CMPG -> when (inst.getLhv().type) {
+                is CmpOpcode.Eq -> LCMP
+                is CmpOpcode.Cmpg -> when (inst.getLhv().type) {
                     is FloatType -> FCMPG
                     is DoubleType -> DCMPG
                     else -> throw InvalidOperandException("Non-real operands of CMPG inst")
                 }
-                CmpOpcode.CMPL -> when (inst.getLhv().type) {
+                is CmpOpcode.Cmpl -> when (inst.getLhv().type) {
                     is FloatType -> FCMPL
                     is DoubleType -> DCMPL
                     else -> throw InvalidOperandException("Non-real operands of CMPL inst")
