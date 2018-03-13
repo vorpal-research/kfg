@@ -42,6 +42,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     var currentInsnList = InsnList()
     var maxLocals = 0
+    var maxStack = 0
 
     init {
         if (!method.isStatic()) {
@@ -57,7 +58,11 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     private fun getInsnList(bb: BasicBlock) = insnLists.getOrPut(bb, { InsnList() })
     private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, { InsnList() })
     private fun stackPop() = stack.removeAt(stack.size - 1)
-    private fun stackPush(value: Value) = stack.add(value)
+    private fun stackPush(value: Value): Boolean {
+        val res = stack.add(value)
+        if (stack.size > maxStack) maxStack = stack.size
+        return res
+    }
     private fun stackSave(): Unit {
         while (stack.isNotEmpty()) {
             val operand = stackPop()
@@ -295,26 +300,20 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
-        val field = inst.getField() as FieldValue
-        val operands = if (!field.isStatic()) arrayOf(field.`object`!!) else arrayOf()
-        addOperandsToStack(operands)
-        val opcode = if (field.isStatic()) GETSTATIC else GETFIELD
-        val insn = FieldInsnNode(opcode, field.field.`class`.getFullname(), field.field.name, field.type.getAsmDesc())
+        addOperandsToStack(inst.operands)
+        val opcode = if (inst.isStatic) GETSTATIC else GETFIELD
+        val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        inst.operands.forEach { stackPop() }
         stackPush(inst)
     }
 
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
-        val field = inst.getField() as FieldValue
-        val operands = mutableListOf<Value>()
-        if (!field.isStatic()) operands.add(field.`object`!!)
-        operands.add(inst.getValue())
-        addOperandsToStack(operands.toTypedArray())
-        val opcode = if (field.isStatic()) PUTSTATIC else PUTFIELD
-        val insn = FieldInsnNode(opcode, field.field.`class`.getFullname(), field.field.name, field.type.getAsmDesc())
+        addOperandsToStack(inst.operands)
+        val opcode = if (inst.isStatic) PUTSTATIC else PUTFIELD
+        val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        inst.operands.forEach { stackPop() }
     }
 
     override fun visitInstanceOfInst(inst: InstanceOfInst) {
@@ -348,15 +347,15 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitCmpInst(inst: CmpInst) {
-        val isBranch = !((inst.opcode in arrayOf(CmpOpcode.Cmpg(), CmpOpcode.Cmpl()))
-                || (inst.opcode == CmpOpcode.Eq() && inst.getLhv().type is LongType))
+        val isBranch = !((inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
+                || (inst.opcode is CmpOpcode.Eq && inst.getLhv().type is LongType))
         if (isBranch) {
             stackSave()
             currentInsnList = getTerminateInsnList(inst.parent!!)
             val opcode = if (inst.getLhv().type is Reference) {
                 when (inst.opcode) {
-                    CmpOpcode.Eq() -> IF_ACMPEQ
-                    CmpOpcode.Neq() -> IF_ACMPNE
+                    is CmpOpcode.Eq -> IF_ACMPEQ
+                    is CmpOpcode.Neq -> IF_ACMPNE
                     else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode}")
                 }
             } else {
