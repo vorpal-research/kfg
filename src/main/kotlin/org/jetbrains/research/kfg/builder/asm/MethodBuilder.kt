@@ -28,7 +28,7 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         mn.instructions = builder.build()
         mn.tryCatchBlocks = builder.buildTryCatchBlocks()
         mn.maxLocals = builder.maxLocals
-        mn.maxStack = 10
+        mn.maxStack = builder.maxStack
     }
 
     override fun visitVisibleAnnotation(anno: Annotation) {

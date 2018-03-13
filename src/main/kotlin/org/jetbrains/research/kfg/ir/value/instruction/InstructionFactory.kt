@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueName
@@ -21,8 +22,10 @@ class InstructionFactory private constructor() {
     fun getArrayLoad(name: ValueName, arrayRef: Value, index: Value): Instruction = ArrayLoadInst(name, arrayRef, index)
     fun getArrayStore(array: Value, index: Value, value: Value): Instruction = ArrayStoreInst(array, index, value)
 
-    fun getFieldLoad(name: ValueName, field: Value): Instruction = FieldLoadInst(name, field)
-    fun getFieldStore(field: Value, value: Value): Instruction = FieldStoreInst(field, value)
+    fun getFieldLoad(name: ValueName, field: Field): Instruction = FieldLoadInst(name, field)
+    fun getFieldLoad(name: ValueName, owner: Value, field: Field): Instruction = FieldLoadInst(name, owner, field)
+    fun getFieldStore(field: Field, value: Value): Instruction = FieldStoreInst(field, value)
+    fun getFieldStore(owner: Value, field: Field, value: Value): Instruction = FieldStoreInst(owner, field, value)
 
     fun getBinary(name: ValueName, opcode: BinaryOpcode, lhv: Value, rhv: Value): Instruction = BinaryInst(name, opcode, lhv, rhv)
     fun getCmp(name: ValueName, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction = CmpInst(name, opcode, lhv, rhv)

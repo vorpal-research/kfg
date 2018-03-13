@@ -434,26 +434,28 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
         val `class` = CM.getByName(insn.owner)
         when (opcode) {
             GETSTATIC -> {
-                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, `class`, fieldType))
+                val field = `class`.getField(insn.name, fieldType)
+                val inst = IF.getFieldLoad(ST.getNextSlot(), field)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             PUTSTATIC -> {
-                val field = VF.getField(insn.name, `class`, fieldType)
+                val field = `class`.getField(insn.name, fieldType)
                 val value = stack.pop()
                 bb.addInstruction(IF.getFieldStore(field, value))
             }
             GETFIELD -> {
-                val obj = stack.pop()
-                val inst = IF.getFieldLoad(ST.getNextSlot(), VF.getField(insn.name, `class`, fieldType, obj))
+                val field = `class`.getField(insn.name, fieldType)
+                val owner = stack.pop()
+                val inst = IF.getFieldLoad(ST.getNextSlot(), owner, field)
                 bb.addInstruction(inst)
                 stack.push(inst)
             }
             PUTFIELD -> {
                 val value = stack.pop()
-                val obj = stack.pop()
-                val field = VF.getField(insn.name, `class`, fieldType, obj)
-                bb.addInstruction(IF.getFieldStore(field, value))
+                val owner = stack.pop()
+                val field = `class`.getField(insn.name, fieldType)
+                bb.addInstruction(IF.getFieldStore(owner, field, value))
             }
         }
     }

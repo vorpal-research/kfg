@@ -2,7 +2,6 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.tree.InnerClassNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.FileOutputStream
@@ -16,9 +15,6 @@ fun main(args: Array<String>) {
         val cn = CM.get(name)
         val `class` = CM.getBuilded(cn)
         println("Class ${cn.name}")
-        println("Class inner classes: ${cn.innerClasses.map { (it as InnerClassNode).name }}")
-        println("Class outer class ${cn.outerClass}")
-        println("Class outter method ${cn.outerMethod}")
         for (mn in cn.methods as MutableList<MethodNode>) {
             println("Visiting method ${mn.name}")
             println("Bytecode: ")
