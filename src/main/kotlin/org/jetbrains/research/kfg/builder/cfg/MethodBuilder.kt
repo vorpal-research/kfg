@@ -10,27 +10,28 @@ import org.objectweb.asm.tree.TypeAnnotationNode
 
 class MethodBuilder(val method: Method, val mn: MethodNode) {
     fun build(): Method {
-        if (!method.builded) {
-            if (mn.parameters != null) {
-                mn.parameters.withIndex().forEach { (indx, param) ->
-                    param as ParameterNode
-                    method.parameters.add(Parameter(indx, param.name, method.argTypes[indx], param.access))
+        method.run {
+            if (!builded) {
+                signature = mn.signature
+                if (mn.parameters != null) {
+                    mn.parameters.withIndex().forEach { (indx, param) ->
+                        param as ParameterNode
+                        parameters.add(Parameter(indx, param.name, method.argTypes[indx], param.access))
+                    }
                 }
-            }
 
-            mn.exceptions.forEach { method.exceptions.add(CM.getByName(it as String)) }
+                mn.exceptions.forEach { exceptions.add(CM.getByName(it as String)) }
 
-            method.run {
                 addVisibleAnnotations(mn.visibleAnnotations as List<AnnotationNode>?)
                 addInvisibleAnnotations(mn.invisibleAnnotations as List<AnnotationNode>?)
                 addVisibleTypeAnnotations(mn.visibleTypeAnnotations as List<TypeAnnotationNode>?)
                 addInvisibleTypeAnnotations(mn.invisibleTypeAnnotations as List<TypeAnnotationNode>?)
-            }
 
-            if (!method.isAbstract()) {
-                CfgBuilder(method, mn).build()
+                if (!isAbstract()) {
+                    CfgBuilder(this, mn).build()
+                }
+                builded = true
             }
-            method.builded = true
         }
         return method
     }

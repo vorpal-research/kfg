@@ -13,7 +13,10 @@ class Class : Node {
     val fields = mutableMapOf<String, Field>()
     val interfaces = mutableMapOf<String, Class>()
     val methods = mutableMapOf<String, Method>()
-    var superClass: Class?
+    var superClass: Class? = null
+    var outerClass: Class? = null
+    var outerMethod: Method? = null
+    val innerClasses = mutableSetOf<Class>()
 
     constructor(fullName: String) : this(fullName, null)
     constructor(name: String, packageName: String) : this(name, packageName, null)

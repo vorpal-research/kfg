@@ -15,10 +15,14 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
         cn.access = `class`.modifiers
         cn.superName = `class`.superClass?.getFullname()
         cn.version = `class`.version
+        cn.signature = `class`.signature
+        cn.outerClass = `class`.outerClass?.getFullname()
+        cn.outerMethod = `class`.outerMethod?.name
+        cn.outerMethodDesc = `class`.outerMethod?.getAsmDesc()
     }
 
     override fun visitField(field: Field) {
-        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), null, field.defaultValue)
+        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), field.signature, field.defaultValue)
         cn.fields.add(fn)
     }
 

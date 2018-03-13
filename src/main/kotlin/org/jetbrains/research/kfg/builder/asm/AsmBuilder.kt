@@ -101,6 +101,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             1.0 -> InsnNode(DCONST_1)
             else -> LdcInsnNode(`const`.value)
         }
+        is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(`const`.value)
         is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.getAsmDesc()))
         is MethodConstant -> TODO()
@@ -130,12 +131,6 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         super.visitBasicBlock(bb)
     }
 
-    override fun visitTerminateInst(inst: TerminateInst) {
-        stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
-        super.visitTerminateInst(inst)
-    }
-
     override fun visitArrayLoadInst(inst: ArrayLoadInst) {
         addOperandsToStack(inst.operands)
         val opcode = IALOAD + typeToFullInt(inst.type)
@@ -163,6 +158,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitJumpInst(inst: JumpInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         val successor = getLabel(inst.successor)
         val insn = JumpInsnNode(GOTO, successor)
         currentInsnList.add(insn)
@@ -175,6 +172,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitReturnInst(inst: ReturnInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         addOperandsToStack(inst.operands)
         val opcode = if (inst.hasReturnValue()) IRETURN + typeToInt(inst.getReturnType()) else RETURN
         val insn = InsnNode(opcode)
@@ -182,6 +181,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitBranchInst(inst: BranchInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         val jump = JumpInsnNode(GOTO, getLabel(inst.falseSuccessor))
         currentInsnList.add(jump)
     }
@@ -273,6 +274,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitThrowInst(inst: ThrowInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         addOperandsToStack(inst.operands)
         val insn = InsnNode(ATHROW)
         currentInsnList.add(insn)
@@ -280,6 +283,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitSwitchInst(inst: SwitchInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         addOperandsToStack(inst.operands)
         val default = getLabel(inst.default)
         val keys = inst.branches.keys.map { (it as IntConstant).value }.toIntArray()
@@ -321,6 +326,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitTableSwitchInst(inst: TableSwitchInst) {
+        stackSave()
+        currentInsnList = getTerminateInsnList(inst.parent!!)
         addOperandsToStack(arrayOf(inst.getIndex()))
         val min = (inst.getMin() as IntConstant).value
         val max = (inst.getMax() as IntConstant).value
@@ -344,6 +351,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val isBranch = !((inst.opcode in arrayOf(CmpOpcode.Cmpg(), CmpOpcode.Cmpl()))
                 || (inst.opcode == CmpOpcode.Eq() && inst.getLhv().type is LongType))
         if (isBranch) {
+            stackSave()
+            currentInsnList = getTerminateInsnList(inst.parent!!)
             val opcode = if (inst.getLhv().type is Reference) {
                 when (inst.opcode) {
                     CmpOpcode.Eq() -> IF_ACMPEQ
