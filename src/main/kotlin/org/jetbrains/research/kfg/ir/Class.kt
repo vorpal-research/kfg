@@ -1,57 +1,78 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.instruction.BinaryOpcode
+import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.UnknownInstance
+import org.jetbrains.research.kfg.defaultHasCode
 import org.jetbrains.research.kfg.type.Type
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
+import org.jetbrains.research.kfg.type.parseMethodDesc
+import org.objectweb.asm.tree.*
 
-class Class : Node {
-    var version = 52
-    val packageName: String
+abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
+    val packageName: String = cn.name.substringBeforeLast('/')
     val fields = mutableMapOf<String, Field>()
-    val interfaces = mutableMapOf<String, Class>()
     val methods = mutableMapOf<String, Method>()
-    var superClass: Class? = null
-    var outerClass: Class? = null
-    var outerMethod: Method? = null
-    val innerClasses = mutableSetOf<Class>()
 
-    constructor(fullName: String) : this(fullName, null)
-    constructor(name: String, packageName: String) : this(name, packageName, null)
-
-    constructor(fullName: String, superClass: Class?, modifiers: Int = 0) : super(fullName.substringAfterLast('/'), modifiers) {
-        this.packageName = fullName.substringBeforeLast('/')
-        this.superClass = superClass
-        this.modifiers = modifiers
-    }
-
-    constructor(name: String, packageName: String, superClass: Class?, modifiers: Int = 0) : super(name, modifiers) {
-        this.packageName = packageName
-        this.superClass = superClass
-        this.modifiers = modifiers
+    fun init() {
+        addVisibleAnnotations(cn.visibleAnnotations as List<AnnotationNode>?)
+        addInvisibleAnnotations(cn.invisibleAnnotations as List<AnnotationNode>?)
+        cn.fields.forEach {
+            it as FieldNode
+            fields[it.name] = Field(it, this)
+        }
+        cn.methods.forEach {
+            it as MethodNode
+            val pr = parseMethodDesc(it.desc)
+            val fullDesc = createMethodDesc(it.name, this, pr.first, pr.second)
+            methods[fullDesc] = Method(it, this)
+        }
     }
 
     fun getFullname() = "$packageName/$name"
-    private fun getMethodByDesc(desc: String) = methods[desc]
+    override fun getAsmDesc() = "L${getFullname()};"
 
-    fun getField(fn: FieldNode) = fields.getOrPut(fn.name, { Field(fn, this) })
-    fun getField(name: String, type: Type, default: Value? = null) = fields.getOrPut(name, { Field(name, this, type, default) })
+    fun getSuperClass() = if (cn.superName != null) CM.getByName(cn.name) else null
+    fun getInterfaces() = if (cn.interfaces != null) cn.interfaces.map { CM.getByName(it as String) } else listOf()
+    fun getOuterClass() = if (cn.outerClass != null) CM.getByName(cn.outerClass) else null
+    fun getOuterMethod() = getOuterClass()?.getMethod(cn.outerMethod, cn.outerMethodDesc)
+    fun getInnerClasses() = if (cn.innerClasses != null) cn.innerClasses.map { CM.getByName(it as String) } else listOf()
 
-    fun getMethod(mn: MethodNode) = getMethod(mn.name, mn.access, mn.desc)
+    abstract fun getField(name: String, type: Type): Field
+    abstract fun getMethod(name: String, desc: String): Method
 
-    fun getMethod(name: String, modifiers: Int, desc: String): Method {
-        val method = getMethod(name, desc)
-        method.modifiers = modifiers
-        return method
+    override fun hashCode() = defaultHasCode(name, packageName)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != this.javaClass) return false
+        other as Class
+        return this.name == other.name && this.packageName == other.packageName
     }
+}
 
-    fun getMethod(name: String, desc: String): Method {
+class ConcreteClass(cn: ClassNode) : Class(cn) {
+    override fun getField(name: String, type: Type) = fields[name]
+            ?: throw UnknownInstance("No field \"$name\" in class ${getFullname()}")
+
+    override fun getMethod(name: String, desc: String): Method {
         val pr = parseMethodDesc(desc)
         val fullDesc = createMethodDesc(name, this, pr.first, pr.second)
-        return methods.getOrPut(fullDesc, { Method(name, this, desc) })
+        return methods[fullDesc] ?: throw UnknownInstance("No method \"$fullDesc\" in class ${getFullname()}")
     }
+}
 
-    override fun getAsmDesc() = "L${getFullname()};"
+class OuterClass(cn: ClassNode) : Class(cn) {
+    override fun getField(name: String, type: Type): Field = fields.getOrPut(name, {
+        val fn = FieldNode(0, name, type.getAsmDesc(), null, null)
+        Field(fn, this)
+    })
+
+    override fun getMethod(name: String, desc: String): Method {
+        val pr = parseMethodDesc(desc)
+        val fullDesc = createMethodDesc(name, this, pr.first, pr.second)
+        return methods.getOrPut(fullDesc, {
+            val mn = MethodNode()
+            mn.name = name
+            mn.desc = desc
+            Method(mn, this)
+        })
+    }
 }

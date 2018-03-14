@@ -11,3 +11,5 @@ class InvalidOperandException(msg: String) : KfgException(msg)
 class UnexpectedException(msg: String) : KfgException(msg)
 
 class UnknownInst(val inst: Instruction) : KfgException(inst.print())
+
+class UnknownInstance(msg: String) : KfgException(msg)

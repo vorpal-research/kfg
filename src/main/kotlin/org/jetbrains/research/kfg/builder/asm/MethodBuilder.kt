@@ -16,7 +16,7 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         mn.access = method.modifiers
         mn.name = method.name
         mn.desc = method.getAsmDesc()
-        mn.signature = method.signature
+        mn.signature = method.mn.signature
         mn.exceptions = method.exceptions.map { it.getAsmDesc() }
         mn.visibleParameterAnnotations = arrayOfNulls(method.argTypes.size)
         mn.invisibleParameterAnnotations = arrayOfNulls(method.argTypes.size)
@@ -41,14 +41,6 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         if (mn.invisibleAnnotations == null) mn.invisibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         mn.invisibleAnnotations.add(an)
-    }
-
-    override fun visitVisibleTypeAnnotation(anno: TypeAnnotation) {
-        TODO()
-    }
-
-    override fun visitInvisibleTypeAnnotation(anno: TypeAnnotation) {
-        TODO()
     }
 
     override fun visitParameter(parameter: Parameter) {

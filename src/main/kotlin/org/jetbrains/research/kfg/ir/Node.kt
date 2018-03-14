@@ -5,22 +5,10 @@ import org.jetbrains.research.kfg.type.parseDesc
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.TypeAnnotationNode
 
-abstract class Node {
-    val name: String
-    var signature: String? = null
+abstract class Node(val name: String, val modifiers: Int) {
     var builded = false
-    var modifiers: Int
     val visibleAnnotations = mutableListOf<Annotation>()
     val invisibleAnnotations = mutableListOf<Annotation>()
-    val visibleTypeAnnotations = mutableListOf<TypeAnnotation>()
-    val invisibleTypeAnnotations = mutableListOf<TypeAnnotation>()
-
-    constructor(name: String) : this(name, 0)
-
-    constructor(name: String, modifiers: Int) {
-        this.name = name
-        this.modifiers = modifiers
-    }
 
     fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>?) {
         if (visibleAnnotations != null) {
@@ -31,18 +19,6 @@ abstract class Node {
     fun addInvisibleAnnotations(invisibleAnnotations: List<AnnotationNode>?) {
         if (invisibleAnnotations != null) {
             this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(it.desc)) })
-        }
-    }
-
-    fun addVisibleTypeAnnotations(visibleAnnotations: List<TypeAnnotationNode>?) {
-        if (visibleAnnotations != null) {
-            this.visibleTypeAnnotations.addAll(visibleAnnotations.map { TypeAnnotation(parseDesc(it.desc), it.typeRef) })
-        }
-    }
-
-    fun addInvisibleTypeAnnotations(invisibleAnnotations: List<TypeAnnotationNode>?) {
-        if (invisibleAnnotations != null) {
-            this.invisibleTypeAnnotations.addAll(invisibleAnnotations.map { TypeAnnotation(parseDesc(it.desc), it.typeRef) })
         }
     }
 

@@ -2,24 +2,23 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.FileOutputStream
 
 fun main(args: Array<String>) {
-    CM.init(args[0])
+    CM.parseJar(args[0])
 
     val keys = CM.classNodes.keys.toTypedArray()
     for (name in keys) {
         println("Visiting class $name")
-        val cn = CM.get(name)
-        val `class` = CM.getBuilded(cn)
+        val `class` = CM.getByName(name)
+        val cn = `class`.cn
         println("Class ${cn.name}")
-        for (mn in cn.methods as MutableList<MethodNode>) {
-            println("Visiting method ${mn.name}")
+        for ((_, method) in `class`.methods) {
+            println("Visiting method ${method.name}")
             println("Bytecode: ")
-            println(mn.printBytecode())
-            println(`class`.getMethod(mn.name, mn.desc).print())
+            println(method.mn.printBytecode())
+            println(method.print())
             println()
         }
 
