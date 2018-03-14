@@ -11,15 +11,6 @@ import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
 import org.objectweb.asm.tree.TypeAnnotationNode
 
-fun createMethodDesc(name: String, `class`: Class, args: Array<Type>, retType: Type): String {
-    val sb = StringBuilder()
-    sb.append("${retType.name} ${`class`.name}::$name(")
-    args.dropLast(1).forEach { sb.append("${it.name}, ") }
-    args.takeLast(1).forEach { sb.append(it.name) }
-    sb.append(")")
-    return sb.toString()
-}
-
 class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock> {
     val argTypes: Array<Type>
     val parameters = mutableListOf<Parameter>()
@@ -68,7 +59,14 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         return basicBlocks[start + 1]
     }
 
-    fun getDesc() = createMethodDesc(name, `class`, argTypes, retType)
+    fun getDesc(): String {
+        val sb = StringBuilder()
+        sb.append("${retType.name} ${`class`.name}::$name(")
+        argTypes.dropLast(1).forEach { sb.append("${it.name}, ") }
+        argTypes.takeLast(1).forEach { sb.append(it.name) }
+        sb.append(")")
+        return sb.toString()
+    }
 
     fun print(): String {
         val sb = StringBuilder()

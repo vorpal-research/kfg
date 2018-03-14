@@ -10,18 +10,8 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
 import java.util.*
 
-class LocalArray : User<Value>, MutableMap<Int, Value> {
-    private val locals = mutableMapOf<Int, Value>()
-
-    override val entries: MutableSet<MutableMap.MutableEntry<Int, Value>>
-        get() = locals.entries
-    override val keys: MutableSet<Int>
-        get() = locals.keys
-    override val size: Int
-        get() = locals.size
-    override val values: MutableCollection<Value>
-        get() = locals.values
-
+class LocalArray(private val locals: MutableMap<Int, Value> = mutableMapOf())
+    : User<Value>, MutableMap<Int, Value> by locals {
     override fun clear() {
         values.forEach { it.removeUser(this) }
         locals.clear()
@@ -46,11 +36,6 @@ class LocalArray : User<Value>, MutableMap<Int, Value> {
         return res
     }
 
-    override fun containsKey(key: Int) = locals.containsKey(key)
-    override fun containsValue(value: Value) = locals.containsValue(value)
-    override fun get(key: Int) = locals.get(key)
-    override fun isEmpty() = locals.isEmpty()
-
     override fun replaceUsesOf(from: Value, to: Value) {
         entries.forEach { (key, value) ->
             if (value == from) {
@@ -62,6 +47,65 @@ class LocalArray : User<Value>, MutableMap<Int, Value> {
     }
 }
 
+class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : User<Value>, MutableList<Value> by stack {
+    override fun replaceUsesOf(from: Value, to: Value) {
+        stack.replaceAll { if (it == from) to else it }
+    }
+
+    override fun add(element: Value): Boolean {
+        element.addUser(this)
+        return stack.add(element)
+    }
+
+    override fun add(index: Int, element: Value) {
+        element.addUser(this)
+        return stack.add(index, element)
+    }
+
+    override fun addAll(index: Int, elements: Collection<Value>): Boolean {
+        elements.forEach { it.addUser(this) }
+        return stack.addAll(index, elements)
+    }
+
+    override fun addAll(elements: Collection<Value>): Boolean {
+        elements.forEach { it.addUser(this) }
+        return stack.addAll(elements)
+    }
+
+    override fun clear() {
+        stack.forEach { it.removeUser(this) }
+        stack.clear()
+    }
+
+    override fun remove(element: Value): Boolean {
+        stack.filter { it == element }.forEach { it.removeUser(this) }
+        return stack.remove(element)
+    }
+
+    override fun removeAll(elements: Collection<Value>): Boolean {
+        stack.filter { it in elements }.forEach { it.removeUser(this) }
+        return stack.removeAll(elements)
+    }
+
+    override fun removeAt(index: Int): Value {
+        val res = stack.removeAt(index)
+        res.removeUser(this)
+        return res
+    }
+
+    override fun retainAll(elements: Collection<Value>): Boolean {
+        stack.filter { it !in elements }.forEach { it.removeUser(this) }
+        return stack.retainAll(elements)
+    }
+
+    override fun set(index: Int, element: Value): Value {
+        element.addUser(this)
+        val res = stack.set(index, element)
+        res.removeUser(this)
+        return res
+    }
+}
+
 class CfgBuilder(val method: Method)
     : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.getAsmDesc(),
         method.mn.signature, method.exceptions.map { it.getFullname() }.toTypedArray()) {
@@ -69,7 +113,7 @@ class CfgBuilder(val method: Method)
 
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
-        val stack = mutableListOf<Value>()
+        val stack = FrameStack()
         val modifiedLocals = mutableSetOf<Int>()
         val readedLocals = mutableSetOf<Int>()
 
@@ -117,6 +161,8 @@ class CfgBuilder(val method: Method)
     }
 
     private fun isTerminateInst(insn: AbstractInsnNode): Boolean {
+        if (insn is TableSwitchInsnNode) return true
+        if (insn is LookupSwitchInsnNode) return true
         if (insn is JumpInsnNode && insn.opcode == GOTO) return true
         if (insn is InsnNode && insn.opcode in IRETURN..RETURN) return true
         if (insn is InsnNode && insn.opcode == ATHROW) return true
@@ -574,6 +620,7 @@ class CfgBuilder(val method: Method)
         val max = VF.getIntConstant(insn.max)
         val default = getBasicBlock(insn.dflt)
         val branches = insn.labels.map { getBasicBlock(it as AbstractInsnNode) }.toTypedArray()
+        reserveState(bb)
         bb.addInstruction(IF.getTableSwitch(index, min, max, default, branches))
     }
 
@@ -585,6 +632,7 @@ class CfgBuilder(val method: Method)
         for (i in 0..(insn.keys.size - 1)) {
             branches[VF.getIntConstant(insn.keys[i] as Int)] = getBasicBlock(insn.labels[i] as LabelNode)
         }
+        reserveState(bb)
         bb.addInstruction(IF.getSwitch(key, default, branches))
     }
 

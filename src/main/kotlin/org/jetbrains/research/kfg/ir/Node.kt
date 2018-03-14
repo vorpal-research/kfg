@@ -1,9 +1,8 @@
 package org.jetbrains.research.kfg.ir
 
-import jdk.internal.org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.type.parseDesc
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.AnnotationNode
-import org.objectweb.asm.tree.TypeAnnotationNode
 
 abstract class Node(val name: String, val modifiers: Int) {
     var builded = false

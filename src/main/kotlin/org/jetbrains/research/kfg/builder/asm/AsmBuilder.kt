@@ -334,7 +334,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val labels = inst.branches.map { getLabel(it) }.toTypedArray()
         val insn = TableSwitchInsnNode(min, max, default, *labels)
         currentInsnList.add(insn)
-        inst.operands.forEach { stackPop() }
+        stackPop()
     }
 
     override fun visitCallInst(inst: CallInst) {
@@ -434,6 +434,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }.toList()
 
     fun build(): InsnList {
+        if (method.name == "view")
+            println("stop")
         visit()
         method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
         val insnList = InsnList()
