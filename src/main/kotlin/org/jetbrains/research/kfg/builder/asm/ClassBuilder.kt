@@ -13,16 +13,16 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
     init {
         cn.name = `class`.getFullname()
         cn.access = `class`.modifiers
-        cn.superName = `class`.superClass?.getFullname()
-        cn.version = `class`.version
-        cn.signature = `class`.signature
-        cn.outerClass = `class`.outerClass?.getFullname()
-        cn.outerMethod = `class`.outerMethod?.name
-        cn.outerMethodDesc = `class`.outerMethod?.getAsmDesc()
+        cn.superName = `class`.getSuperClass()?.getFullname()
+        cn.version = `class`.cn.version
+        cn.signature = `class`.cn.signature
+        cn.outerClass = `class`.getOuterClass()?.getFullname()
+        cn.outerMethod = `class`.getOuterMethod()?.name
+        cn.outerMethodDesc = `class`.getOuterMethod()?.getAsmDesc()
     }
 
     override fun visitField(field: Field) {
-        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), field.signature, field.defaultValue)
+        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), field.fn.signature, field.defaultValue)
         cn.fields.add(fn)
     }
 
@@ -46,13 +46,5 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
         if (cn.invisibleAnnotations == null) cn.invisibleAnnotations = mutableListOf<AnnotationNode>()
         val an = AnnotationNode(anno.type.getAsmDesc())
         cn.invisibleAnnotations.add(an)
-    }
-
-    override fun visitVisibleTypeAnnotation(anno: TypeAnnotation) {
-        TODO()
-    }
-
-    override fun visitInvisibleTypeAnnotation(anno: TypeAnnotation) {
-        TODO()
     }
 }

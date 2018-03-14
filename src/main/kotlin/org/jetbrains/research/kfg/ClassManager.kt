@@ -1,7 +1,9 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.builder.cfg.ClassBuilder
+import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.ConcreteClass
+import org.jetbrains.research.kfg.ir.OuterClass
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.*
 import java.util.jar.JarEntry
@@ -28,7 +30,7 @@ fun parseJar(jar: JarFile): Map<String, ClassNode> {
 class ClassManager private constructor() {
     val classToJar = mutableMapOf<String, JarFile>()
     val classNodes = mutableMapOf<String, ClassNode>()
-    val classes = mutableMapOf<ClassNode, Class>()
+    val classes = mutableMapOf<String, Class>()
 
     private object Holder {
         val instance = ClassManager()
@@ -38,29 +40,29 @@ class ClassManager private constructor() {
         val instance: ClassManager by lazy { Holder.instance }
     }
 
-    fun init(jarPath: String) {
+    fun parseJar(jarPath: String) {
         val jar = JarFile(jarPath)
         val jarClasses = parseJar(jar)
         classNodes.putAll(jarClasses)
         classToJar.putAll(jarClasses.map { Pair(it.key, jar) })
+        jarClasses.forEach { (name, cn) ->
+            classes.getOrPut(name, { ConcreteClass(cn) }).init()
+        }
+        classes.values.forEach {
+            it.methods.forEach { _, method ->
+                if (!method.isAbstract()) CfgBuilder(method).build()
+            }
+        }
     }
 
-    fun add(cn: ClassNode) {
-        classNodes[cn.name] = cn
-    }
-
-    fun get(name: String) = classNodes.getOrPut(name, {
-        val cn = ClassNode()
-        cn.name = name
-        cn
-    })
-
-    fun get(cn: ClassNode) = classes.getOrPut(cn, { Class(cn.name) })
+    fun get(cn: ClassNode) = classes.getOrPut(cn.name, { ConcreteClass(cn) })
 
     fun getByName(name: String): Class {
-        val cn = get(name)
-        return get(cn)
+        var cn = classNodes[name]
+        return if (cn != null) get(cn) else {
+            cn = ClassNode()
+            cn.name = name
+            OuterClass(cn)
+        }
     }
-
-    fun getBuilded(cn: ClassNode) = ClassBuilder(get(cn), cn).build()
 }

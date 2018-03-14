@@ -62,8 +62,9 @@ class LocalArray : User<Value>, MutableMap<Int, Value> {
     }
 }
 
-class CfgBuilder(val method: Method, val mn: MethodNode)
-    : JSRInlinerAdapter(Opcodes.ASM5, mn, mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.map { it as String }.toTypedArray()) {
+class CfgBuilder(val method: Method)
+    : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.getAsmDesc(),
+        method.mn.signature, method.exceptions.map { it.getFullname() }.toTypedArray()) {
     val ST = method.slottracker
 
     inner class StackFrame(val bb: BasicBlock) {
@@ -598,12 +599,12 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
 
     private fun buildCFG() {
         var bbc = 0
-        for (insn in mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
+        for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
             val type = if (insn.type != null) TF.getRefType(insn.type) else CatchBlock.defaultException
             nodeToBlock[insn.handler] = CatchBlock("%bb${bbc++}", method, type)
         }
         var bb: BasicBlock = BodyBlock("%bb${bbc++}", method)
-        for (insn in mn.instructions) {
+        for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
                 if (insn.previous == null) bb = nodeToBlock.getOrPut(insn, { bb })
                 else {
@@ -647,7 +648,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
             }
             method.addIfNotContains(bb)
         }
-        for (insn in mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
+        for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
             val handle = getBasicBlock(insn.handler) as CatchBlock
             nodeToBlock[insn.handler] = handle
             val from = getBasicBlock(insn.start)
@@ -663,7 +664,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
     private fun buildFramesMap() {
         val modifiesMap = mutableMapOf<BasicBlock, MutableSet<Int>>()
         val readsMap = mutableMapOf<BasicBlock, MutableMap<Int, Boolean>>()
-        for (insn in mn.instructions) {
+        for (insn in method.mn.instructions) {
             val bb = getBasicBlock(insn as AbstractInsnNode)
             val modifiesSet = modifiesMap.getOrPut(bb, { mutableSetOf() })
             val readMap = readsMap.getOrPut(bb, { mutableMapOf() })
@@ -746,7 +747,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
         buildCFG()
         buildFramesMap()
 
-        if (mn.instructions.first is LabelNode) {
+        if (method.mn.instructions.first is LabelNode) {
             val entry = BodyBlock("entry", method)
             val oldEntry = method.getEntry()
             entry.addInstruction(IF.getJump(oldEntry))
@@ -759,7 +760,7 @@ class CfgBuilder(val method: Method, val mn: MethodNode)
             frames[entry] = sf
         }
 
-        for (insn in mn.instructions) {
+        for (insn in method.mn.instructions) {
             when (insn) {
                 is InsnNode -> convertInsn(insn)
                 is IntInsnNode -> convertIntInsn(insn)

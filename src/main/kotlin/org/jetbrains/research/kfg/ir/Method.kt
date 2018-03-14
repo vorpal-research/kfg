@@ -1,8 +1,15 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
+import org.jetbrains.research.kfg.defaultHasCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
+import org.objectweb.asm.tree.AnnotationNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.ParameterNode
+import org.objectweb.asm.tree.TypeAnnotationNode
 
 fun createMethodDesc(name: String, `class`: Class, args: Array<Type>, retType: Type): String {
     val sb = StringBuilder()
@@ -13,8 +20,7 @@ fun createMethodDesc(name: String, `class`: Class, args: Array<Type>, retType: T
     return sb.toString()
 }
 
-class Method : Node, Iterable<BasicBlock> {
-    val `class`: Class
+class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock> {
     val argTypes: Array<Type>
     val parameters = mutableListOf<Parameter>()
     val retType: Type
@@ -23,29 +29,27 @@ class Method : Node, Iterable<BasicBlock> {
     val catchBlocks = mutableListOf<BasicBlock>()
     val slottracker = SlotTracker(this)
 
-    constructor(name: String, classRef: Class, desc: String) : super(name) {
-        this.`class` = classRef
-        val pr = parseMethodDesc(desc)
-        this.argTypes = pr.first
-        this.retType = pr.second
-    }
+    init {
+        val pr = parseMethodDesc(mn.desc)
+        argTypes = pr.first
+        retType = pr.second
 
-    constructor(name: String, classRef: Class, modifiers: Int, desc: String) : super(name, modifiers) {
-        this.`class` = classRef
-        val pr = parseMethodDesc(desc)
-        this.argTypes = pr.first
-        this.retType = pr.second
-    }
+        if (mn.parameters != null) {
+            mn.parameters.withIndex().forEach { (indx, param) ->
+                param as ParameterNode
+                parameters.add(Parameter(indx, param.name, argTypes[indx], param.access))
+            }
+        }
 
-    constructor(name: String, classRef: Class, modifiers: Int, arguments: Array<Type>, retType: Type)
-            : super(name, modifiers) {
-        this.`class` = classRef
-        this.argTypes = arguments
-        this.retType = retType
+        if (mn.exceptions != null) {
+            mn.exceptions.forEach { exceptions.add(CM.getByName(it as String)) }
+        }
+
+        addVisibleAnnotations(mn.visibleAnnotations as List<AnnotationNode>?)
+        addInvisibleAnnotations(mn.invisibleAnnotations as List<AnnotationNode>?)
     }
 
     fun getEntry() = basicBlocks.first()
-    fun addBasicBlock(bb: BasicBlock) = basicBlocks.add(bb)
 
     fun addIfNotContains(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) basicBlocks.add(bb)
@@ -86,4 +90,13 @@ class Method : Node, Iterable<BasicBlock> {
 
     override fun toString() = getDesc()
     override fun iterator() = basicBlocks.iterator()
+
+    override fun hashCode() = defaultHasCode(name, `class`, argTypes, retType)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != this.javaClass) return false
+        other as Method
+        return this.name == other.name && this.`class` == other.`class`
+                && this.argTypes.contentEquals(other.argTypes) && this.retType == other.argTypes
+    }
 }
