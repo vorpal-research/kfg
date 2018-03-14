@@ -16,7 +16,6 @@ class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
     override fun getAsmDesc() = type.getAsmDesc()
 
     init {
-        println("Init ${fn.name} ${fn.desc}")
         this.type = parseDesc(fn.desc)
         this.defaultValue = VF.getConstant(fn.value)
         this.builded = true

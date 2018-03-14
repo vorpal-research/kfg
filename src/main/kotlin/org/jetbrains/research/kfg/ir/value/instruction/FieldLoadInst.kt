@@ -24,7 +24,8 @@ class FieldLoadInst : Instruction {
         val sb = StringBuilder()
         sb.append("$name = ")
         if (hasOwner()) sb.append("${getOwner()}.")
-        else sb.append("${field.`class`.name}.${field.name}")
+        else sb.append("${field.`class`.name}.")
+        sb.append(field.name)
         return sb.toString()
     }
 }

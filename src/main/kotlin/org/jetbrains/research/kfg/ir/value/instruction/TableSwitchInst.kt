@@ -14,7 +14,7 @@ class TableSwitchInst(index: Value, min: Value, max: Value, val default: BasicBl
 
     override fun print(): String {
         val sb = StringBuilder()
-        sb.appendln("tableswitch (${getIndex()}) {}")
+        sb.append("tableswitch (${getIndex()}) {}")
         return sb.toString()
     }
 }
