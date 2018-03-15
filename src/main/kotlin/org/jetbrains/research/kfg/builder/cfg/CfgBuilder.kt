@@ -725,8 +725,7 @@ class CfgBuilder(val method: Method)
                     in ILOAD..ALOAD -> {
                         if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = true
                     }
-                    else -> {
-                    }
+                    else -> {}
                 }
             }
         }
@@ -754,29 +753,30 @@ class CfgBuilder(val method: Method)
 
             for ((indx, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
-                if (incomings.values.toSet().size > 1) {
+                val incomingValues = incomings.values.toSet()
+                if (incomingValues.size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
                     bb.replace(phi, newPhi)
                 } else {
-                    phi.replaceAllUsesWith(incomings.values.first())
+                    phi.replaceAllUsesWith(incomingValues.first())
                     bb.remove(phi)
                 }
             }
 
             for ((local, phi) in sf.localPhis) {
-                val incomings = predFrames
-                        .map {
-                            val value = it.locals[local]
-                            require(value != null, { "No local $local defined for ${bb.name}" })
-                            Pair(it.bb, value!!)
-                        }.toMap()
-                if (incomings.values.toSet().size > 1) {
+                val incomings = predFrames.mapNotNull {
+                    val value = it.locals[local]
+                    if (value != null) Pair(it.bb, value) else null
+                }.toMap()
+                require(incomings.size == predFrames.size, { "Local $local is not defined for all $bb predecessors"})
+                val incomingValues = incomings.values.toSet()
+                if (incomingValues.size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
                     bb.replace(phi, newPhi)
                 } else {
-                    phi.replaceAllUsesWith(incomings.values.first())
+                    phi.replaceAllUsesWith(incomingValues.first())
                     bb.remove(phi)
                 }
             }
