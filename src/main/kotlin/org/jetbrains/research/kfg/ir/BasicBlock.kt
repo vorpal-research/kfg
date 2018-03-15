@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.util.defaultHasCode
 
 abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction> {
     val predecessors = mutableSetOf<BasicBlock>()
@@ -40,15 +41,15 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
 
     override fun toString() = print()
 
+    abstract fun print(): String
+
+    override fun iterator() = instructions.iterator()
+    override fun hashCode() = defaultHasCode(name, parent)
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
         if (other !is BasicBlock) return false
         return this.parent == other.parent && this.name == other.name
     }
-
-    abstract fun print(): String
-
-    override fun iterator() = instructions.iterator()
 }
 
 class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {

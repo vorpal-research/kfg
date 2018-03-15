@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.InvalidCallException
-import org.jetbrains.research.kfg.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHasCode
 import org.jetbrains.research.kfg.ir.Class
 
 interface Reference : Type {

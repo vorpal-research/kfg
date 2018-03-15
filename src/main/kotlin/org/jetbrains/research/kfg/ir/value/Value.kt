@@ -1,11 +1,8 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.defaultHasCode
-import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.ir.Field
+import org.jetbrains.research.kfg.util.defaultHasCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.type.TypeFactory
 import java.rmi.UnexpectedException
 
 sealed class ValueName

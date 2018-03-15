@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHasCode
 
 class VoidType : Type {
     companion object {

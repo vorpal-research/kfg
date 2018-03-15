@@ -1,15 +1,13 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
-import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
-import org.jetbrains.research.kfg.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHasCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
-import org.objectweb.asm.tree.TypeAnnotationNode
 
 class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock> {
     val argTypes: Array<Type>
