@@ -1,10 +1,12 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
+import org.jetbrains.research.kfg.util.Node
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
+import org.jetbrains.research.kfg.util.topologicalSort
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
@@ -114,8 +116,7 @@ class CfgBuilder(val method: Method)
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
         val stack = FrameStack()
-        val modifiedLocals = mutableSetOf<Int>()
-        val readedLocals = mutableSetOf<Int>()
+        val definedLocals = mutableSetOf<Int>()
 
         val stackPhis = mutableListOf<PhiInst>()
         val localPhis = mutableMapOf<Int, PhiInst>()
@@ -151,7 +152,12 @@ class CfgBuilder(val method: Method)
             stack.push(phi)
             sf.stackPhis.add(phi as PhiInst)
         }
-        for (local in sf.readedLocals) {
+        val phis = predFrames.map { it.definedLocals }
+        var res = mutableSetOf(*phis.first().toTypedArray())
+        for (next in phis.drop(1)) {
+            res = res.intersect(next).toMutableSet()
+        }
+        for (local in res) {
             val type = predFrames.mapNotNull { it.locals[local] }.first().type
             val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
             bb.addInstruction(phi)
@@ -710,33 +716,53 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildFramesMap() {
-        val modifiesMap = mutableMapOf<BasicBlock, MutableSet<Int>>()
-        val readsMap = mutableMapOf<BasicBlock, MutableMap<Int, Boolean>>()
+        val definedSets = mutableMapOf<BasicBlock, MutableSet<Int>>()
+        for (it in locals) {
+            definedSets.getOrPut(method.getEntry(), { mutableSetOf() }).add(it.key)
+        }
         for (insn in method.mn.instructions) {
             val bb = getBasicBlock(insn as AbstractInsnNode)
-            val modifiesSet = modifiesMap.getOrPut(bb, { mutableSetOf() })
-            val readMap = readsMap.getOrPut(bb, { mutableMapOf() })
+            val definedSet = definedSets.getOrPut(bb, { mutableSetOf() })
             if (insn is VarInsnNode) {
                 when (insn.opcode) {
-                    in ISTORE..ASTORE -> {
-                        modifiesSet.add(insn.`var`)
-                        if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = false
+                    in ISTORE..ASTORE -> definedSet.add(insn.`var`)
+                    in ILOAD..ALOAD -> definedSet.add(insn.`var`)
+                    else -> {
                     }
-                    in ILOAD..ALOAD -> {
-                        if (!readMap.containsKey(insn.`var`)) readMap[insn.`var`] = true
-                    }
-                    else -> {}
                 }
             }
         }
+
+        val graph = method.basicBlocks.map { Pair(it, Node(it)) }.toMap()
+        for ((bb, node) in graph) node.successors.addAll(bb.successors.map { graph[it]!! })
+        val (order, cycled) = topologicalSort(graph[method.getEntry()]!!)
+
+        val cycledVisited = mutableMapOf<BasicBlock, Boolean>()
+        cycledVisited.putAll(cycled.map { Pair(it.value, false) }.toMap())
+        for (node in order.reversed()) {
+            val bb = node.value
+            if (node in cycled)
+                require(cycledVisited[bb]!! || bb == method.getEntry(), { "Cycle entry not visited" })
+            if (bb.predecessors.isNotEmpty()) {
+                val predDefs = bb.predecessors.map { definedSets[it]!! }
+                var res = mutableSetOf(*predDefs.first().toTypedArray())
+                for (next in predDefs.drop(1)) {
+                    res = res.intersect(next).toMutableSet()
+                }
+                val def = definedSets[bb]!!
+                def.addAll(res)
+            }
+            bb.successors.filter { it in cycledVisited.keys }.filter { !cycledVisited[it]!! }.forEach {
+                val ds = definedSets[it]!!
+                ds.addAll(definedSets[bb]!!)
+                cycledVisited[it] = true
+            }
+        }
+
         for (bb in method.basicBlocks) {
-            val readMap = readsMap[bb] ?: throw UnexpectedException("No read map for basic block ${bb.name}")
-            val modifies = modifiesMap[bb] ?: throw UnexpectedException("No modifies map for basic block ${bb.name}")
-            val reads = readMap.map { if (it.value) it.key else null }.filterNotNull()
-            val sf = StackFrame(bb)
-            sf.readedLocals.addAll(reads)
-            sf.modifiedLocals.addAll(modifies)
-            frames[bb] = sf
+            val definedSet = definedSets[bb] ?: throw UnexpectedException("No defined map for basic block ${bb.name}")
+            val sf = frames.getOrPut(bb, { StackFrame(bb) })
+            sf.definedLocals.addAll(definedSet)
         }
     }
 
@@ -769,7 +795,7 @@ class CfgBuilder(val method: Method)
                     val value = it.locals[local]
                     if (value != null) Pair(it.bb, value) else null
                 }.toMap()
-                require(incomings.size == predFrames.size, { "Local $local is not defined for all $bb predecessors"})
+                require(incomings.size == predFrames.size, { "Local $local is not defined for all $bb predecessors" })
                 val incomingValues = incomings.values.toSet()
                 if (incomingValues.size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)

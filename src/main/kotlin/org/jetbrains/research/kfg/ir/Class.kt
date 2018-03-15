@@ -2,9 +2,8 @@ package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.UnknownInstance
-import org.jetbrains.research.kfg.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHasCode
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.tree.*
 
 data class MethodDesc(val name: String, val desc: String)

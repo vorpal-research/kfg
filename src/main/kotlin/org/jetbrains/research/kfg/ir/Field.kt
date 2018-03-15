@@ -1,13 +1,12 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.VF
-import org.jetbrains.research.kfg.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHasCode
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.TypeAnnotationNode
 
 class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
     val type: Type
