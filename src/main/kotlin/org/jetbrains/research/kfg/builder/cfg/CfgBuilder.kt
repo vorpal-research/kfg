@@ -807,6 +807,18 @@ class CfgBuilder(val method: Method)
                 }
             }
         }
+        for (inst in method.flatten()) {
+            if (inst is PhiInst) {
+                val incomings = inst.getIncomingValues().toSet()
+                if (inst in incomings && incomings.size == 2) {
+                    if (inst == incomings.first()) inst.replaceAllUsesWith(incomings.last())
+                    if (inst == incomings.last()) inst.replaceAllUsesWith(incomings.first())
+                    inst.parent!!.remove(inst)
+                }
+                else if (inst.getUsers().mapNotNull { if (it is Instruction) it else null }.isEmpty())
+                    inst.parent!!.remove(inst)
+            }
+        }
     }
 
     fun build(): Method {
@@ -855,6 +867,8 @@ class CfgBuilder(val method: Method)
         }
 
         buildPhiInstructions()
+
+        method.slottracker.rerun()
         return method
     }
 }
