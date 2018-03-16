@@ -3,9 +3,10 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHasCode
 
-abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction> {
+abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction>, GraphNode {
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
@@ -50,6 +51,8 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
         if (other !is BasicBlock) return false
         return this.parent == other.parent && this.name == other.name
     }
+
+    override fun getEdges() = successors.map { it as GraphNode }.toSet()
 }
 
 class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {

@@ -1,7 +1,6 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
-import org.jetbrains.research.kfg.util.Node
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
@@ -116,7 +115,7 @@ class CfgBuilder(val method: Method)
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
         val stack = FrameStack()
-        val definedLocals = mutableSetOf<Int>()
+        val incomingLocals = mutableSetOf<Int>()
 
         val stackPhis = mutableListOf<PhiInst>()
         val localPhis = mutableMapOf<Int, PhiInst>()
@@ -152,12 +151,7 @@ class CfgBuilder(val method: Method)
             stack.push(phi)
             sf.stackPhis.add(phi as PhiInst)
         }
-        val phis = predFrames.map { it.definedLocals }
-        var res = mutableSetOf(*phis.first().toTypedArray())
-        for (next in phis.drop(1)) {
-            res = res.intersect(next).toMutableSet()
-        }
-        for (local in res) {
+        for (local in sf.incomingLocals) {
             val type = predFrames.mapNotNull { it.locals[local] }.first().type
             val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
             bb.addInstruction(phi)
@@ -657,7 +651,8 @@ class CfgBuilder(val method: Method)
             val type = if (insn.type != null) TF.getRefType(insn.type) else CatchBlock.defaultException
             nodeToBlock[insn.handler] = CatchBlock("%bb${bbc++}", method, type)
         }
-        var bb: BasicBlock = BodyBlock("%bb${bbc++}", method)
+        val getNextBlock = { BodyBlock("%bb${bbc++}", method) }
+        var bb: BasicBlock = getNextBlock()
         for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
                 if (insn.previous == null) bb = nodeToBlock.getOrPut(insn, { bb })
@@ -673,28 +668,28 @@ class CfgBuilder(val method: Method)
                 bb = nodeToBlock.getOrPut(insn as AbstractInsnNode, { bb })
                 if (insn is JumpInsnNode) {
                     if (insn.opcode != GOTO) {
-                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BodyBlock("%bb${bbc++}", method) })
+                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, getNextBlock)
                         bb.addSuccessor(falseSuccessor)
                         falseSuccessor.addPredecessor(bb)
                     }
-                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock("%bb${bbc++}", method) })
+                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, getNextBlock)
                     bb.addSuccessor(trueSuccessor)
                     trueSuccessor.addPredecessor(bb)
                 } else if (insn is TableSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("%bb${bbc++}", method) })
+                    val default = nodeToBlock.getOrPut(insn.dflt, getNextBlock)
                     bb.addSuccessors(default)
                     default.addPredecessor(bb)
                     for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("%bb${bbc++}", method) })
+                        val lblBB = nodeToBlock.getOrPut(lbl, getNextBlock)
                         bb.addSuccessors(lblBB)
                         lblBB.addPredecessor(bb)
                     }
                 } else if (insn is LookupSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("%bb${bbc++}", method) })
+                    val default = nodeToBlock.getOrPut(insn.dflt, getNextBlock)
                     bb.addSuccessors(default)
                     default.addPredecessor(bb)
                     for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("%bb${bbc++}", method) })
+                        val lblBB = nodeToBlock.getOrPut(lbl, getNextBlock)
                         bb.addSuccessors(lblBB)
                         lblBB.addPredecessor(bb)
                     }
@@ -715,14 +710,16 @@ class CfgBuilder(val method: Method)
         }
     }
 
-    private fun buildFramesMap() {
-        val definedSets = mutableMapOf<BasicBlock, MutableSet<Int>>()
+    private fun buildFrames() {
+        val insideLocals = mutableMapOf<BasicBlock, MutableSet<Int>>()
+        val incomingLocals = mutableMapOf<BasicBlock, MutableSet<Int>>()
         for (it in locals) {
-            definedSets.getOrPut(method.getEntry(), { mutableSetOf() }).add(it.key)
+            insideLocals.getOrPut(method.getEntry(), { mutableSetOf() }).add(it.key)
         }
+
         for (insn in method.mn.instructions) {
             val bb = getBasicBlock(insn as AbstractInsnNode)
-            val definedSet = definedSets.getOrPut(bb, { mutableSetOf() })
+            val definedSet = insideLocals.getOrPut(bb, { mutableSetOf() })
             if (insn is VarInsnNode) {
                 when (insn.opcode) {
                     in ISTORE..ASTORE -> definedSet.add(insn.`var`)
@@ -733,45 +730,43 @@ class CfgBuilder(val method: Method)
             }
         }
 
-        val graph = method.basicBlocks.map { Pair(it, Node(it)) }.toMap()
-        for ((bb, node) in graph) node.successors.addAll(bb.successors.map { graph[it]!! })
-        val (order, cycled) = topologicalSort(graph[method.getEntry()]!!)
+        val getAllLocals = { bb: BasicBlock ->
+            val res = insideLocals[bb]?.toMutableSet()
+                    ?: throw UnexpectedException("No inside locals map for basic block ${bb.name}")
+            res.addAll(incomingLocals.getOrDefault(bb, mutableSetOf()))
+            res
+        }
 
-        val cycledVisited = mutableMapOf<BasicBlock, Boolean>()
-        cycledVisited.putAll(cycled.map { Pair(it.value, false) }.toMap())
-        for (node in order.reversed()) {
-            val bb = node.value
-            if (node in cycled)
-                require(cycledVisited[bb]!! || bb == method.getEntry(), { "Cycle entry not visited" })
+        val (order, cycled) = topologicalSort(method.getEntry())
+
+        val cycledVisited = cycled.map { Pair(it as BasicBlock, false) }.toMap().toMutableMap()
+        for (bb in order.map { it as BasicBlock }.reversed()) {
+            if (bb in cycled) require(cycledVisited[bb]!! || bb == method.getEntry(), { "Cycle entry not visited" })
+
             if (bb.predecessors.isNotEmpty()) {
-                val predDefs = bb.predecessors.map { definedSets[it]!! }
-                var res = mutableSetOf(*predDefs.first().toTypedArray())
-                for (next in predDefs.drop(1)) {
-                    res = res.intersect(next).toMutableSet()
-                }
-                val def = definedSets[bb]!!
-                def.addAll(res)
+                val predecessorsLocals = bb.predecessors.map(getAllLocals)
+                val incomingLocal = predecessorsLocals.fold(predecessorsLocals.first(), { acc, current ->
+                    acc.intersect(current).toMutableSet()
+                })
+                incomingLocals[bb] = incomingLocal
             }
             bb.successors.filter { it in cycledVisited.keys }.filter { !cycledVisited[it]!! }.forEach {
-                val ds = definedSets[it]!!
-                ds.addAll(definedSets[bb]!!)
+                incomingLocals[it] = getAllLocals(bb)
                 cycledVisited[it] = true
             }
         }
 
         for (bb in method.basicBlocks) {
-            val definedSet = definedSets[bb] ?: throw UnexpectedException("No defined map for basic block ${bb.name}")
+            val incomings = incomingLocals.getOrPut(bb, { mutableSetOf() })
             val sf = frames.getOrPut(bb, { StackFrame(bb) })
-            sf.definedLocals.addAll(definedSet)
+            sf.incomingLocals.addAll(incomings)
         }
     }
 
     private fun buildPhiInstructions() {
-        for (it in frames) {
-            val bb = it.key
+        for ((bb, sf) in frames) {
             if (bb.predecessors.isEmpty()) continue
 
-            val sf = it.value
             val predFrames = bb.predecessors.map { getFrame(it) }
             val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
@@ -796,6 +791,7 @@ class CfgBuilder(val method: Method)
                     if (value != null) Pair(it.bb, value) else null
                 }.toMap()
                 require(incomings.size == predFrames.size, { "Local $local is not defined for all $bb predecessors" })
+
                 val incomingValues = incomings.values.toSet()
                 if (incomingValues.size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)
@@ -807,16 +803,21 @@ class CfgBuilder(val method: Method)
                 }
             }
         }
-        for (inst in method.flatten()) {
+        for (inst in method.flatten().reversed()) {
             if (inst is PhiInst) {
+                val bb = inst.parent ?: throw UnexpectedException("Instruction ${inst.print()} does not have parent")
+                val instUsers = inst.getUsers().mapNotNull { if (it is Instruction) it else null }
+                if (instUsers.isEmpty()) {
+                    bb.remove(inst)
+                    continue
+                }
+
                 val incomings = inst.getIncomingValues().toSet()
                 if (inst in incomings && incomings.size == 2) {
                     if (inst == incomings.first()) inst.replaceAllUsesWith(incomings.last())
                     if (inst == incomings.last()) inst.replaceAllUsesWith(incomings.first())
-                    inst.parent!!.remove(inst)
+                    bb.remove(inst)
                 }
-                else if (inst.getUsers().mapNotNull { if (it is Instruction) it else null }.isEmpty())
-                    inst.parent!!.remove(inst)
             }
         }
     }
@@ -830,9 +831,10 @@ class CfgBuilder(val method: Method)
             else ++localIndx
         }
 
-        buildCFG()
-        buildFramesMap()
+        buildCFG()  // build basic blocks graph
+        buildFrames() // build frame maps for each basic block
 
+        // if the first instruction of method is label, add special BB before it, so method entry have no predecessors
         if (method.mn.instructions.first is LabelNode) {
             val entry = BodyBlock("entry", method)
             val oldEntry = method.getEntry()
