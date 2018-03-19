@@ -47,7 +47,7 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
     private val bucket = arrayListOf<MutableSet<Int>>()
 
     class DominatorTreeNode(val value: GraphNode): TreeNode {
-        var idom: DominatorTreeNode = this
+        var idom: DominatorTreeNode? = null
         val dominates = mutableSetOf<DominatorTreeNode>()
 
         override fun getChilds() = dominates
@@ -124,6 +124,9 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
                 tree[dominator]!!.dominates.add(tree[current]!!)
                 tree[current]!!.idom = tree[dominator]!!
             }
+        }
+        for (it in tree) {
+            if (it.key == it.value.idom?.value) it.value.idom = null
         }
         return tree
     }
