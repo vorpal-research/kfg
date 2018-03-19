@@ -17,6 +17,25 @@ fun Type.toInternalDesc(): String =
         }
         else throw UnexpectedException("Unknown type ${this.name}")
 
+fun mergeTypes(types: Set<Type>) : Type? {
+    if (types.size == 1) return types.first()
+    else if (types.size == 2 && TF.getNullType() in types) {
+        return if (types.first() == TF.getNullType()) types.last() else types.first()
+    }
+    val integrals = types.mapNotNull { it as? Integral }
+    if (integrals.size == types.size) return integrals.maxBy { it.width }
+
+    val classes = types.mapNotNull { it as? ClassType }
+    if (classes.size == types.size) {
+        for (i in 0 until classes.size) {
+            val current = classes[i]
+            val isAncestor = classes.foldRight(true, { `class`, acc -> acc && current.`class`.isAncestor(`class`.`class`) })
+            if (isAncestor) return current
+        }
+    }
+    return null
+}
+
 fun parseDesc(desc: String): Type {
     return when (desc[0]) {
         'V' -> TF.getVoidType()
@@ -67,7 +86,7 @@ fun primaryTypeToInt(type: Type): Int {
 
 fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
     val args = mutableListOf<Type>()
-    val pattern= Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9\\/]+;))")
+    val pattern= Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9\\/_]+;))")
     val matcher = pattern.matcher(desc)
     while (matcher.find()) {
         args.add(parseDesc(matcher.group(0)))

@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.TF
+import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
@@ -52,7 +53,8 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
         return this.parent == other.parent && this.name == other.name
     }
 
-    override fun getEdges() = successors.map { it as GraphNode }.toSet()
+    override fun getSuccSet() = successors.map { it as GraphNode }.toSet()
+    override fun getPredSet() = predecessors.map { it as GraphNode }.toSet()
 }
 
 class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
@@ -71,6 +73,10 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
 class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(name, method) {
     val throwers = mutableListOf<BasicBlock>()
 
+    fun from() = throwers.minBy { parent.basicBlocks.indexOf(it) }
+            ?: throw UnexpectedException("Unknown thrower")
+    fun to() = throwers.maxBy { parent.basicBlocks.indexOf(it) }
+            ?: throw UnexpectedException("Unknown thrower")
     fun addThrower(bb: BasicBlock) = throwers.add(bb)
     fun addThrowers(vararg blocks: BasicBlock) = throwers.addAll(blocks)
 
