@@ -21,16 +21,16 @@ fun main(args: Array<String>) {
             println()
         }
 
-//        val cb = ClassBuilder(`class`)
-//        cb.visit()
-//        val cw = ClassWriter(0)
-//        val cca = CheckClassAdapter(cw)
-//        cb.cn.accept(cca)
-//
-//        val realName = cb.cn.name.removeSuffix(".class").replace("/", ".")
-//        val fos = FileOutputStream("${realName.split('.').last()}.class")
-//        fos.write(cw.toByteArray())
-//        fos.close()
-//        println()
+        val cb = ClassBuilder(`class`)
+        cb.visit()
+        val cw = ClassWriter(0)
+        val cca = CheckClassAdapter(cw)
+        cb.cn.accept(cca)
+
+        val realName = cb.cn.name.removeSuffix(".class").replace("/", ".")
+        val fos = FileOutputStream("${realName.split('.').last()}.class")
+        fos.write(cw.toByteArray())
+        fos.close()
+        println()
     }
 }

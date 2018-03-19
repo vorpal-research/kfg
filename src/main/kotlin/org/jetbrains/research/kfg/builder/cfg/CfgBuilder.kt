@@ -1,7 +1,6 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
-import org.jetbrains.research.kfg.builder.asm.AsmBuilder
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
@@ -116,12 +115,12 @@ class CfgBuilder(val method: Method)
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
         val stack = FrameStack()
-        val incomingLocals = mutableSetOf<Int>()
 
         val stackPhis = mutableListOf<PhiInst>()
         val localPhis = mutableMapOf<Int, PhiInst>()
     }
 
+    private val phiBlocks = mutableSetOf<BasicBlock>()
     private val locals = LocalArray()
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
     private val frames = mutableMapOf<BasicBlock, StackFrame>()
@@ -134,24 +133,25 @@ class CfgBuilder(val method: Method)
         val sf = getFrame(bb)
         sf.stack.addAll(stack)
         sf.locals.putAll(locals)
+        stack.clear()
+        locals.clear()
     }
 
     private fun recoverState(bb: BasicBlock) {
-        if (bb.predecessors.isEmpty()) {
-            if (bb is CatchBlock) {
-                // all locals for the catch block are the same, as for the try block entry
-                val entry = bb.from()
-                val sf = getFrame(entry)
-                locals.clear()
-                locals.putAll(sf.locals)
+        if (bb.predecessors.isEmpty() && bb is CatchBlock) {
+            // all locals for the catch block are the same, as for the try block entry
+            val entry = bb.from()
+            val sf = getFrame(entry)
+            locals.clear()
+            locals.putAll(sf.locals)
 
-                // stack for catch block contains only reference to catched exception
-                stack.clear()
-                val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
-                bb.addInstruction(inst)
-                stack.push(inst)
-            }
-        } else {
+            // stack for catch block contains only reference to catched exception
+            stack.clear()
+            val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
+            bb.addInstruction(inst)
+            stack.push(inst)
+
+        } else if (bb in phiBlocks) {
             val sf = getFrame(bb)
             val predFrames = bb.predecessors.map { getFrame(it) }
             stack.clear()
@@ -167,13 +167,18 @@ class CfgBuilder(val method: Method)
                 stack.push(phi)
                 sf.stackPhis.add(phi as PhiInst)
             }
-            for (local in sf.incomingLocals) {
+            val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+            for (local in definedLocals) {
                 val type = predFrames.mapNotNull { it.locals[local] }.first().type
                 val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
                 bb.addInstruction(phi)
                 locals[local] = phi
                 sf.localPhis[local] = phi as PhiInst
             }
+        } else {
+            val predFrame = bb.predecessors.map { getFrame(it) }.firstOrNull() ?: return
+            for (it in predFrame.stack) stack.push(it)
+            for ((local, value) in predFrame.locals) locals[local] = value
         }
     }
 
@@ -583,6 +588,7 @@ class CfgBuilder(val method: Method)
             reserveState(bb)
             bb.addInstruction(cond)
             bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
+            if (insn.next !is LabelNode) recoverState(falseSuccessor)
         }
     }
 
@@ -674,13 +680,8 @@ class CfgBuilder(val method: Method)
                     entry.addSuccessor(bb)
                     bb.addPredecessor(entry)
 
-
-                    val sf = frames.getOrPut(entry, { StackFrame(entry) })
-                    sf.locals.putAll(locals)
-
                     method.addIfNotContains(entry)
-                }
-                else {
+                } else {
                     bb = nodeToBlock.getOrPut(insn, { BodyBlock("%bb${bbc++}", method) })
                     if (!isTerminateInst(insn.previous)) {
                         val prev = nodeToBlock[insn.previous]
@@ -735,61 +736,35 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildFrames() {
-        val insideLocals = mutableMapOf<BasicBlock, MutableSet<Int>>()
-        val incomingLocals = mutableMapOf<BasicBlock, MutableSet<Int>>()
-        for (it in locals) {
-            insideLocals.getOrPut(method.getEntry(), { mutableSetOf() }).add(it.key)
-        }
+        val sf = frames.getOrPut(method.getEntry(), { StackFrame(method.getEntry()) })
+        sf.locals.putAll(locals)
 
-        for (insn in method.mn.instructions) {
-            val bb = getBasicBlock(insn as AbstractInsnNode)
-            val definedSet = insideLocals.getOrPut(bb, { mutableSetOf() })
-            if (insn is VarInsnNode) {
-                when (insn.opcode) {
-                    in ISTORE..ASTORE -> definedSet.add(insn.`var`)
-                    in ILOAD..ALOAD -> definedSet.add(insn.`var`)
-                    else -> {
+        for (bb in method.basicBlocks.drop(1)) {
+            frames.getOrPut(bb, { StackFrame(bb) })
+        }
+    }
+
+    private fun buildPhiBlocks() {
+        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
+        val dominatorTree = DominatorTreeBuilder(nodes).build()
+
+        for (it in dominatorTree) {
+            val preds = it.key.getPredSet()
+            if (preds.size > 1) {
+                for (pred in preds) {
+                    var runner: GraphNode? = pred
+                    while (runner != null && runner != it.value.idom?.value) {
+                        phiBlocks.add(it.key as BasicBlock)
+                        runner = dominatorTree[runner]!!.idom?.value
                     }
                 }
             }
-        }
-
-        val getAllLocals = { bb: BasicBlock ->
-            val res = insideLocals[bb]?.toMutableSet()
-                    ?: throw UnexpectedException("No inside locals map for basic block ${bb.name}")
-            res.addAll(incomingLocals.getOrDefault(bb, mutableSetOf()))
-            res
-        }
-
-        val (order, cycled) = TopologicalSorter().sort(method.getEntry())
-
-        val cycledVisited = cycled.map { Pair(it as BasicBlock, false) }.toMap().toMutableMap()
-        for (bb in order.map { it as BasicBlock }.reversed()) {
-            if (bb in cycled) require(cycledVisited[bb]!! || bb == method.getEntry(), { "Cycle entry not visited" })
-
-            if (bb.predecessors.isNotEmpty() && bb !in cycled) {
-                val predecessorsLocals = bb.predecessors.map(getAllLocals)
-                val incomingLocal = predecessorsLocals.fold(predecessorsLocals.first(), { acc, current ->
-                    acc.intersect(current).toMutableSet()
-                })
-                incomingLocals[bb] = incomingLocal
-            }
-            bb.successors.filter { it in cycledVisited.keys }.filter { !cycledVisited[it]!! }.forEach {
-                incomingLocals[it] = getAllLocals(bb)
-                cycledVisited[it] = true
-            }
-        }
-
-        for (bb in method.basicBlocks) {
-            val incomings = incomingLocals.getOrPut(bb, { mutableSetOf() })
-            val sf = frames.getOrPut(bb, { StackFrame(bb) })
-            sf.incomingLocals.addAll(incomings)
         }
     }
 
     private fun buildPhiInstructions() {
         for ((bb, sf) in frames) {
-            if (bb.predecessors.isEmpty()) continue
+            if (bb !in phiBlocks) continue
 
             val predFrames = bb.predecessors.map { getFrame(it) }
             val stacks = predFrames.map { it.stack }
@@ -814,7 +789,14 @@ class CfgBuilder(val method: Method)
                     val value = it.locals[local]
                     if (value != null) Pair(it.bb, value) else null
                 }.toMap()
-                require(incomings.size == predFrames.size, { "Local $local is not defined for all $bb predecessors" })
+
+                // if this local is not defined in all predecessors, then it should not be used
+                // we can safely delete it
+                if (incomings.size < predFrames.size) {
+                    require(phi.getUsers().mapNotNull { it as? Instruction }.isEmpty(),
+                            { "$method Incorrect phi ${phi.print()}  users" })
+                    bb.remove(phi)
+                }
 
                 val incomingValues = incomings.values.toSet()
                 if (incomingValues.size > 1) {
@@ -864,17 +846,7 @@ class CfgBuilder(val method: Method)
 
         // if the first instruction of method is label, add special BB before it, so method entry have no predecessors
         buildCFG()  // build basic blocks graph
-
-        println(method)
-        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
-        val domTree = DominatorTreeBuilder(nodes).build()
-
-        for (it in domTree) {
-            val bb = it.key as BasicBlock
-            println("${bb.name} idom is ${(it.value.idom.value as BasicBlock).name}")
-        }
-        println()
-
+        buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
         for (insn in method.mn.instructions) {
