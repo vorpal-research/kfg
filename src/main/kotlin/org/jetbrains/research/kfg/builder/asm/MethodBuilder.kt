@@ -10,7 +10,6 @@ import org.objectweb.asm.tree.ParameterNode
 
 class MethodBuilder(method: Method) : MethodVisitor(method) {
     val mn = MethodNode()
-    val labels = mutableMapOf<BasicBlock, LabelNode>()
 
     init {
         mn.access = method.modifiers
@@ -48,9 +47,5 @@ class MethodBuilder(method: Method) : MethodVisitor(method) {
         mn.parameters.add(pn)
         mn.visibleParameterAnnotations[parameter.indx] = parameter.visibleAnnotations.map { AnnotationNode(it.type.getAsmDesc()) }.toList()
         mn.invisibleParameterAnnotations[parameter.indx] = parameter.invisibleAnnotations.map { AnnotationNode(it.type.getAsmDesc()) }.toList()
-    }
-
-    override fun visitBasicBlock(bb: BasicBlock) {
-        labels[bb] = LabelNode()
     }
 }

@@ -426,16 +426,10 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     fun buildTryCatchBlocks() = method.filter { it is CatchBlock }.map {
         it as CatchBlock
-        val from = it.throwers.minBy { method.basicBlocks.indexOf(it) }
-                ?: throw UnexpectedException("Unknown thrower")
-        val to = it.throwers.maxBy { method.basicBlocks.indexOf(it) }
-                ?: throw UnexpectedException("Unknown thrower")
-        TryCatchBlockNode(getLabel(from), getLabel(method.getNext(to)), getLabel(it), it.exception.toInternalDesc())
+        TryCatchBlockNode(getLabel(it.from()), getLabel(method.getNext(it.to())), getLabel(it), it.exception.toInternalDesc())
     }.toList()
 
     fun build(): InsnList {
-        if (method.name == "view")
-            println("stop")
         visit()
         method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
         val insnList = InsnList()

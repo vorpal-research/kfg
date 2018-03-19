@@ -41,4 +41,17 @@ class ValueFactory private constructor() {
         is String -> getStringConstant(value)
         else -> null
     }
+
+    fun unwrapConstant(constant: Value?): Any? = when (constant) {
+        is BoolConstant -> if (constant.value) 1 else 0
+        is ByteConstant -> constant.value.toInt()
+        is ShortConstant -> constant.value.toInt()
+        is IntConstant -> constant.value
+        is LongConstant -> constant.value
+        is CharConstant -> constant.value.toInt()
+        is FloatConstant -> constant.value
+        is DoubleConstant -> constant.value
+        is StringConstant -> constant.value
+        else -> null
+    }
 }

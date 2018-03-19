@@ -31,9 +31,12 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 
     fun getSuperClass() = if (cn.superName != null) CM.getByName(cn.superName) else null
     fun getInterfaces() = if (cn.interfaces != null) cn.interfaces.map { CM.getByName(it as String) } else listOf()
+    fun getAllAncestors() = listOf(getSuperClass()).plus(getInterfaces()).filterNotNull()
     fun getOuterClass() = if (cn.outerClass != null) CM.getByName(cn.outerClass) else null
     fun getOuterMethod() = if (cn.outerMethod != null) getOuterClass()?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
     fun getInnerClasses() = if (cn.innerClasses != null) cn.innerClasses.map { CM.getByName(it as String) } else listOf()
+
+    abstract fun isAncestor(other: Class): Boolean
 
     abstract fun getFieldConcrete(name: String, type: Type): Field?
     abstract fun getMethodConcrete(name: String, desc: String): Method?
@@ -81,6 +84,15 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
                             ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
         })
     }
+
+    override fun isAncestor(other: Class): Boolean {
+        if (this == other) return true
+        else {
+            val ancestors = other.getAllAncestors()
+            for (it in ancestors) if (isAncestor(it)) return true
+        }
+        return false
+    }
 }
 
 class OuterClass(cn: ClassNode) : Class(cn) {
@@ -101,4 +113,6 @@ class OuterClass(cn: ClassNode) : Class(cn) {
             Method(mn, this)
         })
     }
+
+    override fun isAncestor(other: Class) = true
 }

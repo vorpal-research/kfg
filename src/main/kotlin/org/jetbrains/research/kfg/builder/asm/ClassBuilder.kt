@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.builder.asm
 
+import org.jetbrains.research.kfg.VF
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.Annotation
 import org.jetbrains.research.kfg.visitor.ClassVisitor
@@ -22,7 +23,8 @@ class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
     }
 
     override fun visitField(field: Field) {
-        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), field.fn.signature, field.defaultValue)
+        val default = VF.unwrapConstant(field.defaultValue)
+        val fn = FieldNode(field.modifiers, field.name, field.type.getAsmDesc(), field.fn.signature, default)
         cn.fields.add(fn)
     }
 

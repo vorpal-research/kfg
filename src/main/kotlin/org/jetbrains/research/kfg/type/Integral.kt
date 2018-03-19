@@ -27,9 +27,9 @@ class BoolType : Integral {
     override val width = defaultWidth
     override val signed = isSigned
 
-    override fun toString() = name
     override fun getAsmDesc() = "Z"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -50,6 +50,7 @@ class ByteType : Integral {
     override fun isByte() = true
     override fun getAsmDesc() = "B"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -69,6 +70,7 @@ class ShortType : Integral {
     override fun isShort() = true
     override fun getAsmDesc() = "S"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -88,6 +90,7 @@ class IntType : Integral {
     override fun isInt() = true
     override fun getAsmDesc() = "I"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -108,6 +111,7 @@ class LongType : Integral {
     override fun isDWord() = true
     override fun getAsmDesc() = "J"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -127,6 +131,7 @@ class CharType : Integral {
     override fun isChar() = true
     override fun getAsmDesc() = "C"
 
+    override fun toString() = name
     override fun hashCode() = defaultHasCode(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
