@@ -91,11 +91,11 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
         dsu[nodeCounter] = nodeCounter
         nodeCounter++
         for (it in node.getSuccSet()) {
-            if (dfsTree[it] == -1) {
+            if (dfsTree.getValue(it) == -1) {
                 dfs(it)
-                parents[dfsTree[it]!!] = dfsTree[node]!!
+                parents[dfsTree.getValue(it)] = dfsTree.getValue(node)
             }
-            reverseGraph[dfsTree[it]!!].add(dfsTree[node]!!)
+            reverseGraph[dfsTree.getValue(it)].add(dfsTree.getValue(node))
         }
     }
 
@@ -121,8 +121,8 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
             val current = reverseMapping[it]!!
             if (idom != -1) {
                 val dominator = reverseMapping[idom]!!
-                tree[dominator]!!.dominates.add(tree[current]!!)
-                tree[current]!!.idom = tree[dominator]!!
+                tree.getValue(dominator).dominates.add(tree.getValue(current))
+                tree.getValue(current).idom = tree.getValue(dominator)
             }
         }
         for (it in tree) {
