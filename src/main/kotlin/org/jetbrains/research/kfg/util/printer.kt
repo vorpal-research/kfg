@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.util
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.TryCatchBlockNode
 import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceMethodVisitor
 import java.io.PrintWriter
@@ -28,6 +29,10 @@ fun MethodNode.printBytecode(): String {
         val ain = insn as AbstractInsnNode
         sb.append(ain.printBytecode())
     }
+    for (insn in this.tryCatchBlocks) {
+        val ain = insn as TryCatchBlockNode
+        sb.append(ain.printBytecode())
+    }
     return sb.toString()
 }
 
@@ -37,4 +42,13 @@ fun AbstractInsnNode.printBytecode(): String {
     printer.print(PrintWriter(sw))
     printer.getText().clear()
     return sw.toString()
+}
+
+fun TryCatchBlockNode.printBytecode(): String {
+    val sb = StringBuilder()
+    sb.append("${start.printBytecode().dropLast(1)} ")
+    sb.append("${end.printBytecode().dropLast(1)} ")
+    sb.append("${handler.printBytecode().dropLast(1)} ")
+    sb.appendln(type ?: "java/lang/Throwable")
+    return sb.toString()
 }

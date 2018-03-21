@@ -46,19 +46,6 @@ class LocalArray(private val locals: MutableMap<Int, Value> = mutableMapOf())
             }
         }
     }
-
-    override fun supportsRemove() = true
-
-    override fun removeUsesOf(value: Value) {
-        val keys = mutableSetOf<Int>()
-        entries.forEach { (k, v) ->
-            if (v == value) {
-                value.removeUser(this)
-                keys.add(k)
-            }
-        }
-        keys.forEach { locals.remove(it) }
-    }
 }
 
 class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : User<Value>, MutableList<Value> by stack {
@@ -134,8 +121,10 @@ class CfgBuilder(val method: Method)
     }
 
     private val phiBlocks = mutableSetOf<BasicBlock>()
+    private val cycleEntries = mutableSetOf<BasicBlock>()
     private val locals = LocalArray()
     private val nodeToBlock = mutableMapOf<AbstractInsnNode, BasicBlock>()
+    private val blockToNode = mutableMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val frames = mutableMapOf<BasicBlock, StackFrame>()
     private val stack = Stack<Value>()
 
@@ -154,7 +143,6 @@ class CfgBuilder(val method: Method)
             val sf = frames.getValue(entry)
             val predLocals = entry.predecessors.map { frames.getValue(it) }.map { it.locals }
             val allLocals = predLocals.map { it.keys }.flatten().toSet()
-            locals.clear()
             // find out which locals are defined in catch block
             if (predLocals.isEmpty()) { // entry block is predecessor
                 locals.putAll(sf.locals)
@@ -170,7 +158,6 @@ class CfgBuilder(val method: Method)
             }
 
             // stack for catch block contains only reference to catched exception
-            stack.clear()
             val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
             bb.addInstruction(inst)
             stack.push(inst)
@@ -178,26 +165,67 @@ class CfgBuilder(val method: Method)
         } else if (bb in phiBlocks) {
             val sf = frames.getValue(bb)
             val predFrames = bb.predecessors.map { frames.getValue(it) }
-            stack.clear()
             val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
-            require(stackSizes.size <= 2, { "Stack sizes of ${bb.name} predecessors are different" })
 
-            val stackSize = stackSizes.max()!!
-            for (indx in 0 until stackSize) {
-                val type = stacks.map { it[indx] }.first().type
-                val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
-                bb.addInstruction(phi)
-                stack.push(phi)
-                sf.stackPhis.add(phi as PhiInst)
-            }
-            val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-            for (local in definedLocals) {
-                val type = predFrames.mapNotNull { it.locals[local] }.first().type
-                val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
-                bb.addInstruction(phi)
-                locals[local] = phi
-                sf.localPhis[local] = phi as PhiInst
+            if (bb in cycleEntries) {
+                require(stackSizes.size <= 2, { "Stack sizes of ${bb.name} predecessors are different" })
+
+                val stackSize = stackSizes.max()!!
+                for (indx in 0 until stackSize) {
+                    val type = stacks.map { it[indx] }.first().type
+                    val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
+                    bb.addInstruction(phi)
+                    stack.push(phi)
+                    sf.stackPhis.add(phi as PhiInst)
+                }
+
+                val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+                for (local in definedLocals) {
+                    val type = predFrames.mapNotNull { it.locals[local] }.first().type
+                    val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
+                    bb.addInstruction(phi)
+                    locals[local] = phi
+                    sf.localPhis[local] = phi as PhiInst
+                }
+
+            } else {
+                require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
+
+                for (indx in 0 until stackSizes.first()) {
+                    val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
+                    val incomingValues = incomings.values.toSet()
+                    if (incomingValues.size > 1) {
+                        val newPhi = IF.getPhi(ST.getNextSlot(), incomingValues.first().type, incomings)
+                        bb.addInstruction(newPhi)
+                        stack.push(newPhi)
+                    } else {
+                        stack.push(incomingValues.first())
+                    }
+                }
+                val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+                for (local in definedLocals) {
+                    val incomings = predFrames.mapNotNull {
+                        val value = it.locals[local]
+                        if (value != null) Pair(it.bb, value) else null
+                    }.toMap()
+
+                    // if this local is not defined in all predecessors, then it should not be used
+                    // we can safely delete it
+                    if (incomings.size < predFrames.size) continue
+
+                    val incomingValues = incomings.values.toSet()
+                    if (incomingValues.size > 1) {
+                        val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                        if (type != null) {
+                            val newPhi = IF.getPhi(ST.getNextSlot(), type, incomings)
+                            bb.addInstruction(newPhi)
+                            locals[local] = newPhi
+                        }
+                    } else {
+                        locals[local] = incomingValues.first()
+                    }
+                }
             }
         } else {
             val predFrame = bb.predecessors.map { frames.getValue(it) }.firstOrNull() ?: return
@@ -594,7 +622,6 @@ class CfgBuilder(val method: Method)
         val trueSuccessor = nodeToBlock.getValue(insn.label)
 
         if (insn.opcode == GOTO) {
-            reserveState(bb)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
             val name = ST.getNextSlot()
@@ -606,10 +633,8 @@ class CfgBuilder(val method: Method)
                 in IFNULL..IFNONNULL -> IF.getCmp(name, opc, rhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
-            reserveState(bb)
             bb.addInstruction(cond)
             bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
-            if (insn.next !is LabelNode) recoverState(falseSuccessor)
         }
     }
 
@@ -618,15 +643,8 @@ class CfgBuilder(val method: Method)
         // if we came to this label not by jump, but just by consistently executing instructions
         if (lbl.previous != null && !isTerminateInst(lbl.previous)) {
             val prev = nodeToBlock.getValue(lbl.previous)
-            reserveState(prev)
             prev.addInstruction(IF.getJump(bb))
-            bb.addPredecessor(prev)
-            prev.addSuccessor(bb)
-        } else {
-            stack.clear()
-            locals.clear()
         }
-        recoverState(bb)
     }
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
@@ -662,7 +680,6 @@ class CfgBuilder(val method: Method)
         val max = VF.getIntConstant(insn.max)
         val default = nodeToBlock.getValue(insn.dflt)
         val branches = insn.labels.map { nodeToBlock.getValue(it as AbstractInsnNode) }.toTypedArray()
-        reserveState(bb)
         bb.addInstruction(IF.getTableSwitch(index, min, max, default, branches))
     }
 
@@ -674,7 +691,6 @@ class CfgBuilder(val method: Method)
         for (i in 0..(insn.keys.size - 1)) {
             branches[VF.getIntConstant(insn.keys[i] as Int)] = nodeToBlock.getValue(insn.labels[i] as LabelNode)
         }
-        reserveState(bb)
         bb.addInstruction(IF.getSwitch(key, default, branches))
     }
 
@@ -695,6 +711,7 @@ class CfgBuilder(val method: Method)
         }
         val getNextBlock = { BodyBlock("%bb${bbc++}", method) }
         var bb: BasicBlock = getNextBlock()
+        var insnList = blockToNode.getOrPut(bb, { mutableListOf() })
         for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
                 if (insn.previous == null) { // when first instruction of method is label
@@ -702,11 +719,13 @@ class CfgBuilder(val method: Method)
                     val entry = BodyBlock("entry", method)
                     entry.addInstruction(IF.getJump(bb))
                     entry.addSuccessor(bb)
+                    blockToNode[entry] = mutableListOf()
                     bb.addPredecessor(entry)
 
                     method.addIfNotContains(entry)
                 } else {
                     bb = nodeToBlock.getOrPut(insn, getNextBlock)
+                    insnList = blockToNode.getOrPut(bb, { mutableListOf() })
                     if (!isTerminateInst(insn.previous)) {
                         val prev = nodeToBlock[insn.previous]
                         bb.addPredecessor(prev!!)
@@ -715,6 +734,7 @@ class CfgBuilder(val method: Method)
                 }
             } else {
                 bb = nodeToBlock.getOrPut(insn as AbstractInsnNode, { bb })
+                insnList = blockToNode.getOrPut(bb, { mutableListOf() })
                 if (insn is JumpInsnNode) {
                     if (insn.opcode != GOTO) {
                         val falseSuccessor = nodeToBlock.getOrPut(insn.next, getNextBlock)
@@ -744,6 +764,7 @@ class CfgBuilder(val method: Method)
                     }
                 }
             }
+            insnList.add((insn as AbstractInsnNode))
             method.addIfNotContains(bb)
         }
         for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
@@ -787,8 +808,10 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildPhiInstructions() {
+        val removeablePhis = mutableSetOf<PhiInst>()
+        val processPhis = mutableListOf<PhiInst>()
         for ((bb, sf) in frames) {
-            if (bb !in phiBlocks) continue
+            if (bb !in phiBlocks && bb !in cycleEntries) continue
 
             val predFrames = bb.predecessors.map { frames.getValue(it) }
             val stacks = predFrames.map { it.stack }
@@ -806,6 +829,7 @@ class CfgBuilder(val method: Method)
                     phi.replaceAllUsesWith(incomingValues.first())
                     bb.remove(phi)
                 }
+                phi.operands.forEach { it.removeUser(phi) }
             }
 
             for ((local, phi) in sf.localPhis) {
@@ -817,10 +841,7 @@ class CfgBuilder(val method: Method)
                 // if this local is not defined in all predecessors, then it should not be used
                 // we can safely delete it
                 if (incomings.size < predFrames.size) {
-                    require(phi.getUsers().mapNotNull { it as? Instruction }.isEmpty(),
-                            { "$method Incorrect phi ${phi.print()}  users" })
-                    phi.getUsers().forEach { it.removeUsesOf(phi) }
-                    bb.remove(phi)
+                    removeablePhis.add(phi)
                     continue
                 }
 
@@ -828,20 +849,65 @@ class CfgBuilder(val method: Method)
                 if (incomingValues.size > 1) {
                     val type = mergeTypes(incomingValues.map { it.type }.toSet())
                     if (type == null) {
-                        require(phi.getUsers().mapNotNull { it as? Instruction }.isEmpty(),
-                                { "$method Incorrect phi ${phi.print()}  users" })
-                        phi.getUsers().forEach { it.removeUsesOf(phi) }
-                        bb.remove(phi)
+                        removeablePhis.add(phi)
                     } else {
                         val newPhi = IF.getPhi(phi.name, type, incomings)
                         phi.replaceAllUsesWith(newPhi)
+                        phi.operands.forEach { it.removeUser(phi) }
                         bb.replace(phi, newPhi)
                     }
                 } else {
                     phi.replaceAllUsesWith(incomingValues.first())
+                    phi.operands.forEach { it.removeUser(phi) }
                     bb.remove(phi)
                 }
             }
+        }
+        for (it in method.flatten()) {
+            if (it is PhiInst) {
+                val incomings = it.getIncomingValues()
+                val instUsers = it.getUsers().mapNotNull { it as? Instruction }
+                if (instUsers.isEmpty()) removeablePhis.add(it)
+                else if (incomings.size == 2 && incomings.contains(it)) {
+                    if (incomings.first() == it) it.replaceAllUsesWith(incomings.last())
+                    else it.replaceAllUsesWith(incomings.first())
+                    it.operands.forEach { op -> op.removeUser(it) }
+                    instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                }
+            }
+        }
+
+        processPhis.addAll(removeablePhis)
+        while (processPhis.isNotEmpty()) {
+            val top = processPhis.first()
+            processPhis.removeAt(0)
+            val incomings = top.getIncomingValues()
+            val incomingsSet = incomings.toSet()
+            val instUsers = top.getUsers().mapNotNull { it as? Instruction }
+            if (incomingsSet.size == 1) {
+                val first = incomingsSet.first()
+                top.replaceAllUsesWith(first)
+                top.operands.forEach { it.removeUser(top) }
+                if (first is PhiInst) processPhis.add(first)
+                top.parent?.remove(top) ?: continue
+            } else if (incomings.size == 2 && incomings.contains(top)) {
+                if (incomings.first() == top) top.replaceAllUsesWith(incomings.last())
+                else top.replaceAllUsesWith(incomings.first())
+                top.operands.forEach { it.removeUser(top) }
+                instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+            } else if (instUsers.isEmpty()) {
+                top.operands.forEach { it.removeUser(top) }
+                top.parent?.remove(top) ?: continue
+            } else if (removeablePhis.containsAll(instUsers)) {
+                top.operands.forEach { it.removeUser(top) }
+                top.parent?.remove(top) ?: continue
+            }
+        }
+        removeablePhis.forEach {
+            val instUsers = it.getUsers().mapNotNull { it as? Instruction }
+            val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
+            require(methodInstUsers.isEmpty(), { "Instruction ${it.print()} still have usages" })
+            if (it.parent != null) it.parent!!.remove(it)
         }
     }
 
@@ -859,24 +925,51 @@ class CfgBuilder(val method: Method)
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
-        for (insn in method.mn.instructions) {
-            when (insn) {
-                is InsnNode -> convertInsn(insn)
-                is IntInsnNode -> convertIntInsn(insn)
-                is VarInsnNode -> convertVarInsn(insn)
-                is TypeInsnNode -> convertTypeInsn(insn)
-                is FieldInsnNode -> convertFieldInsn(insn)
-                is MethodInsnNode -> convertMethodInsn(insn)
-                is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn)
-                is JumpInsnNode -> convertJumpInsn(insn)
-                is LabelNode -> convertLabel(insn)
-                is LdcInsnNode -> convertLdcInsn(insn)
-                is IincInsnNode -> convertIincInsn(insn)
-                is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
-                is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
-                is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
-                else -> throw UnexpectedOpcodeException("Unknown insn: ${(insn as AbstractInsnNode).opcode}")
+        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
+        val order = mutableListOf<BasicBlock>()
+        if (method.catchBlocks.isEmpty()) {
+            val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
+            order.addAll(o.reversed().map { it as BasicBlock })
+            cycleEntries.addAll(c.map { it as BasicBlock })
+        } else {
+            val entries = method.catchBlocks
+            entries.forEach { cb ->
+                // temperately add predecessors for each catch block, so it would have correct place in topological sort
+                cb as CatchBlock
+                cb.from().predecessors.forEach { it.addSuccessor(cb) }
             }
+            val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
+            order.addAll(o.reversed().map { it as BasicBlock })
+            cycleEntries.addAll(c.map { it as BasicBlock })
+            entries.forEach { cb ->
+                // temperately add predecessors for each catch block, so it would have correct place in topological sort
+                cb as CatchBlock
+                cb.from().predecessors.forEach { it.successors.remove(cb) }
+            }
+        }
+
+        for (bb in order) {
+            recoverState(bb)
+            for (insn in blockToNode.getValue(bb)) {
+                when (insn) {
+                    is InsnNode -> convertInsn(insn)
+                    is IntInsnNode -> convertIntInsn(insn)
+                    is VarInsnNode -> convertVarInsn(insn)
+                    is TypeInsnNode -> convertTypeInsn(insn)
+                    is FieldInsnNode -> convertFieldInsn(insn)
+                    is MethodInsnNode -> convertMethodInsn(insn)
+                    is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn)
+                    is JumpInsnNode -> convertJumpInsn(insn)
+                    is LabelNode -> convertLabel(insn)
+                    is LdcInsnNode -> convertLdcInsn(insn)
+                    is IincInsnNode -> convertIincInsn(insn)
+                    is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
+                    is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
+                    is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
+                    else -> throw UnexpectedOpcodeException("Unknown insn: ${insn.opcode}")
+                }
+            }
+            reserveState(bb)
         }
 
         buildPhiInstructions()
