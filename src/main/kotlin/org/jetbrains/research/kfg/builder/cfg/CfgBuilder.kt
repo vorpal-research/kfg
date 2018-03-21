@@ -138,29 +138,32 @@ class CfgBuilder(val method: Method)
 
     private fun recoverState(bb: BasicBlock) {
         if (bb.predecessors.isEmpty() && bb is CatchBlock) {
-            // all locals for the catch block are the same, as for the try block entry
-            val entry = bb.from()
-            val sf = frames.getValue(entry)
-            val predLocals = entry.predecessors.map { frames.getValue(it) }.map { it.locals }
-            val allLocals = predLocals.map { it.keys }.flatten().toSet()
-            // find out which locals are defined in catch block
-            if (predLocals.isEmpty()) { // entry block is predecessor
-                locals.putAll(sf.locals)
-            } else if (predLocals.size == 1) {
-                locals.putAll(predLocals.first())
-            } else {
-                for (local in allLocals) {
-                    val values = predLocals.mapNotNull { it[local] }
-                    if (values.size < predLocals.size) continue // local not defined in all predecessor
-                    if (values.toSet().size > 1) continue // different locals in different predecessors
-                    locals[local] = values.first()
-                }
-            }
-
-            // stack for catch block contains only reference to catched exception
             val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
             bb.addInstruction(inst)
             stack.push(inst)
+
+            val entries = bb.getEntries()
+            val predFrames = entries.map { frames.getValue(it) }
+            val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+            for (local in definedLocals) {
+                val incomings = predFrames.mapNotNull {
+                    val value = it.locals[local]
+                    if (value != null) it.bb to value else null
+                }.toMap()
+                if (incomings.size < predFrames.size) continue // local not defined in all predecessor
+
+                val incomingValues = incomings.values.toSet()
+                if (incomingValues.size > 1) {
+                    val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                    if (type != null) {
+                        val newPhi = IF.getPhi(ST.getNextSlot(), type, incomings)
+                        bb.addInstruction(newPhi)
+                        locals[local] = newPhi
+                    }
+                } else {
+                    locals[local] = incomingValues.first()
+                }
+            }
 
         } else if (bb in phiBlocks) {
             val sf = frames.getValue(bb)
@@ -193,7 +196,7 @@ class CfgBuilder(val method: Method)
                 require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
 
                 for (indx in 0 until stackSizes.first()) {
-                    val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
+                    val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
                     val incomingValues = incomings.values.toSet()
                     if (incomingValues.size > 1) {
                         val newPhi = IF.getPhi(ST.getNextSlot(), incomingValues.first().type, incomings)
@@ -207,11 +210,9 @@ class CfgBuilder(val method: Method)
                 for (local in definedLocals) {
                     val incomings = predFrames.mapNotNull {
                         val value = it.locals[local]
-                        if (value != null) Pair(it.bb, value) else null
+                        if (value != null) it.bb to value else null
                     }.toMap()
 
-                    // if this local is not defined in all predecessors, then it should not be used
-                    // we can safely delete it
                     if (incomings.size < predFrames.size) continue
 
                     val incomingValues = incomings.values.toSet()
@@ -583,9 +584,8 @@ class CfgBuilder(val method: Method)
         val `class` = CM.getByName(insn.owner)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
-        method.argTypes.forEach {
-            args.add(0, stack.pop())
-        }
+        method.argTypes.forEach { args.add(0, stack.pop()) }
+
         val returnType = method.retType
         val opcode = toCallOpcode(insn.opcode)
         val call =
@@ -808,7 +808,7 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildPhiInstructions() {
-        val removeablePhis = mutableSetOf<PhiInst>()
+        val removablePhis = mutableSetOf<PhiInst>()
         val processPhis = mutableListOf<PhiInst>()
         for ((bb, sf) in frames) {
             if (bb !in phiBlocks && bb !in cycleEntries) continue
@@ -819,7 +819,7 @@ class CfgBuilder(val method: Method)
             require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
 
             for ((indx, phi) in sf.stackPhis.withIndex()) {
-                val incomings = predFrames.map { Pair(it.bb, it.stack[indx]) }.toMap()
+                val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
                 val incomingValues = incomings.values.toSet()
                 if (incomingValues.size > 1) {
                     val newPhi = IF.getPhi(phi.name, phi.type, incomings)
@@ -835,13 +835,13 @@ class CfgBuilder(val method: Method)
             for ((local, phi) in sf.localPhis) {
                 val incomings = predFrames.mapNotNull {
                     val value = it.locals[local]
-                    if (value != null) Pair(it.bb, value) else null
+                    if (value != null) it.bb to value else null
                 }.toMap()
 
                 // if this local is not defined in all predecessors, then it should not be used
                 // we can safely delete it
                 if (incomings.size < predFrames.size) {
-                    removeablePhis.add(phi)
+                    removablePhis.add(phi)
                     continue
                 }
 
@@ -849,7 +849,7 @@ class CfgBuilder(val method: Method)
                 if (incomingValues.size > 1) {
                     val type = mergeTypes(incomingValues.map { it.type }.toSet())
                     if (type == null) {
-                        removeablePhis.add(phi)
+                        removablePhis.add(phi)
                     } else {
                         val newPhi = IF.getPhi(phi.name, type, incomings)
                         phi.replaceAllUsesWith(newPhi)
@@ -867,7 +867,7 @@ class CfgBuilder(val method: Method)
             if (it is PhiInst) {
                 val incomings = it.getIncomingValues()
                 val instUsers = it.getUsers().mapNotNull { it as? Instruction }
-                if (instUsers.isEmpty()) removeablePhis.add(it)
+                if (instUsers.isEmpty()) removablePhis.add(it)
                 else if (incomings.size == 2 && incomings.contains(it)) {
                     if (incomings.first() == it) it.replaceAllUsesWith(incomings.last())
                     else it.replaceAllUsesWith(incomings.first())
@@ -877,7 +877,7 @@ class CfgBuilder(val method: Method)
             }
         }
 
-        processPhis.addAll(removeablePhis)
+        processPhis.addAll(removablePhis)
         while (processPhis.isNotEmpty()) {
             val top = processPhis.first()
             processPhis.removeAt(0)
@@ -898,12 +898,12 @@ class CfgBuilder(val method: Method)
             } else if (instUsers.isEmpty()) {
                 top.operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
-            } else if (removeablePhis.containsAll(instUsers)) {
+            } else if (removablePhis.containsAll(instUsers)) {
                 top.operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
             }
         }
-        removeablePhis.forEach {
+        removablePhis.forEach {
             val instUsers = it.getUsers().mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
             require(methodInstUsers.isEmpty(), { "Instruction ${it.print()} still have usages" })
@@ -932,19 +932,19 @@ class CfgBuilder(val method: Method)
             order.addAll(o.reversed().map { it as BasicBlock })
             cycleEntries.addAll(c.map { it as BasicBlock })
         } else {
-            val entries = method.catchBlocks
-            entries.forEach { cb ->
+            val catches = method.catchBlocks
+            catches.forEach { cb ->
                 // temperately add predecessors for each catch block, so it would have correct place in topological sort
                 cb as CatchBlock
-                cb.from().predecessors.forEach { it.addSuccessor(cb) }
+                cb.getEntries().forEach { it.addSuccessor(cb) }
             }
             val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
             order.addAll(o.reversed().map { it as BasicBlock })
             cycleEntries.addAll(c.map { it as BasicBlock })
-            entries.forEach { cb ->
+            catches.forEach { cb ->
                 // temperately add predecessors for each catch block, so it would have correct place in topological sort
                 cb as CatchBlock
-                cb.from().predecessors.forEach { it.successors.remove(cb) }
+                cb.getEntries().forEach { it.successors.remove(cb) }
             }
         }
 

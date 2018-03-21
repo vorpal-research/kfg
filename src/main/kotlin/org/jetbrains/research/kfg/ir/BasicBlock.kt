@@ -6,6 +6,8 @@ import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.printBytecode
+import org.jetbrains.research.kfg.util.viewCfg
 
 abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction>, GraphNode {
     val predecessors = mutableSetOf<BasicBlock>()
@@ -81,7 +83,15 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
     fun to() = throwers.maxBy { parent.basicBlocks.indexOf(it) }
             ?: throw UnexpectedException("Unknown thrower")
     fun addThrower(bb: BasicBlock) = throwers.add(bb)
-    fun addThrowers(vararg blocks: BasicBlock) = throwers.addAll(blocks)
+
+    fun getEntries(): Set<BasicBlock> {
+        val entries = mutableSetOf<BasicBlock>()
+        for (it in throwers) {
+            for (pred in it.predecessors)
+                if (!throwers.contains(pred)) entries.add(pred)
+        }
+        return entries
+    }
 
     override fun print(): String {
         val sb = StringBuilder()

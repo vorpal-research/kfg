@@ -44,7 +44,7 @@ class ClassManager private constructor() {
         val jar = JarFile(jarPath)
         val jarClasses = parseJar(jar)
         classNodes.putAll(jarClasses)
-        classToJar.putAll(jarClasses.map { Pair(it.key, jar) })
+        classToJar.putAll(jarClasses.map { it.key to jar })
         jarClasses.forEach { (name, cn) ->
             classes.getOrPut(name, { ConcreteClass(cn) }).init()
         }
