@@ -37,7 +37,7 @@ fun typeToInt(type: Type) = when (type) {
 class AsmBuilder(method: Method) : MethodVisitor(method) {
     private val insnLists = mutableMapOf<BasicBlock, InsnList>()
     private val terminateInsns = mutableMapOf<BasicBlock, InsnList>()
-    val labels = method.basicBlocks.map { Pair(it, LabelNode()) }.toMap()
+    val labels = method.basicBlocks.map { it to LabelNode() }.toMap()
     private val stack = mutableListOf<Value>()
     private val locals = mutableMapOf<Value, Int>()
 
@@ -425,10 +425,10 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
     }
 
-    fun buildTryCatchBlocks() = method.filter { it is CatchBlock }.map {
-        it as CatchBlock
-        TryCatchBlockNode(getLabel(it.from()), getLabel(method.getNext(it.to())), getLabel(it), it.exception.toInternalDesc())
-    }.toList()
+    fun buildTryCatchBlocks() = method.catchBlocks.map { it as CatchBlock }
+            .map {
+                TryCatchBlockNode(getLabel(it.from()), getLabel(method.getNext(it.to())), getLabel(it), it.exception.toInternalDesc())
+            }.toList()
 
     fun build(): InsnList {
         visit()

@@ -66,7 +66,7 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
             bucket.add(mutableSetOf())
             reverseGraph.add(arrayListOf())
         }
-        tree.putAll(nodes.map { Pair(it, DominatorTreeNode(it)) })
+        tree.putAll(nodes.map { it to DominatorTreeNode(it) })
     }
 
     private fun union(u: Int, v: Int) {
