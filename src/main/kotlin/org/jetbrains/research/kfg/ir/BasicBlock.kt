@@ -25,7 +25,10 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
     }
 
     fun remove(inst: Instruction) {
-        instructions.remove(inst)
+        if (inst.parent == this) {
+            instructions.remove(inst)
+            inst.parent = null
+        }
     }
 
     fun replace(from: Instruction, to: Instruction){

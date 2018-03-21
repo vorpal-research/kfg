@@ -7,7 +7,7 @@ interface GraphNode {
     fun getSuccSet(): Set<GraphNode>
 }
 
-class TopologicalSorter {
+class TopologicalSorter(val nodes: Set<GraphNode>) {
     private val order = mutableListOf<GraphNode>()
     private val cycled = mutableSetOf<GraphNode>()
     private val colors = mutableMapOf<GraphNode, Color>()

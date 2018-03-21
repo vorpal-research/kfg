@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
+import org.jetbrains.research.kfg.util.printBytecode
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
@@ -36,7 +37,7 @@ fun typeToInt(type: Type) = when (type) {
 class AsmBuilder(method: Method) : MethodVisitor(method) {
     private val insnLists = mutableMapOf<BasicBlock, InsnList>()
     private val terminateInsns = mutableMapOf<BasicBlock, InsnList>()
-    private val labels = method.basicBlocks.map { Pair(it, LabelNode()) }.toMap()
+    val labels = method.basicBlocks.map { Pair(it, LabelNode()) }.toMap()
     private val stack = mutableListOf<Value>()
     private val locals = mutableMapOf<Value, Int>()
 
