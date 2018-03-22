@@ -16,16 +16,10 @@ interface Integral : Type {
     fun isChar() = false
 }
 
-class BoolType : Integral {
-    companion object {
-        val instance = BoolType()
-        const val defaultWidth = 32
-        const val isSigned = false
-    }
-
+object BoolType : Integral {
     override val name = "bool"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 32
+    override val signed = false
 
     override fun getAsmDesc() = "Z"
 
@@ -37,16 +31,10 @@ class BoolType : Integral {
     }
 }
 
-class ByteType : Integral {
-    companion object {
-        val instance = BoolType()
-        const val defaultWidth = 8
-        const val isSigned = true
-    }
-
+object ByteType : Integral {
     override val name = "byte"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 8
+    override val signed = true
     override fun isByte() = true
     override fun getAsmDesc() = "B"
 
@@ -58,15 +46,10 @@ class ByteType : Integral {
     }
 }
 
-class ShortType : Integral {
-    companion object {
-        val instance = ShortType()
-        const val defaultWidth = 16
-        const val isSigned = true
-    }
+object ShortType : Integral {
     override val name = "short"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 16
+    override val signed = true
     override fun isShort() = true
     override fun getAsmDesc() = "S"
 
@@ -78,15 +61,10 @@ class ShortType : Integral {
     }
 }
 
-class IntType : Integral {
-    companion object {
-        val instance = IntType()
-        const val defaultWidth = 32
-        const val isSigned = true
-    }
+object IntType : Integral {
     override val name = "int"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 32
+    override val signed = true
     override fun isInt() = true
     override fun getAsmDesc() = "I"
 
@@ -98,15 +76,10 @@ class IntType : Integral {
     }
 }
 
-class LongType : Integral {
-    companion object {
-        val instance = LongType()
-        const val defaultWidth = 64
-        const val isSigned = true
-    }
+object LongType : Integral {
     override val name = "long"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 64
+    override val signed = true
     override fun isLong() = true
     override fun isDWord() = true
     override fun getAsmDesc() = "J"
@@ -119,15 +92,10 @@ class LongType : Integral {
     }
 }
 
-class CharType : Integral {
-    companion object {
-        val instance = CharType()
-        const val defaultWidth = 16
-        const val isSigned = false
-    }
+object CharType : Integral {
     override val name = "char"
-    override val width = defaultWidth
-    override val signed = isSigned
+    override val width = 16
+    override val signed = false
     override fun isChar() = true
     override fun getAsmDesc() = "C"
 

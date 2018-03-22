@@ -7,15 +7,11 @@ interface Real : Type {
     override fun isReal() = true
 }
 
-class FloatType : Real {
+object FloatType : Real {
     override val name = "float"
 
     override fun toString() = name
     override fun getAsmDesc() = "F"
-
-    companion object {
-        val instance = FloatType()
-    }
 
     override fun hashCode() = defaultHasCode(name)
     override fun equals(other: Any?): Boolean {
@@ -24,15 +20,11 @@ class FloatType : Real {
     }
 }
 
-class DoubleType : Real {
+object DoubleType : Real {
     override val name = "double"
     override fun toString() = name
     override fun isDWord() = true
     override fun getAsmDesc() = "D"
-
-    companion object {
-        val instance = DoubleType()
-    }
 
     override fun hashCode() = defaultHasCode(name)
     override fun equals(other: Any?): Boolean {

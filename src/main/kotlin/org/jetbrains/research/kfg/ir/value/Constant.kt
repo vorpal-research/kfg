@@ -107,8 +107,4 @@ class MethodConstant(val method: Method) : Constant(method.name, TF.getRefType("
 }
 
 class ClassConstant(`class`: Type) : Constant("${`class`.name}.class", `class`)
-class NullConstant : Constant("null", TF.getNullType()) {
-    companion object {
-        val instance = NullConstant()
-    }
-}
+object NullConstant : Constant("null", TF.getNullType())

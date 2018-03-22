@@ -25,11 +25,7 @@ class Slot(private val st: SlotTracker) : ValueName() {
     }
 }
 
-class UndefinedName private constructor() : ValueName() {
-    companion object {
-        val instance = UndefinedName()
-    }
-
+object UndefinedName : ValueName() {
     override fun toString(): String = throw UnexpectedException("Trying to print undefined name")
 }
 

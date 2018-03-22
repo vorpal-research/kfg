@@ -4,27 +4,18 @@ import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ClassManager
 
-class TypeFactory private constructor() {
-
-    private object Holder {
-        val instance = TypeFactory()
-    }
-
-    companion object {
-        val instance: TypeFactory by lazy { Holder.instance }
-    }
-
-    fun getVoidType(): Type = VoidType.instance
-    fun getBoolType(): Type = BoolType.instance
-    fun getByteType(): Type = ByteType.instance
-    fun getShortType(): Type = ShortType.instance
-    fun getIntType(): Type = IntType.instance
-    fun getLongType(): Type = LongType.instance
-    fun getCharType(): Type = CharType.instance
-    fun getFloatType(): Type = FloatType.instance
-    fun getDoubleType(): Type = DoubleType.instance
+object TypeFactory {
+    fun getVoidType(): Type = VoidType
+    fun getBoolType(): Type = BoolType
+    fun getByteType(): Type = ByteType
+    fun getShortType(): Type = ShortType
+    fun getIntType(): Type = IntType
+    fun getLongType(): Type = LongType
+    fun getCharType(): Type = CharType
+    fun getFloatType(): Type = FloatType
+    fun getDoubleType(): Type = DoubleType
     fun getRefType(cname: Class): Type = ClassType(cname)
     fun getRefType(cname: String): Type = getRefType(CM.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
-    fun getNullType(): Type = NullType.instance
+    fun getNullType(): Type = NullType
 }

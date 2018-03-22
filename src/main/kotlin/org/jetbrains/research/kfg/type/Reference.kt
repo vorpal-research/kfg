@@ -38,7 +38,7 @@ class ArrayType(val component: Type) : Reference {
     }
 }
 
-class NullType : Reference {
+object NullType : Reference {
     override val name = "null"
 
     override fun toString() = name
@@ -48,9 +48,5 @@ class NullType : Reference {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
-    }
-
-    companion object {
-        val instance = NullType()
     }
 }

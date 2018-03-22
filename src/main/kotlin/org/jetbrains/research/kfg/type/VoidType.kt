@@ -2,11 +2,7 @@ package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.util.defaultHasCode
 
-class VoidType : Type {
-    companion object {
-        val instance = VoidType()
-    }
-
+object VoidType : Type {
     override val name = "void"
     override fun isPrimary() = false
     override fun isVoid() = true

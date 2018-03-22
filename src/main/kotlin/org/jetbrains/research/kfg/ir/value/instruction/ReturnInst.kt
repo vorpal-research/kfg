@@ -5,8 +5,8 @@ import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
 
 class ReturnInst : TerminateInst {
-    constructor() : super(UndefinedName.instance, TF.getVoidType(), arrayOf())
-    constructor(retval: Value) : super(UndefinedName.instance, retval.type, arrayOf(retval))
+    constructor() : super(UndefinedName, TF.getVoidType(), arrayOf())
+    constructor(retval: Value) : super(UndefinedName, retval.type, arrayOf(retval))
 
     fun hasReturnValue() = operands.isNotEmpty()
     fun getReturnType() = operands[0].type

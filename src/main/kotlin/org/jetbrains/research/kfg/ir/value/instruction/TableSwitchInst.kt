@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
 
 class TableSwitchInst(index: Value, min: Value, max: Value, val default: BasicBlock, val branches: Array<BasicBlock>)
-    : TerminateInst(UndefinedName.instance, TF.getVoidType(), arrayOf(index, min, max)) {
+    : TerminateInst(UndefinedName, TF.getVoidType(), arrayOf(index, min, max)) {
 
     fun getIndex() = operands[0]
     fun getMin() = operands[1]
