@@ -4,23 +4,36 @@ import info.leadinglight.jdot.Edge
 import info.leadinglight.jdot.Graph
 import info.leadinglight.jdot.Node
 import info.leadinglight.jdot.enums.Shape
+import info.leadinglight.jdot.enums.Style
+import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
-import kotlin.concurrent.thread
 
-fun viewCfg(method: Method) {
+fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
     Graph.DEFAULT_CMD = "/usr/bin/dot"
     Graph.DEFAULT_BROWSER_CMD = arrayOf("/usr/bin/chromium")
-    val graph = Graph()
+    val graph = Graph(method.name)
+    val name = Node(method.name).setShape(Shape.oval).setLabel(method.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
+    graph.addNode(name)
     method.basicBlocks.forEach {
-        val node = Node(it.name).setShape(Shape.box).setLabel(it.name)
+        val label = StringBuilder()
+        label.append("${it.name}:\\l")
+        it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
+        val node = Node(it.name).setShape(Shape.box).setLabel(label.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
         graph.addNode(node)
     }
+    graph.addEdge(Edge(method.name, method.getEntry().name))
     method.basicBlocks.forEach {
         for (succ in it.successors) {
             graph.addEdge(Edge(it.name, succ.name))
         }
     }
-    thread {
-        graph.viewSvg()
+    if (viewCatchBlocks) {
+        method.catchBlocks.forEach {
+            it as CatchBlock
+            for (thrower in it.throwers) {
+                graph.addEdge(Edge(thrower.name, it.name).setStyle(Style.Edge.dotted))
+            }
+        }
     }
+    graph.viewSvg()
 }

@@ -5,15 +5,11 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 
-class ValueFactory private constructor() {
-    companion object {
-        val instance = ValueFactory()
-    }
-
+object ValueFactory {
     fun getThis(type: Type): Value = ThisRef(type)
     fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
     // constants
-    fun getNullConstant(): Value = NullConstant.instance
+    fun getNullConstant(): Value = NullConstant
     fun getBoolConstant(value: Boolean) = BoolConstant(value)
     fun getIntConstant(value: Int): Value = IntConstant(value)
     fun getLongConstant(value: Long): Value = LongConstant(value)

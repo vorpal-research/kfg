@@ -8,15 +8,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueName
 import org.jetbrains.research.kfg.type.Type
 
-class InstructionFactory private constructor() {
-    private object Holder {
-        val instance = InstructionFactory()
-    }
-
-    companion object {
-        val instance: InstructionFactory by lazy { Holder.instance }
-    }
-
+object InstructionFactory {
     fun getNewArray(name: ValueName, componentType: Type, count: Value): Instruction = NewArrayInst(name, componentType, count)
     fun getMultiNewArray(name: ValueName, type: Type, dims: Int): Instruction = MultiNewArrayInst(name, type, dims)
     fun getArrayLoad(name: ValueName, arrayRef: Value, index: Value): Instruction = ArrayLoadInst(name, arrayRef, index)

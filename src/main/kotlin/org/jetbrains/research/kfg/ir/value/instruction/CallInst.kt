@@ -13,7 +13,7 @@ class CallInst : Instruction {
     val isStatic: Boolean
 
     constructor(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>)
-            : super(UndefinedName.instance, method.retType, args) {
+            : super(UndefinedName, method.retType, args) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`
@@ -21,7 +21,7 @@ class CallInst : Instruction {
     }
 
     constructor(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>)
-            : super(UndefinedName.instance, method.retType, arrayOf(obj).plus(args)) {
+            : super(UndefinedName, method.retType, arrayOf(obj).plus(args)) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`

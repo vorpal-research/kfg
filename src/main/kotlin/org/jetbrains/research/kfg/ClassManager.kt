@@ -27,18 +27,10 @@ fun parseJar(jar: JarFile): Map<String, ClassNode> {
     return classes
 }
 
-class ClassManager private constructor() {
+object ClassManager {
     val classToJar = mutableMapOf<String, JarFile>()
     val classNodes = mutableMapOf<String, ClassNode>()
     val classes = mutableMapOf<String, Class>()
-
-    private object Holder {
-        val instance = ClassManager()
-    }
-
-    companion object {
-        val instance: ClassManager by lazy { Holder.instance }
-    }
 
     fun parseJar(jarPath: String) {
         val jar = JarFile(jarPath)

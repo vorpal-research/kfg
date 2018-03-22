@@ -15,10 +15,11 @@ class PhiInst(name: ValueName, type: Type, incomings: Map<BasicBlock, Value>)
 
     override fun print(): String {
         val sb = StringBuilder()
-        sb.appendln("$name = phi {")
-        for (indx in 0 until predecessors.size)
-            sb.appendln("\t ${predecessors[indx].name} -> ${operands[indx]}")
-        sb.append("\t}")
+        sb.append("$name = phi {")
+        val incomings = getIncomings().map { it.key to it.value }
+        incomings.take(1).forEach { sb.append("${it.first.name} -> ${it.second}") }
+        incomings.drop(1).forEach { sb.append("; ${it.first.name} -> ${it.second}") }
+        sb.append("}")
         return sb.toString()
     }
 }

@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.printBytecode
+import org.jetbrains.research.kfg.util.viewCfg
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.FileOutputStream
