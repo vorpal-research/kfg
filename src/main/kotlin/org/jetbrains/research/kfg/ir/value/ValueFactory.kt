@@ -10,7 +10,8 @@ object ValueFactory {
     fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
     // constants
     fun getNullConstant(): Value = NullConstant
-    fun getBoolConstant(value: Boolean) = BoolConstant(value)
+    fun getBoolConstant(value: Boolean): Value = BoolConstant(value)
+    fun getCharConstant(value: Char): Value = CharConstant(value)
     fun getIntConstant(value: Int): Value = IntConstant(value)
     fun getLongConstant(value: Long): Value = LongConstant(value)
     fun getFloatConstant(value: Float): Value = FloatConstant(value)
@@ -21,6 +22,7 @@ object ValueFactory {
 
     fun getZeroConstant(type: Type): Value = when(type) {
         is BoolType -> getBoolConstant(false)
+        is CharType -> getCharConstant(0.toChar())
         is IntType -> getIntConstant(0)
         is LongType -> getLongConstant(0)
         is FloatType -> getFloatConstant(0.0f)

@@ -9,6 +9,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.printBytecode
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 
@@ -371,8 +372,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                 }
             }
             addOperandsToStack(inst.operands)
-            require(inst.getUsers().size == 1, { "Unsupported usage of cmp inst" })
-            require(inst.getUsers().first() is BranchInst, { "Unsupported usage of cmp inst" })
+            assert(inst.getUsers().size == 1, { "Unsupported usage of cmp inst" })
+            assert(inst.getUsers().first() is BranchInst, { "Unsupported usage of cmp inst" })
             val branch = inst.getUsers().first() as BranchInst
             val insn = JumpInsnNode(opcode, getLabel(branch.trueSuccessor))
             currentInsnList.add(insn)
@@ -430,7 +431,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                 TryCatchBlockNode(getLabel(it.from()), getLabel(method.getNext(it.to())), getLabel(it), it.exception.toInternalDesc())
             }.toList()
 
-    fun build(): InsnList {
+    fun build(): MethodNode {
         visit()
         method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
         val insnList = InsnList()
@@ -439,6 +440,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             insnList.add(getInsnList(bb))
             insnList.add(getTerminateInsnList(bb))
         }
-        return insnList
+        method.mn.instructions = insnList
+        method.mn.tryCatchBlocks = buildTryCatchBlocks()
+        return method.mn
     }
 }
