@@ -136,6 +136,43 @@ class CfgBuilder(val method: Method)
         locals.clear()
     }
 
+    private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, size: Int) {
+        for (indx in 0 until size) {
+            val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
+            val incomingValues = incomings.values.toSet()
+            if (incomingValues.size > 1) {
+                val newPhi = IF.getPhi(ST.getNextSlot(), incomingValues.first().type, incomings)
+                bb.addInstruction(newPhi)
+                stack.push(newPhi)
+            } else {
+                stack.push(incomingValues.first())
+            }
+        }
+    }
+
+    private fun createLocalPhis(bb: BasicBlock, predFrames: List<StackFrame>, definedLocals: Set<Int>) {
+        for (local in definedLocals) {
+            val incomings = predFrames.mapNotNull {
+                val value = it.locals[local]
+                if (value != null) it.bb to value else null
+            }.toMap()
+
+            if (incomings.size < predFrames.size) continue
+
+            val incomingValues = incomings.values.toSet()
+            if (incomingValues.size > 1) {
+                val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                if (type != null) {
+                    val newPhi = IF.getPhi(ST.getNextSlot(), type, incomings)
+                    bb.addInstruction(newPhi)
+                    locals[local] = newPhi
+                }
+            } else {
+                locals[local] = incomingValues.first()
+            }
+        }
+    }
+
     private fun recoverState(bb: BasicBlock) {
         if (bb.predecessors.isEmpty() && bb is CatchBlock) {
             val inst = IF.getCatch(ST.getNextSlot(), bb.exception)
@@ -145,25 +182,7 @@ class CfgBuilder(val method: Method)
             val entries = bb.getEntries()
             val predFrames = entries.map { frames.getValue(it) }
             val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-            for (local in definedLocals) {
-                val incomings = predFrames.mapNotNull {
-                    val value = it.locals[local]
-                    if (value != null) it.bb to value else null
-                }.toMap()
-                if (incomings.size < predFrames.size) continue // local not defined in all predecessor
-
-                val incomingValues = incomings.values.toSet()
-                if (incomingValues.size > 1) {
-                    val type = mergeTypes(incomingValues.map { it.type }.toSet())
-                    if (type != null) {
-                        val newPhi = IF.getPhi(ST.getNextSlot(), type, incomings)
-                        bb.addInstruction(newPhi)
-                        locals[local] = newPhi
-                    }
-                } else {
-                    locals[local] = incomingValues.first()
-                }
-            }
+            createLocalPhis(bb, predFrames, definedLocals)
 
         } else if (bb in phiBlocks) {
             val sf = frames.getValue(bb)
@@ -172,7 +191,7 @@ class CfgBuilder(val method: Method)
             val stackSizes = stacks.map { it.size }.toSet()
 
             if (bb in cycleEntries) {
-                require(stackSizes.size <= 2, { "Stack sizes of ${bb.name} predecessors are different" })
+                assert(stackSizes.size <= 2, { "Stack sizes of ${bb.name} predecessors are different" })
 
                 val stackSize = stackSizes.max()!!
                 for (indx in 0 until stackSize) {
@@ -193,40 +212,11 @@ class CfgBuilder(val method: Method)
                 }
 
             } else {
-                require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
+                assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
+                createStackPhis(bb, predFrames, stackSizes.first())
 
-                for (indx in 0 until stackSizes.first()) {
-                    val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
-                    val incomingValues = incomings.values.toSet()
-                    if (incomingValues.size > 1) {
-                        val newPhi = IF.getPhi(ST.getNextSlot(), incomingValues.first().type, incomings)
-                        bb.addInstruction(newPhi)
-                        stack.push(newPhi)
-                    } else {
-                        stack.push(incomingValues.first())
-                    }
-                }
                 val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-                for (local in definedLocals) {
-                    val incomings = predFrames.mapNotNull {
-                        val value = it.locals[local]
-                        if (value != null) it.bb to value else null
-                    }.toMap()
-
-                    if (incomings.size < predFrames.size) continue
-
-                    val incomingValues = incomings.values.toSet()
-                    if (incomingValues.size > 1) {
-                        val type = mergeTypes(incomingValues.map { it.type }.toSet())
-                        if (type != null) {
-                            val newPhi = IF.getPhi(ST.getNextSlot(), type, incomings)
-                            bb.addInstruction(newPhi)
-                            locals[local] = newPhi
-                        }
-                    } else {
-                        locals[local] = incomingValues.first()
-                    }
-                }
+                createLocalPhis(bb, predFrames, definedLocals)
             }
         } else {
             val predFrame = bb.predecessors.map { frames.getValue(it) }.firstOrNull() ?: return
@@ -347,11 +337,17 @@ class CfgBuilder(val method: Method)
                 val val1 = stack.pop()
                 if (val1.type.isDWord()) {
                     val val2 = stack.pop()
-                    val val3 = stack.pop()
-                    stack.push(val1)
-                    stack.push(val3)
-                    stack.push(val2)
-                    stack.push(val1)
+                    if (val2.type.isDWord()) {
+                        stack.push(val1)
+                        stack.push(val2)
+                        stack.push(val1)
+                    } else {
+                        val val3 = stack.pop()
+                        stack.push(val1)
+                        stack.push(val3)
+                        stack.push(val2)
+                        stack.push(val1)
+                    }
                 } else {
                     val val2 = stack.pop()
                     val val3 = stack.pop()
@@ -618,12 +614,13 @@ class CfgBuilder(val method: Method)
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val falseSuccessor = nodeToBlock.getValue(insn.next)
-        val trueSuccessor = nodeToBlock.getValue(insn.label)
 
         if (insn.opcode == GOTO) {
+            val trueSuccessor = nodeToBlock.getValue(insn.label)
             bb.addInstruction(IF.getJump(trueSuccessor))
         } else {
+            val falseSuccessor = nodeToBlock.getValue(insn.next)
+            val trueSuccessor = nodeToBlock.getValue(insn.label)
             val name = ST.getNextSlot()
             val rhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
@@ -816,7 +813,7 @@ class CfgBuilder(val method: Method)
             val predFrames = bb.predecessors.map { frames.getValue(it) }
             val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
-            require(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
+            assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
 
             for ((indx, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
@@ -838,8 +835,6 @@ class CfgBuilder(val method: Method)
                     if (value != null) it.bb to value else null
                 }.toMap()
 
-                // if this local is not defined in all predecessors, then it should not be used
-                // we can safely delete it
                 if (incomings.size < predFrames.size) {
                     removablePhis.add(phi)
                     continue
@@ -906,7 +901,7 @@ class CfgBuilder(val method: Method)
         removablePhis.forEach {
             val instUsers = it.getUsers().mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
-            require(methodInstUsers.isEmpty(), { "Instruction ${it.print()} still have usages" })
+            assert(methodInstUsers.isEmpty(), { "Instruction ${it.print()} still have usages" })
             if (it.parent != null) it.parent!!.remove(it)
         }
     }
@@ -948,6 +943,8 @@ class CfgBuilder(val method: Method)
             }
         }
 
+        println(method)
+        println(method.mn.printBytecode())
         for (bb in order) {
             recoverState(bb)
             for (insn in blockToNode.getValue(bb)) {
