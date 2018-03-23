@@ -7,9 +7,7 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
-import org.jetbrains.research.kfg.util.printBytecode
 import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 
@@ -93,6 +91,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             in Short.MIN_VALUE..Short.MAX_VALUE -> IntInsnNode(SIPUSH, `const`.value)
             else -> LdcInsnNode(`const`.value)
         }
+        is CharConstant -> LdcInsnNode(const.value.toInt())
         is LongConstant -> when (`const`.value) {
             in 0..1 -> InsnNode(LCONST_0 + `const`.value.toInt())
             else -> LdcInsnNode(`const`.value)
@@ -200,19 +199,19 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val targetType = inst.type
         val insn = if (originalType.isPrimary() and targetType.isPrimary()) {
             val opcode = when (originalType) {
-                is IntType -> when (targetType) {
+                is LongType -> when (targetType) {
+                    is IntType -> L2I
+                    is FloatType -> L2F
+                    is DoubleType -> L2D
+                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                }
+                is Integral -> when (targetType) {
                     is LongType -> I2L
                     is FloatType -> I2F
                     is DoubleType -> I2D
                     is ByteType -> I2B
                     is CharType -> I2C
                     is ShortType -> I2S
-                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
-                }
-                is LongType -> when (targetType) {
-                    is IntType -> L2I
-                    is FloatType -> L2F
-                    is DoubleType -> L2D
                     else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
                 is FloatType -> when (targetType) {
@@ -239,13 +238,17 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitEnterMonitorInst(inst: EnterMonitorInst) {
+        addOperandsToStack(inst.operands)
         val insn = InsnNode(MONITORENTER)
         currentInsnList.add(insn)
+        inst.operands.forEach { stackPop() }
     }
 
     override fun visitExitMonitorInst(inst: ExitMonitorInst) {
+        addOperandsToStack(inst.operands)
         val insn = InsnNode(MONITOREXIT)
         currentInsnList.add(insn)
+        inst.operands.forEach { stackPop() }
     }
 
     override fun visitNewArrayInst(inst: NewArrayInst) {
@@ -426,7 +429,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
     }
 
-    fun buildTryCatchBlocks() = method.catchBlocks.map { it as CatchBlock }
+    private fun buildTryCatchBlocks() = method.catchBlocks.map { it as CatchBlock }
             .map {
                 TryCatchBlockNode(getLabel(it.from()), getLabel(method.getNext(it.to())), getLabel(it), it.exception.toInternalDesc())
             }.toList()
@@ -442,6 +445,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()
+        method.mn.maxLocals = maxLocals
+        method.mn.maxStack = maxStack
         return method.mn
     }
 }
