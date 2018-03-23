@@ -6,8 +6,6 @@ import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHasCode
-import org.jetbrains.research.kfg.util.printBytecode
-import org.jetbrains.research.kfg.util.viewCfg
 
 abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction>, GraphNode {
     val predecessors = mutableSetOf<BasicBlock>()

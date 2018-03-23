@@ -10,7 +10,7 @@ enum class UnaryOpcode {
 }
 
 class UnaryInst(name: ValueName, val opcode: UnaryOpcode, obj: Value)
-    : Instruction(name, TF.getIntType(), arrayOf(obj)) {
+    : Instruction(name, if (opcode == UnaryOpcode.LENGTH) TF.getIntType() else obj.type, arrayOf(obj)) {
 
     fun getOperand() = operands[0]
 

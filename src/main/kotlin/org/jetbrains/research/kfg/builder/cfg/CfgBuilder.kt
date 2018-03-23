@@ -944,7 +944,7 @@ class CfgBuilder(val method: Method)
         }
 
         println(method)
-        println(method.mn.printBytecode())
+        println(method.mn.print())
         for (bb in order) {
             recoverState(bb)
             for (insn in blockToNode.getValue(bb)) {

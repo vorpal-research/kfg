@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.ir.ConcreteClass
-import org.jetbrains.research.kfg.util.printBytecode
+import org.jetbrains.research.kfg.util.print
 import org.jetbrains.research.kfg.util.writeJar
 import java.util.jar.JarFile
 
@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
         for ((_, method) in `class`.methods) {
             println("Visiting method $method")
             println("Bytecode: ")
-            println(method.mn.printBytecode())
+            println(method.mn.print())
             println(method.print())
             println()
         }
