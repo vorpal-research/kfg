@@ -4,6 +4,8 @@ import org.jetbrains.research.kfg.InvalidTypeDescException
 import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
+import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.value.NullConstant
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
@@ -23,15 +25,25 @@ fun mergeTypes(types: Set<Type>) : Type? {
         return if (types.first() == TF.getNullType()) types.last() else types.first()
     }
     val integrals = types.mapNotNull { it as? Integral }
-    if (integrals.size == types.size) return integrals.maxBy { it.width }
+    if (integrals.size == types.size) return integrals.maxBy { it.width }!!
 
-    val classes = types.mapNotNull { it as? ClassType }
+    val classes = types.mapNotNull { it as? NullType ?: it as? ClassType }
     if (classes.size == types.size) {
         for (i in 0 until classes.size) {
             val current = classes[i]
-            val isAncestor = classes.foldRight(true, { `class`, acc -> acc && current.`class`.isAncestor(`class`.`class`) })
+            if (current is NullType) continue
+            current as ClassType
+            val isAncestor = classes.foldRight(true, { `class`, acc ->
+                acc && when (`class`) {
+                    is NullType -> true
+                    is ArrayType -> false
+                    is ClassType -> current.`class`.isAncestor(`class`.`class`)
+                    else -> throw UnexpectedException("Unknown ref type $`class`")
+                }
+            })
             if (isAncestor) return current
         }
+        return TF.getRefType("java/lang/Object")
     }
     return null
 }

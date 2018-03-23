@@ -11,6 +11,7 @@ object ValueFactory {
     // constants
     fun getNullConstant(): Value = NullConstant
     fun getBoolConstant(value: Boolean): Value = BoolConstant(value)
+    fun getByteConstant(value: Byte): Value = ByteConstant(value)
     fun getCharConstant(value: Char): Value = CharConstant(value)
     fun getIntConstant(value: Int): Value = IntConstant(value)
     fun getLongConstant(value: Long): Value = LongConstant(value)
@@ -22,6 +23,7 @@ object ValueFactory {
 
     fun getZeroConstant(type: Type): Value = when(type) {
         is BoolType -> getBoolConstant(false)
+        is ByteType -> getByteConstant(0.toByte())
         is CharType -> getCharConstant(0.toChar())
         is IntType -> getIntConstant(0)
         is LongType -> getLongConstant(0)
