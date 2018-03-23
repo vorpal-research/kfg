@@ -252,6 +252,10 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val index = stack.pop()
         val arrayRef = stack.pop()
+        if (arrayRef.type is NullType) {
+            println(method.print())
+            println(method.mn.print())
+        }
         val inst = IF.getArrayLoad(ST.getNextSlot(), arrayRef, index)
         bb.addInstruction(inst)
         stack.push(inst)
@@ -351,13 +355,21 @@ class CfgBuilder(val method: Method)
                 } else {
                     val val2 = stack.pop()
                     val val3 = stack.pop()
-                    val val4 = stack.pop()
-                    stack.push(val2)
-                    stack.push(val1)
-                    stack.push(val4)
-                    stack.push(val3)
-                    stack.push(val2)
-                    stack.push(val1)
+                    if (val3.type.isDWord()) {
+                        stack.push(val2)
+                        stack.push(val1)
+                        stack.push(val3)
+                        stack.push(val2)
+                        stack.push(val1)
+                    } else {
+                        val val4 = stack.pop()
+                        stack.push(val2)
+                        stack.push(val1)
+                        stack.push(val4)
+                        stack.push(val3)
+                        stack.push(val2)
+                        stack.push(val1)
+                    }
                 }
             }
             else -> throw UnexpectedOpcodeException("Dup opcode $opcode")
@@ -943,8 +955,6 @@ class CfgBuilder(val method: Method)
             }
         }
 
-        println(method)
-        println(method.mn.print())
         for (bb in order) {
             recoverState(bb)
             for (insn in blockToNode.getValue(bb)) {
