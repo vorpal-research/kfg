@@ -28,7 +28,7 @@ fun parseJarClasses(jar: JarFile): Map<String, ClassNode> {
     return classes
 }
 
-fun writeJar(jar: JarFile, suffix: String = "instrumented") {
+fun writeJar(jar: JarFile, `package`: String = "", suffix: String = "instrumented") {
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
     val builder = JarBuilder("$jarName-$suffix.jar")
     val enumeration = jar.entries()
@@ -45,7 +45,7 @@ fun writeJar(jar: JarFile, suffix: String = "instrumented") {
         val entry = enumeration.nextElement() as JarEntry
         if (entry.name == "META-INF/MANIFEST.MF") continue
 
-        if (entry.isClass()) {
+        if (entry.isClass() && entry.name.startsWith(`package`)) {
             val `class` = CM.getByName(entry.name.removeSuffix(".class"))
             val cn = ClassBuilder(`class`).build()
             val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)

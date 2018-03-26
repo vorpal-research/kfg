@@ -22,5 +22,5 @@ fun main(args: Array<String>) {
         }
     }
 
-    writeJar(jar)
+    writeJar(jar, "org/jetbrains/research/kfg", "instrumented")
 }
