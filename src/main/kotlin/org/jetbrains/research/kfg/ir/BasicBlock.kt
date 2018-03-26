@@ -76,8 +76,19 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
 class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(name, method) {
     val throwers = mutableSetOf<List<BasicBlock>>()
 
+    fun getEntries(): Set<BasicBlock> {
+        val entries = mutableSetOf<BasicBlock>()
+        val throwers = getAllThrowers()
+        for (it in throwers) {
+            for (pred in it.predecessors)
+                if (!throwers.contains(pred)) entries.add(pred)
+        }
+        return entries
+    }
+
     fun addThrowers(throwers: List<BasicBlock>) = this.throwers.add(throwers)
     fun getAllThrowers() = throwers.flatten().toSet()
+    fun getAllPredecessors() = getAllThrowers().plus(getEntries())
 
     override fun print(): String {
         val sb = StringBuilder()

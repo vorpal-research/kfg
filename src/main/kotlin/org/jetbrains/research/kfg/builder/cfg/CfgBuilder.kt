@@ -202,7 +202,7 @@ class CfgBuilder(val method: Method)
             bb.addInstruction(inst)
             stack.push(inst)
 
-            val predFrames = bb.getAllThrowers().map { frames.getValue(it) }
+            val predFrames = bb.getAllPredecessors().map { frames.getValue(it) }
             val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
             if (bb in cycleEntries) {
                 createLocalCyclePhis(frames.getValue(bb), predFrames, definedLocals)
@@ -221,23 +221,9 @@ class CfgBuilder(val method: Method)
 
                 val stackSize = stackSizes.max()!!
                 createStackCyclePhis(sf, predFrames, stackSize)
-//                for (indx in 0 until stackSize) {
-//                    val type = stacks.map { it[indx] }.first().type
-//                    val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
-//                    bb.addInstruction(phi)
-//                    stack.push(phi)
-//                    sf.stackPhis.add(phi as PhiInst)
-//                }
 
                 val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
                 createLocalCyclePhis(sf, predFrames, definedLocals)
-//                for (local in definedLocals) {
-//                    val type = predFrames.mapNotNull { it.locals[local] }.first().type
-//                    val phi = IF.getPhi(ST.getNextSlot(), type, mapOf())
-//                    bb.addInstruction(phi)
-//                    locals[local] = phi
-//                    sf.localPhis[local] = phi as PhiInst
-//                }
 
             } else {
                 assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
@@ -904,7 +890,7 @@ class CfgBuilder(val method: Method)
         for ((bb, sf) in frames) {
             if (bb !in phiBlocks && bb !in cycleEntries) continue
 
-            val predFrames = ((bb as? CatchBlock)?.getAllThrowers() ?: bb.predecessors).map { frames.getValue(it) }
+            val predFrames = ((bb as? CatchBlock)?.getAllPredecessors() ?: bb.predecessors).map { frames.getValue(it) }
             val stacks = predFrames.map { it.stack }
             val stackSizes = stacks.map { it.size }.toSet()
             assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
@@ -1005,7 +991,7 @@ class CfgBuilder(val method: Method)
                     is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
                     is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
                     is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
-                    else -> throw UnexpectedOpcodeException("Unknown insn: ${insn.opcode}")
+                    else -> throw UnexpectedOpcodeException("Unknown insn: ${insn.print()}")
                 }
             }
             reserveState(bb)
