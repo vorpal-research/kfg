@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.VF
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
@@ -22,7 +22,7 @@ class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
         addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
     }
 
-    override fun hashCode() = defaultHasCode(name, `class`, type)
+    override fun hashCode() = defaultHashCode(name, `class`, type)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

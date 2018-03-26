@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 import java.rmi.UnexpectedException
@@ -76,7 +76,7 @@ abstract class Value(val name: ValueName, val type: Type) : Usable<Value> {
 }
 
 class Argument(argName: String, val method: Method, type: Type) : Value(argName, type) {
-    override fun hashCode() = defaultHasCode(name, type, method)
+    override fun hashCode() = defaultHashCode(name, type, method)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -87,7 +87,7 @@ class Argument(argName: String, val method: Method, type: Type) : Value(argName,
 }
 
 class ThisRef(type: Type) : Value("this", type) {
-    override fun hashCode() = defaultHasCode(name, type)
+    override fun hashCode() = defaultHashCode(name, type)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

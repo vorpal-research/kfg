@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 
 interface Real : Type {
     override fun isPrimary() = true
@@ -13,7 +13,7 @@ object FloatType : Real {
     override fun toString() = name
     override fun getAsmDesc() = "F"
 
-    override fun hashCode() = defaultHasCode(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -26,7 +26,7 @@ object DoubleType : Real {
     override fun isDWord() = true
     override fun getAsmDesc() = "D"
 
-    override fun hashCode() = defaultHasCode(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass

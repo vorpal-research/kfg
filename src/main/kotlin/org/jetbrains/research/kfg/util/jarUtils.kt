@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
@@ -11,13 +12,13 @@ import java.util.jar.*
 
 fun JarEntry.isClass() = this.name.endsWith(".class")
 
-fun parseJarClasses(jar: JarFile): Map<String, ClassNode> {
+fun parseJarClasses(jar: JarFile, `package`: Package = Package("*")): Map<String, ClassNode> {
     val classes = mutableMapOf<String, ClassNode>()
     val enumeration = jar.entries()
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
 
-        if (entry.isClass()) {
+        if (entry.isClass() && `package`.isParent(entry.name)) {
             val classReader = ClassReader(jar.getInputStream(entry))
             val classNode = ClassNode()
             classReader.accept(classNode, ClassReader.SKIP_DEBUG or ClassReader.SKIP_FRAMES)
@@ -28,7 +29,7 @@ fun parseJarClasses(jar: JarFile): Map<String, ClassNode> {
     return classes
 }
 
-fun writeJar(jar: JarFile, `package`: String = "", suffix: String = "instrumented") {
+fun writeJar(jar: JarFile, `package`: Package = Package("*"), suffix: String = "instrumented") {
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
     val builder = JarBuilder("$jarName-$suffix.jar")
     val enumeration = jar.entries()
@@ -45,7 +46,7 @@ fun writeJar(jar: JarFile, `package`: String = "", suffix: String = "instrumente
         val entry = enumeration.nextElement() as JarEntry
         if (entry.name == "META-INF/MANIFEST.MF") continue
 
-        if (entry.isClass() && entry.name.startsWith(`package`)) {
+        if (entry.isClass() && `package`.isParent(entry.name)) {
             val `class` = CM.getByName(entry.name.removeSuffix(".class"))
             val cn = ClassBuilder(`class`).build()
             val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)

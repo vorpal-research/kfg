@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
@@ -87,7 +87,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     override fun toString() = getDesc()
     override fun iterator() = basicBlocks.iterator()
 
-    override fun hashCode() = defaultHasCode(name, `class`, argTypes, retType)
+    override fun hashCode() = defaultHashCode(name, `class`, argTypes, retType)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
