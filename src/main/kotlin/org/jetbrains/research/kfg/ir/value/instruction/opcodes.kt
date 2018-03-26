@@ -115,3 +115,29 @@ sealed class CallOpcode {
         is Interface -> Opcodes.INVOKEINTERFACE
     }
 }
+
+fun isTerminateInst(opcode: Int) = when (opcode) {
+    Opcodes.TABLESWITCH -> true
+    Opcodes.LOOKUPSWITCH -> true
+    Opcodes.GOTO -> true
+    Opcodes.ATHROW -> true
+    in Opcodes.IRETURN..Opcodes.RETURN -> true
+    else -> false
+}
+
+fun isExceptionThrowing(opcode: Int) = when (opcode) {
+    in Opcodes.NOP..Opcodes.ALOAD -> false
+    in Opcodes.IALOAD..Opcodes.SALOAD -> true
+    in Opcodes.ISTORE..Opcodes.ASTORE -> false
+    in Opcodes.IASTORE..Opcodes.SASTORE -> true
+    in Opcodes.POP..Opcodes.DMUL -> false
+    in Opcodes.IDIV..Opcodes.DREM -> true
+    in Opcodes.INEG..Opcodes.PUTSTATIC -> false
+    in Opcodes.GETFIELD..Opcodes.INVOKEDYNAMIC -> true
+    Opcodes.NEW -> false
+    in Opcodes.NEWARRAY..Opcodes.CHECKCAST -> true
+    Opcodes.INSTANCEOF -> false
+    in Opcodes.MONITORENTER..Opcodes.MULTIANEWARRAY -> true
+    in Opcodes.IFNULL..Opcodes.IFNONNULL -> false
+    else -> throw UnexpectedOpcodeException("Unknown instruction opcode $opcode")
+}

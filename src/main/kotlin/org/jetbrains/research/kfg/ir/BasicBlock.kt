@@ -74,26 +74,15 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
 }
 
 class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(name, method) {
-    val throwers = mutableListOf<BasicBlock>()
+    val throwers = mutableSetOf<List<BasicBlock>>()
 
-    fun from() = throwers.minBy { parent.basicBlocks.indexOf(it) }
-            ?: throw UnexpectedException("Unknown thrower")
-    fun to() = throwers.maxBy { parent.basicBlocks.indexOf(it) }
-            ?: throw UnexpectedException("Unknown thrower")
-    fun addThrower(bb: BasicBlock) = throwers.add(bb)
-
-    fun getEntries(): Set<BasicBlock> {
-        val entries = mutableSetOf<BasicBlock>()
-        for (it in throwers) {
-            for (pred in it.predecessors)
-                if (!throwers.contains(pred)) entries.add(pred)
-        }
-        return entries
-    }
+    fun addThrowers(throwers: List<BasicBlock>) = this.throwers.add(throwers)
+    fun getAllThrowers() = throwers.flatten().toSet()
 
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
+        val throwers = getAllThrowers()
         throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
         throwers.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()
