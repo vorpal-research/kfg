@@ -645,7 +645,7 @@ class CfgBuilder(val method: Method)
             val rhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
             val cond = when (insn.opcode) {
-                in IFEQ..IFLE -> IF.getCmp(name, opc, VF.getZeroConstant(rhv.type), rhv)
+                in IFEQ..IFLE -> IF.getCmp(name, opc, rhv, VF.getZeroConstant(rhv.type))
                 in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, opc, stack.pop(), rhv)
                 in IFNULL..IFNONNULL -> IF.getCmp(name, opc, rhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
