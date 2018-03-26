@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.util.writeJar
 import java.util.jar.JarFile
 
 fun main(args: Array<String>) {
-    require(args.size > 1, { "Specify input jar file" })
+    require(args.isNotEmpty(), { "Specify input jar file" })
     val jar = JarFile(args[0])
     CM.parseJar(jar)
 

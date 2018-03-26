@@ -905,6 +905,7 @@ class CfgBuilder(val method: Method)
                 val incomings = it.getIncomingValues()
                 val instUsers = it.getUsers().mapNotNull { it as? Instruction }
                 if (instUsers.isEmpty()) removablePhis.add(it)
+                else if (instUsers.size == 1 && instUsers.first() == it) removablePhis.add(it)
                 else if (incomings.size == 2 && incomings.contains(it)) {
                     if (incomings.first() == it) it.replaceAllUsesWith(incomings.last())
                     else it.replaceAllUsesWith(incomings.first())
@@ -927,6 +928,7 @@ class CfgBuilder(val method: Method)
                 top.operands.forEach { it.removeUser(top) }
                 if (first is PhiInst) processPhis.add(first)
                 top.parent?.remove(top) ?: continue
+                top.operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
             } else if (incomings.size == 2 && incomings.contains(top)) {
                 if (incomings.first() == top) top.replaceAllUsesWith(incomings.last())
                 else top.replaceAllUsesWith(incomings.first())
@@ -935,9 +937,18 @@ class CfgBuilder(val method: Method)
             } else if (instUsers.isEmpty()) {
                 top.operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
+                top.operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+            } else if (instUsers.size == 1 && instUsers.first() == top) {
+                top.operands.forEach { it.removeUser(top) }
+                top.parent?.remove(top)
+                top.operands
+                        .mapNotNull { it as? PhiInst }
+                        .mapNotNull { if (it == top) null else it }
+                        .forEach { processPhis.add(it) }
             } else if (removablePhis.containsAll(instUsers)) {
                 top.operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
+                top.operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
             }
         }
         removablePhis.forEach {
@@ -966,11 +977,11 @@ class CfgBuilder(val method: Method)
         val order = mutableListOf<BasicBlock>()
 
         val catches = method.catchBlocks.map { it as CatchBlock }
-        catches.forEach { cb -> cb.getAllThrowers().forEach { it.addSuccessor(cb) } }
+        catches.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
         val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
         order.addAll(o.reversed().map { it as BasicBlock })
         cycleEntries.addAll(c.map { it as BasicBlock })
-        catches.forEach { cb -> cb.getAllThrowers().forEach { it.successors.remove(cb) } }
+        catches.forEach { cb -> cb.getAllPredecessors().forEach { it.successors.remove(cb) } }
 
 
         for (bb in order) {
