@@ -1,11 +1,10 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 
 abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction>, GraphNode {
     val predecessors = mutableSetOf<BasicBlock>()
@@ -49,7 +48,7 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
     abstract fun print(): String
 
     override fun iterator() = instructions.iterator()
-    override fun hashCode() = defaultHasCode(name, parent)
+    override fun hashCode() = defaultHashCode(name, parent)
     override fun equals(other: Any?): Boolean {
         if (other == null) return false
         if (other !is BasicBlock) return false

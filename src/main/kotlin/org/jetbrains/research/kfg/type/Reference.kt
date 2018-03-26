@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.InvalidCallException
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.Class
 
 interface Reference : Type {
@@ -15,7 +15,7 @@ class ClassType(val `class`: Class) : Reference {
     override fun toString() = name
     override fun getAsmDesc() = "L${`class`.getFullname()};"
 
-    override fun hashCode() = defaultHasCode(`class`)
+    override fun hashCode() = defaultHashCode(`class`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (this.javaClass != other?.javaClass) return false
@@ -29,7 +29,7 @@ class ArrayType(val component: Type) : Reference {
     override fun toString() = name
     override fun getAsmDesc() = "[${component.getAsmDesc()}"
 
-    override fun hashCode() = defaultHasCode(component)
+    override fun hashCode() = defaultHashCode(component)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (this.javaClass != other?.javaClass) return false
@@ -44,7 +44,7 @@ object NullType : Reference {
     override fun toString() = name
     override fun getAsmDesc() = throw InvalidCallException("Called getAsmDesc on NullType")
 
-    override fun hashCode() = defaultHasCode(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass

@@ -1,15 +1,16 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
-import org.jetbrains.research.kfg.util.defaultHasCode
+import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.type.Type
 import org.objectweb.asm.tree.*
 
 data class MethodDesc(val name: String, val desc: String)
 
 abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
-    val packageName: String = cn.name.substringBeforeLast('/')
+    val `package` = Package(cn.name.substringBeforeLast('/'))
     val fields = mutableMapOf<String, Field>()
     val methods = mutableMapOf<MethodDesc, Method>()
 
@@ -26,7 +27,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         }
     }
 
-    fun getFullname() = "$packageName/$name"
+    fun getFullname() = "$`package`/$name"
     override fun getAsmDesc() = "L${getFullname()};"
 
     fun getSuperClass() = if (cn.superName != null) CM.getByName(cn.superName) else null
@@ -45,12 +46,12 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     abstract fun getMethod(name: String, desc: String): Method
 
     override fun toString() = getFullname()
-    override fun hashCode() = defaultHasCode(name, packageName)
+    override fun hashCode() = defaultHashCode(name, `package`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
         other as Class
-        return this.name == other.name && this.packageName == other.packageName
+        return this.name == other.name && this.`package` == other.`package`
     }
 }
 
