@@ -30,8 +30,9 @@ fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
     if (viewCatchBlocks) {
         method.catchBlocks.forEach {
             it as CatchBlock
-            for (thrower in it.throwers) {
-                graph.addEdge(Edge(thrower.name, it.name).setStyle(Style.Edge.dotted))
+            for (thrower in it.getAllThrowers()) {
+                val edge = Edge(thrower.name, it.name).setStyle(Style.Edge.dotted)
+                graph.addEdge(edge)
             }
         }
     }

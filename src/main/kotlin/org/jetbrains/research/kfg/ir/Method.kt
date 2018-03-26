@@ -15,7 +15,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     val retType: Type
     val exceptions = mutableSetOf<Class>()
     val basicBlocks = mutableListOf<BasicBlock>()
-    val catchBlocks = mutableListOf<BasicBlock>()
+    val catchBlocks = mutableSetOf<BasicBlock>()
     val slottracker = SlotTracker(this)
 
     init {
