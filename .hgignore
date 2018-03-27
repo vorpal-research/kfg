@@ -4,3 +4,4 @@ syntax: glob
 .idea/*
 target/*
 *.log
+instrumented/*
