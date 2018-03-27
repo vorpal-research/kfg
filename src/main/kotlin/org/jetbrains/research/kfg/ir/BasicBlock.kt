@@ -23,6 +23,18 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
         inst.parent = this
     }
 
+    fun insertBefore(before: Instruction, inst: Instruction) {
+        val index = instructions.indexOf(before)
+        instructions.add(index, inst)
+        inst.parent = this
+    }
+
+    fun insertAfter(after: Instruction, inst: Instruction) {
+        val index = instructions.indexOf(after)
+        instructions.add(index + 1, inst)
+        inst.parent = this
+    }
+
     fun remove(inst: Instruction) {
         if (inst.parent == this) {
             instructions.remove(inst)

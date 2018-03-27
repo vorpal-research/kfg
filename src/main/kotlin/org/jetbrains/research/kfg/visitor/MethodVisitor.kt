@@ -10,14 +10,14 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
     override fun visit() {
         super.visit()
         method.run {
-            parameters.forEach { visitParameter(it) }
-            basicBlocks.forEach { visitBasicBlock(it) }
+            parameters.toTypedArray().forEach { visitParameter(it) }
+            basicBlocks.toTypedArray().forEach { visitBasicBlock(it) }
         }
     }
 
     open fun visitParameter(parameter: Parameter) {}
     open fun visitBasicBlock(bb: BasicBlock) {
-        bb.instructions.forEach { visitInstruction(it) }
+        bb.instructions.toTypedArray().forEach { visitInstruction(it) }
     }
 
     open fun visitInstruction(inst: Instruction) {

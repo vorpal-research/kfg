@@ -37,7 +37,7 @@ fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.clas
     cn.accept(cca)
 
     val file = File(filename)
-    file.parentFile.mkdirs()
+    file.parentFile?.mkdirs()
     val fos = FileOutputStream(file)
     fos.write(cw.toByteArray())
     fos.close()

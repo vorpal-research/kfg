@@ -51,6 +51,7 @@ object ClassManager {
     }
 
     fun get(cn: ClassNode) = classes.getOrPut(cn.name, { ConcreteClass(cn) })
+    fun getConcreteClasses() = classes.values.mapNotNull { it as? ConcreteClass }
 
     fun getByName(name: String): Class {
         var cn = classNodes[name]
