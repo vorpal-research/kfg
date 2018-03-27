@@ -12,7 +12,7 @@ import java.util.jar.*
 
 fun JarEntry.isClass() = this.name.endsWith(".class")
 
-fun parseJarClasses(jar: JarFile, `package`: Package = Package("*")): Map<String, ClassNode> {
+fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
     val classes = mutableMapOf<String, ClassNode>()
     val enumeration = jar.entries()
     while (enumeration.hasMoreElements()) {
@@ -29,7 +29,7 @@ fun parseJarClasses(jar: JarFile, `package`: Package = Package("*")): Map<String
     return classes
 }
 
-fun writeJar(jar: JarFile, `package`: Package = Package("*"), suffix: String = "instrumented") {
+fun writeJar(jar: JarFile, `package`: Package, suffix: String) {
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
     val builder = JarBuilder("$jarName-$suffix.jar")
     val enumeration = jar.entries()
@@ -76,7 +76,7 @@ class JarBuilder(val name: String) {
     fun addMainAttribute(key: Any, attrs: Any) { manifest.mainAttributes[key] = attrs }
     fun addManifestEntry(key: String, attrs: Attributes) { manifest.entries[key] = attrs }
 
-    fun init() {
+    private fun init() {
         jar = JarOutputStream(FileOutputStream(name), manifest)
     }
 
