@@ -6,8 +6,8 @@ import org.jetbrains.research.kfg.ir.Node
 open class NodeVisitor(val node: Node) {
     open fun visit() {
         node.run {
-            visibleAnnotations.forEach { visitVisibleAnnotation(it) }
-            invisibleAnnotations.forEach { visitInvisibleAnnotation(it) }
+            visibleAnnotations.toTypedArray().forEach { visitVisibleAnnotation(it) }
+            invisibleAnnotations.toTypedArray().forEach { visitInvisibleAnnotation(it) }
         }
     }
 

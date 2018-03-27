@@ -8,8 +8,8 @@ open class ClassVisitor(val `class`: Class) : NodeVisitor(`class`) {
     override fun visit() {
         super.visit()
         `class`.run {
-            fields.forEach { visitField(it.value) }
-            methods.forEach { visitMethod(it.value) }
+            fields.values.forEach { visitField(it) }
+            methods.values.forEach { visitMethod(it) }
         }
     }
 
