@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.util
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
+import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
@@ -29,6 +30,19 @@ fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
     return classes
 }
 
+fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.class") {
+    val cn = ClassBuilder(`class`).build()
+    val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
+    val cca = CheckClassAdapter(cw)
+    cn.accept(cca)
+
+    val file = File(filename)
+    file.parentFile.mkdirs()
+    val fos = FileOutputStream(file)
+    fos.write(cw.toByteArray())
+    fos.close()
+}
+
 fun writeJar(jar: JarFile, `package`: Package, suffix: String) {
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
     val builder = JarBuilder("$jarName-$suffix.jar")
@@ -48,20 +62,11 @@ fun writeJar(jar: JarFile, `package`: Package, suffix: String) {
 
         if (entry.isClass() && `package`.isParent(entry.name)) {
             val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-            val cn = ClassBuilder(`class`).build()
-            val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
-            val cca = CheckClassAdapter(cw)
-            cn.accept(cca)
+            val path = "${`class`.getFullname()}.class"
+            writeClass(`class`, path)
 
-            val classFileName = "${`class`.getFullname()}.class"
-            val file = File(classFileName)
-            file.parentFile.mkdirs()
-            val fos = FileOutputStream(file)
-            fos.write(cw.toByteArray())
-            fos.close()
-
-            val newEntry = JarEntry(file.path.replace("\\", "/"))
-            builder.add(newEntry, FileInputStream(file))
+            val newEntry = JarEntry(path.replace("\\", "/"))
+            builder.add(newEntry, FileInputStream(path))
         } else {
             builder.add(entry, jar.getInputStream(entry))
         }
