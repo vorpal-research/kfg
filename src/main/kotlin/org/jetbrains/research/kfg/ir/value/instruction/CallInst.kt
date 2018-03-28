@@ -49,7 +49,8 @@ class CallInst : Instruction {
 
     override fun print(): String {
         val sb = StringBuilder()
-        if (!type.isVoid()) sb.append("$name = $opcode ")
+        if (name !is UndefinedName) sb.append("$name = ")
+        sb.append("$opcode ")
         if (isStatic) sb.append(`class`.name)
         else sb.append(operands[0].name)
         sb.append(".${method.name}(")

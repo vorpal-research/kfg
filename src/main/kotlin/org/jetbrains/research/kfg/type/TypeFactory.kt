@@ -18,4 +18,7 @@ object TypeFactory {
     fun getRefType(cname: String): Type = getRefType(CM.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
     fun getNullType(): Type = NullType
+
+    fun getString() = getRefType("java/lang/String")
+    fun getObject() = getRefType("java/lang/Object")
 }
