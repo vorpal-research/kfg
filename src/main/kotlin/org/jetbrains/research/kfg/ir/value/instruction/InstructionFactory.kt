@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Field
@@ -45,6 +46,8 @@ object InstructionFactory {
     fun getInstanceOf(name: ValueName, targetType: Type, obj: Value): Instruction = InstanceOfInst(name, targetType, obj)
 
     fun getNew(name: String, type: Type): Instruction = getNew(StrName(name), type)
+    fun getNew(name: String, `class`: Class): Instruction = getNew(StrName(name), `class`)
+    fun getNew(name: ValueName, `class`: Class): Instruction = getNew(name, TF.getRefType(`class`))
     fun getNew(name: ValueName, type: Type): Instruction = NewInst(name, type)
 
     fun getUnary(name: String, opcode: UnaryOpcode, obj: Value): Instruction = getUnary(StrName(name), opcode, obj)
@@ -63,8 +66,10 @@ object InstructionFactory {
     fun getPhi(name: String, type: Type, incomings: Map<BasicBlock, Value>): Instruction = getPhi(StrName(name), type, incomings)
     fun getPhi(name: ValueName, type: Type, incomings: Map<BasicBlock, Value>): Instruction = PhiInst(name, type, incomings)
 
-    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>): Instruction = CallInst(opcode, method, `class`, args)
-    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>): Instruction = CallInst(opcode, method, `class`, obj, args)
+    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>): Instruction
+            = CallInst(opcode, method, `class`, args)
+    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>): Instruction
+            = CallInst(opcode, method, `class`, obj, args)
 
     fun getCall(opcode: CallOpcode, name: String, method: Method, `class`: Class, args: Array<Value>): Instruction
             = getCall(opcode, StrName(name), method, `class`, args)

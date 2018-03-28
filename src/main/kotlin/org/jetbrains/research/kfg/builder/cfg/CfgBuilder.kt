@@ -12,7 +12,7 @@ import org.objectweb.asm.tree.*
 import java.util.*
 
 class LocalArray(private val locals: MutableMap<Int, Value> = mutableMapOf())
-    : User<Value>, MutableMap<Int, Value> by locals {
+    : ValueUser, MutableMap<Int, Value> by locals {
     override fun clear() {
         values.forEach { it.removeUser(this) }
         locals.clear()
@@ -37,20 +37,20 @@ class LocalArray(private val locals: MutableMap<Int, Value> = mutableMapOf())
         return res
     }
 
-    override fun replaceUsesOf(from: Value, to: Value) {
+    override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
         entries.forEach { (key, value) ->
             if (value == from) {
                 value.removeUser(this)
-                locals[key] = to
+                locals[key] = to.get()
                 to.addUser(this)
             }
         }
     }
 }
 
-class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : User<Value>, MutableList<Value> by stack {
-    override fun replaceUsesOf(from: Value, to: Value) {
-        stack.replaceAll { if (it == from) to else it }
+class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : ValueUser, MutableList<Value> by stack {
+    override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
+        stack.replaceAll { if (it == from) to.get() else it }
     }
 
     override fun add(element: Value): Boolean {
@@ -600,9 +600,9 @@ class CfgBuilder(val method: Method)
         val `class` = CM.getByName(insn.owner)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = mutableListOf<Value>()
-        method.argTypes.forEach { args.add(0, stack.pop()) }
+        method.desc.args.forEach { args.add(0, stack.pop()) }
 
-        val returnType = method.retType
+        val returnType = method.desc.retval
         val opcode = toCallOpcode(insn.opcode)
         val call =
                 if (returnType.isVoid()) {
@@ -732,7 +732,7 @@ class CfgBuilder(val method: Method)
                     blockToNode[entry] = mutableListOf()
                     bb.addPredecessor(entry)
 
-                    method.addIfNotContains(entry)
+                    method.add(entry)
                 } else {
                     bb = nodeToBlock.getOrPut(insn, getNextBlock)
                     insnList = blockToNode.getOrPut(bb, { mutableListOf() })
@@ -781,7 +781,7 @@ class CfgBuilder(val method: Method)
                 }
             }
             insnList.add(insn as AbstractInsnNode)
-            method.addIfNotContains(bb)
+            method.add(bb)
         }
         for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
             val handle = nodeToBlock.getValue(insn.handler) as CatchBlock
@@ -903,7 +903,7 @@ class CfgBuilder(val method: Method)
         for (it in method.flatten()) {
             if (it is PhiInst) {
                 val incomings = it.getIncomingValues()
-                val instUsers = it.getUsers().mapNotNull { it as? Instruction }
+                val instUsers = it.users.mapNotNull { it as? Instruction }
                 if (instUsers.isEmpty()) removablePhis.add(it)
                 else if (instUsers.size == 1 && instUsers.first() == it) removablePhis.add(it)
                 else if (incomings.size == 2 && incomings.contains(it)) {
@@ -921,7 +921,7 @@ class CfgBuilder(val method: Method)
             processPhis.removeAt(0)
             val incomings = top.getIncomingValues()
             val incomingsSet = incomings.toSet()
-            val instUsers = top.getUsers().mapNotNull { it as? Instruction }
+            val instUsers = top.users.mapNotNull { it as? Instruction }
             if (incomingsSet.size == 1) {
                 val first = incomingsSet.first()
                 top.replaceAllUsesWith(first)
@@ -952,7 +952,7 @@ class CfgBuilder(val method: Method)
             }
         }
         removablePhis.forEach {
-            val instUsers = it.getUsers().mapNotNull { it as? Instruction }
+            val instUsers = it.users.mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
             assert(methodInstUsers.isEmpty(), { "Instruction ${it.print()} still have usages" })
             if (it.parent != null) it.parent!!.remove(it)
@@ -962,7 +962,7 @@ class CfgBuilder(val method: Method)
     fun build(): Method {
         var localIndx = 0
         if (!method.isStatic()) locals[localIndx++] = VF.getThis(TF.getRefType(method.`class`))
-        for ((indx, type) in method.argTypes.withIndex()) {
+        for ((indx, type) in method.desc.args.withIndex()) {
             locals[localIndx] = VF.getArgument("arg$$indx", method, type)
             if (type.isDWord()) localIndx += 2
             else ++localIndx
@@ -1005,16 +1005,17 @@ class CfgBuilder(val method: Method)
                     else -> throw UnexpectedOpcodeException("Unknown insn: ${insn.print()}")
                 }
             }
-            reserveState(bb)
-
             val last = bb.instructions.lastOrNull()
             if (last == null || !last.isTerminate()) {
                 assert(bb.successors.size == 1)
                 bb.addInstruction(IF.getJump(bb.successors.first()))
             }
+
+            reserveState(bb)
         }
 
         buildPhiInstructions()
+        RetvalBuilder(method).visit()
 
         method.slottracker.rerun()
         return method

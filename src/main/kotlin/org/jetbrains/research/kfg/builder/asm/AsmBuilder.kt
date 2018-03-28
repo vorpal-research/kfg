@@ -34,13 +34,13 @@ fun typeToInt(type: Type) = when (type) {
 }
 
 class AsmBuilder(method: Method) : MethodVisitor(method) {
-    private val bbInsns = mutableMapOf<BasicBlock, InsnList>()
-    private val terminateInsns = mutableMapOf<BasicBlock, InsnList>()
+    private val bbInsns = mutableMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
+    private val terminateInsns = mutableMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.map { it to LabelNode() }.toMap()
     private val stack = mutableListOf<Value>()
     private val locals = mutableMapOf<Value, Int>()
 
-    var currentInsnList = InsnList()
+    var currentInsnList = mutableListOf<AbstractInsnNode>()
     var maxLocals = 0
     var maxStack = 0
 
@@ -49,14 +49,14 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             val `this` = VF.getThis(TF.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
-        for ((indx, type) in method.argTypes.withIndex()) {
+        for ((indx, type) in method.desc.args.withIndex()) {
             val arg = VF.getArgument("arg$$indx", method, type)
             locals[arg] = getLocalFor(arg)
         }
     }
 
-    private fun getInsnList(bb: BasicBlock) = bbInsns.getOrPut(bb, { InsnList() })
-    private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, { InsnList() })
+    private fun getInsnList(bb: BasicBlock) = bbInsns.getOrPut(bb, { mutableListOf() })
+    private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, { mutableListOf() })
     private fun stackPop() = stack.removeAt(stack.size - 1)
     private fun stackPush(value: Value): Boolean {
         val res = stack.add(value)
@@ -166,7 +166,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitJumpInst(inst: JumpInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        val successor = getLabel(inst.successor)
+        val successor = getLabel(inst.getSuccessor())
         val insn = JumpInsnNode(GOTO, successor)
         currentInsnList.add(insn)
     }
@@ -209,11 +209,11 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             }
         }
         addOperandsToStack(cond.operands)
-        val insn = JumpInsnNode(opcode, getLabel(inst.trueSuccessor))
+        val insn = JumpInsnNode(opcode, getLabel(inst.getTrueSuccessor()))
         currentInsnList.add(insn)
         inst.operands.forEach { stackPop() }
 
-        val jump = JumpInsnNode(GOTO, getLabel(inst.falseSuccessor))
+        val jump = JumpInsnNode(GOTO, getLabel(inst.getFalseSuccessor()))
         currentInsnList.add(jump)
     }
 
@@ -319,13 +319,14 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitSwitchInst(inst: SwitchInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(inst.operands)
-        val default = getLabel(inst.default)
-        val keys = inst.branches.keys.map { (it as IntConstant).value }.toIntArray()
-        val labels = inst.branches.values.map { getLabel(it) }.toTypedArray()
+        addOperandsToStack(arrayOf(inst.getKey()))
+        val default = getLabel(inst.getDefault())
+        val branches = inst.getBranches()
+        val keys = branches.keys.map { (it as IntConstant).value }.toIntArray()
+        val labels = branches.values.map { getLabel(it) }.toTypedArray()
         val insn = LookupSwitchInsnNode(default, keys, labels)
         currentInsnList.add(insn)
-        inst.operands.forEach { stackPop() }
+        stackPop()
     }
 
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
@@ -359,8 +360,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         addOperandsToStack(arrayOf(inst.getIndex()))
         val min = (inst.getMin() as IntConstant).value
         val max = (inst.getMax() as IntConstant).value
-        val default = getLabel(inst.default)
-        val labels = inst.branches.map { getLabel(it) }.toTypedArray()
+        val default = getLabel(inst.getDefault())
+        val labels = inst.getBranches().map { getLabel(it) }.toTypedArray()
         val insn = TableSwitchInsnNode(min, max, default, *labels)
         currentInsnList.add(insn)
         stackPop()
@@ -379,32 +380,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val isBranch = !((inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
                 || (inst.opcode is CmpOpcode.Eq && inst.getLhv().type is LongType))
         if (isBranch) {
-//            stackSave()
-//            currentInsnList = getTerminateInsnList(inst.parent!!)
-//            val opcode = if (inst.getLhv().type is Reference) {
-//                when (inst.opcode) {
-//                    is CmpOpcode.Eq -> IF_ACMPEQ
-//                    is CmpOpcode.Neq -> IF_ACMPNE
-//                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode}")
-//                }
-//            } else {
-//                when (inst.opcode) {
-//                    is CmpOpcode.Eq -> IF_ICMPEQ
-//                    is CmpOpcode.Neq -> IF_ICMPNE
-//                    is CmpOpcode.Lt -> IF_ICMPLT
-//                    is CmpOpcode.Gt -> IF_ICMPGT
-//                    is CmpOpcode.Le -> IF_ICMPLE
-//                    is CmpOpcode.Ge -> IF_ICMPGE
-//                    else -> throw UnexpectedOpcodeException("Branch cmp opcode ${inst.opcode}")
-//                }
-//            }
-//            addOperandsToStack(inst.operands)
-            assert(inst.getUsers().size == 1, { "Unsupported usage of cmp inst" })
-            assert(inst.getUsers().first() is BranchInst, { "Unsupported usage of cmp inst" })
-//            val branch = inst.getUsers().first() as BranchInst
-//            val insn = JumpInsnNode(opcode, getLabel(branch.trueSuccessor))
-//            currentInsnList.add(insn)
-//            inst.operands.forEach { stackPop() }
+            // this kind of cmp insts are handled in visitBranch
+            assert(inst.users.size == 1, { "Unsupported usage of cmp inst" })
+            assert(inst.users.first() is BranchInst, { "Unsupported usage of cmp inst" })
         } else {
             val opcode = when (inst.opcode) {
                 is CmpOpcode.Eq -> LCMP
@@ -474,8 +452,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val insnList = InsnList()
         for (bb in method.basicBlocks) {
             insnList.add(getLabel(bb))
-            insnList.add(getInsnList(bb))
-            insnList.add(getTerminateInsnList(bb))
+            getInsnList(bb).forEach { insnList.add(it) }//insnList.add(getInsnList(bb))
+            getTerminateInsnList(bb).forEach { insnList.add(it) }//insnList.add(getTerminateInsnList(bb))
         }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()
