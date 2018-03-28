@@ -1,12 +1,17 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.TF
+import org.jetbrains.research.kfg.ir.value.BlockUser
+import org.jetbrains.research.kfg.ir.value.UsableBlock
+import org.jetbrains.research.kfg.ir.value.User
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
 
-abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instruction>, GraphNode {
+abstract class BasicBlock(val name: String, val parent: Method): BlockUser, UsableBlock, Iterable<Instruction>, GraphNode {
+    override val users = mutableSetOf<User>()
+
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
@@ -18,6 +23,22 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
     fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
     fun addHandler(handle: CatchBlock) = handlers.add(handle)
 
+    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+        if (predecessors.remove(from)) {
+            from.removeUser(this)
+            from.get().successors.remove(this)
+            predecessors.add(to.get())
+            to.addUser(this)
+        }
+        if (successors.remove(from)) {
+            from.removeUser(this)
+            from.get().successors.remove(this)
+            successors.add(to.get())
+            to.addUser(this)
+        }
+    }
+    override fun get() = this
+
     fun addInstruction(inst: Instruction) {
         instructions.add(inst)
         inst.parent = this
@@ -28,17 +49,17 @@ abstract class BasicBlock(val name: String, val parent: Method): Iterable<Instru
     }
 
     fun insertBefore(before: Instruction, vararg insts: Instruction) {
-        var currentIndex = instructions.indexOf(before)
+        var index = instructions.indexOf(before)
         for (inst in insts) {
-            instructions.add(currentIndex++, inst)
+            instructions.add(index++, inst)
             inst.parent = this
         }
     }
 
     fun insertAfter(after: Instruction, vararg insts: Instruction) {
-        val index = instructions.indexOf(after) + 1
+        var index = instructions.indexOf(after) + 1
         for (inst in insts) {
-            instructions.add(index, inst)
+            instructions.add(index++, inst)
             inst.parent = this
         }
     }

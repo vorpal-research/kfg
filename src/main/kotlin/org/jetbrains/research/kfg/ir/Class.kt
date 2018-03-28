@@ -7,12 +7,14 @@ import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.type.Type
 import org.objectweb.asm.tree.*
 
-data class MethodDesc(val name: String, val desc: String)
-
 abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
+    data class MethodKey(val name: String, val desc: MethodDesc) {
+        constructor(name: String, desc: String) : this(name, MethodDesc(desc))
+    }
+
     val `package` = Package(cn.name.substringBeforeLast('/'))
     val fields = mutableMapOf<String, Field>()
-    val methods = mutableMapOf<MethodDesc, Method>()
+    val methods = mutableMapOf<MethodKey, Method>()
 
     fun init() {
         addVisibleAnnotations(cn.visibleAnnotations as List<AnnotationNode>?)
@@ -23,7 +25,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         }
         cn.methods.forEach {
             it as MethodNode
-            methods[MethodDesc(it.name, it.desc)] = Method(it, this)
+            methods[MethodKey(it.name, it.desc)] = Method(it, this)
         }
     }
 
@@ -40,10 +42,12 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     abstract fun isAncestor(other: Class): Boolean
 
     abstract fun getFieldConcrete(name: String, type: Type): Field?
-    abstract fun getMethodConcrete(name: String, desc: String): Method?
+    abstract fun getMethodConcrete(name: String, desc: MethodDesc): Method?
 
     abstract fun getField(name: String, type: Type): Field
-    abstract fun getMethod(name: String, desc: String): Method
+
+    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc(desc))
+    abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = getFullname()
     override fun hashCode() = defaultHashCode(name, `package`)
@@ -58,7 +62,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 class ConcreteClass(cn: ClassNode) : Class(cn) {
     override fun getFieldConcrete(name: String, type: Type): Field? = fields.getOrElse(name, { getSuperClass()?.getFieldConcrete(name, type) })
 
-    override fun getMethodConcrete(name: String, desc: String): Method? = methods.getOrElse(MethodDesc(name, desc), {
+    override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = methods.getOrElse(MethodKey(name, desc), {
         val uppers = listOf(getSuperClass()).plus(getInterfaces()).filterNotNull()
         val res: Method? = uppers
                 .mapNotNull { if (it is ConcreteClass) it else null }
@@ -74,8 +78,8 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
         getSuperClass()?.getFieldConcrete(name, type) ?: throw UnknownInstance("No field \"$name\" in class $this")
     })
 
-    override fun getMethod(name: String, desc: String): Method {
-        val methodDesc = MethodDesc(name, desc)
+    override fun getMethod(name: String, desc: MethodDesc): Method {
+        val methodDesc = MethodKey(name, desc)
         return methods.getOrElse(methodDesc, {
             val `super` = getSuperClass()
             getMethodConcrete(name, desc)
@@ -98,19 +102,19 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
 
 class OuterClass(cn: ClassNode) : Class(cn) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
-    override fun getMethodConcrete(name: String, desc: String) = getMethod(name, desc)
+    override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
     override fun getField(name: String, type: Type): Field = fields.getOrPut(name, {
         val fn = FieldNode(0, name, type.getAsmDesc(), null, null)
         Field(fn, this)
     })
 
-    override fun getMethod(name: String, desc: String): Method {
-        val methodDesc = MethodDesc(name, desc)
+    override fun getMethod(name: String, desc: MethodDesc): Method {
+        val methodDesc = MethodKey(name, desc)
         return methods.getOrPut(methodDesc, {
             val mn = MethodNode()
             mn.name = name
-            mn.desc = desc
+            mn.desc = desc.getAsmDesc()
             Method(mn, this)
         })
     }
