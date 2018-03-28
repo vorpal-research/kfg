@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg.ir.value
 
+import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
-import java.rmi.UnexpectedException
 
 sealed class ValueName
 class StrName(val value: String) : ValueName() {

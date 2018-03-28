@@ -86,7 +86,7 @@ class DoubleConstant(val value: Double) : Constant(value.toString(), TF.getDoubl
     }
 }
 
-class StringConstant(val value: String) : Constant("\"$value\"", TF.getRefType("java/lang/String")) {
+class StringConstant(val value: String) : Constant("\"$value\"", TF.getString()) {
     override fun hashCode() = value.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
