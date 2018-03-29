@@ -79,10 +79,10 @@ object InstructionFactory {
     fun getPhi(name: Name, type: Type, incomings: Map<BasicBlock, Value>): Instruction = PhiInst(name, type, incomings)
     fun getPhi(type: Type, incomings: Map<BasicBlock, Value>): Instruction = PhiInst(Slot(), type, incomings)
 
-    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>): Instruction
-            = CallInst(opcode, method, `class`, args)
-    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>): Instruction
-            = CallInst(opcode, method, `class`, obj, args)
+    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>, isNamed: Boolean): Instruction
+            = if (isNamed) CallInst(opcode, Slot(), method, `class`, args) else CallInst(opcode, method, `class`, args)
+    fun getCall(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>, isNamed: Boolean): Instruction
+            = if (isNamed) CallInst(opcode, Slot(), method, `class`, obj, args) else CallInst(opcode, method, `class`, obj, args)
 
     fun getCall(opcode: CallOpcode, name: String, method: Method, `class`: Class, args: Array<Value>): Instruction
             = getCall(opcode, StringName(name), method, `class`, args)

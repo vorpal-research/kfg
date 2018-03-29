@@ -82,6 +82,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
             basicBlocks.add(bb)
+            slottracker.addBlock(bb)
         }
     }
 
