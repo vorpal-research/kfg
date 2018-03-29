@@ -13,10 +13,12 @@ import java.util.jar.*
 
 internal fun getCurrentDirectory() = File(".").canonicalPath
 
-internal fun setCurrentDirectory(path: String){
-    val file = File(path)
-    if (!file.exists()) file.mkdirs()
-    System.setProperty("user.dir", path)
+internal fun setCurrentDirectory(path: String) = setCurrentDirectory(File(path))
+
+internal fun setCurrentDirectory(path: File) {
+    if (!path.exists()) path.mkdirs()
+    assert(path.isDirectory)
+    System.setProperty("user.dir", path.canonicalPath)
 }
 
 internal fun JarEntry.isClass() = this.name.endsWith(".class")
@@ -51,9 +53,9 @@ fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.clas
     fos.close()
 }
 
-fun writeJar(jar: JarFile, `package`: Package, target: String) {
+fun writeJar(jar: JarFile, `package`: Package, target: File) {
     val workingDir = getCurrentDirectory()
-    setCurrentDirectory("$target/")
+    setCurrentDirectory(target)
     val currentDir = getCurrentDirectory()
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
     val builder = JarBuilder("$currentDir/$jarName.jar")
@@ -91,8 +93,13 @@ class JarBuilder(val name: String) {
     private val manifest = Manifest()
     private var jar: JarOutputStream? = null
 
-    fun addMainAttribute(key: Any, attrs: Any) { manifest.mainAttributes[key] = attrs }
-    fun addManifestEntry(key: String, attrs: Attributes) { manifest.entries[key] = attrs }
+    fun addMainAttribute(key: Any, attrs: Any) {
+        manifest.mainAttributes[key] = attrs
+    }
+
+    fun addManifestEntry(key: String, attrs: Attributes) {
+        manifest.entries[key] = attrs
+    }
 
     private fun init() {
         jar = JarOutputStream(FileOutputStream(name), manifest)
