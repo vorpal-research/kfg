@@ -42,6 +42,7 @@ abstract class BasicBlock(val name: String, val parent: Method): BlockUser, Usab
     fun addInstruction(inst: Instruction) {
         instructions.add(inst)
         inst.parent = this
+        parent.slottracker.addValue(inst)
     }
 
     fun addInstructions(vararg insts: Instruction) {
@@ -53,6 +54,7 @@ abstract class BasicBlock(val name: String, val parent: Method): BlockUser, Usab
         for (inst in insts) {
             instructions.add(index++, inst)
             inst.parent = this
+            parent.slottracker.addValue(inst)
         }
     }
 
@@ -61,6 +63,7 @@ abstract class BasicBlock(val name: String, val parent: Method): BlockUser, Usab
         for (inst in insts) {
             instructions.add(index++, inst)
             inst.parent = this
+            parent.slottracker.addValue(inst)
         }
     }
 

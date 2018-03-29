@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.ValueName
+import org.jetbrains.research.kfg.ir.value.Name
 
 class CallInst : Instruction {
     val opcode: CallOpcode
@@ -28,7 +28,7 @@ class CallInst : Instruction {
         this.isStatic = false
     }
 
-    constructor(opcode: CallOpcode, name: ValueName, method: Method, `class`: Class, args: Array<Value>)
+    constructor(opcode: CallOpcode, name: Name, method: Method, `class`: Class, args: Array<Value>)
             : super(name, method.desc.retval, args) {
         this.opcode = opcode
         this.method = method
@@ -36,7 +36,7 @@ class CallInst : Instruction {
         this.isStatic = true
     }
 
-    constructor(opcode: CallOpcode, name: ValueName, method: Method, `class`: Class, obj: Value, args: Array<Value>)
+    constructor(opcode: CallOpcode, name: Name, method: Method, `class`: Class, obj: Value, args: Array<Value>)
             : super(name, method.desc.retval, arrayOf(obj).plus(args)) {
         this.opcode = opcode
         this.method = method

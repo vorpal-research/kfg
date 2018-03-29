@@ -1,6 +1,5 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.util.viewCfg
 import org.jetbrains.research.kfg.util.writeJar
 import java.util.jar.JarFile
 

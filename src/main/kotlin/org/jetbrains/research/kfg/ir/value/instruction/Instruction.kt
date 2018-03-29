@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 
-abstract class Instruction(name: ValueName, type: Type, val operands: Array<Value>)
+abstract class Instruction(name: Name, type: Type, val operands: Array<Value>)
     : Value(name, type), ValueUser, Iterable<Value> {
     var parent : BasicBlock? = null
 
@@ -27,7 +27,7 @@ abstract class Instruction(name: ValueName, type: Type, val operands: Array<Valu
     }
 }
 
-abstract class TerminateInst(name: ValueName, type: Type, operands: Array<Value>, val successors: Array<BasicBlock>):
+abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, val successors: Array<BasicBlock>):
         Instruction(name, type, operands), BlockUser {
 
     init {

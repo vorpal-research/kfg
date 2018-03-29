@@ -2,18 +2,18 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.ValueName
+import org.jetbrains.research.kfg.ir.value.Name
 
 class FieldLoadInst : Instruction {
     val field: Field
     val isStatic: Boolean
 
-    constructor(name: ValueName, field: Field) : super(name, field.type, arrayOf()) {
+    constructor(name: Name, field: Field) : super(name, field.type, arrayOf()) {
         this.field = field
         isStatic = true
     }
 
-    constructor(name: ValueName, owner: Value, field: Field) : super(name, field.type, arrayOf(owner)) {
+    constructor(name: Name, owner: Value, field: Field) : super(name, field.type, arrayOf(owner)) {
         this.field = field
         isStatic = false
     }
