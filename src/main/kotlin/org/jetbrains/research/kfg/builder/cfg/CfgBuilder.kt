@@ -601,30 +601,18 @@ class CfgBuilder(val method: Method)
         val args = mutableListOf<Value>()
         method.desc.args.forEach { args.add(0, stack.pop()) }
 
-        val returnType = method.desc.retval
+        val isNamed = !method.desc.retval.isVoid()
         val opcode = toCallOpcode(insn.opcode)
-        val call =
-                if (returnType.isVoid()) {
-                    when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray())
-                        in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
-                            val obj = stack.pop()
-                            IF.getCall(opcode, method, `class`, obj, args.toTypedArray())
-                        }
-                        else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
-                    }
-                } else {
-                    when (insn.opcode) {
-                        INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray())
-                        in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
-                            val obj = stack.pop()
-                            IF.getCall(opcode, method, `class`, obj, args.toTypedArray())
-                        }
-                        else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
-                    }
-                }
+        val call = when (insn.opcode) {
+            INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
+            in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
+                val obj = stack.pop()
+                IF.getCall(opcode, method, `class`, obj, args.toTypedArray(), isNamed)
+            }
+            else -> throw UnexpectedOpcodeException("Method insn opcode ${insn.opcode}")
+        }
         bb.addInstruction(call)
-        if (!returnType.isVoid()) {
+        if (isNamed) {
             stack.push(call)
         }
     }
@@ -713,13 +701,11 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildCFG() {
-        var bbc = 0
         for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
             val type = if (insn.type != null) TF.getRefType(insn.type) else CatchBlock.defaultException
-            nodeToBlock[insn.handler] = CatchBlock("%bb${bbc++}", method, type)
+            nodeToBlock[insn.handler] = CatchBlock("catch", method, type)
         }
-        val getNextBlock = { BodyBlock("%bb${bbc++}", method) }
-        var bb: BasicBlock = getNextBlock()
+        var bb: BasicBlock = BodyBlock("bb", method)
         var insnList = blockToNode.getOrPut(bb, { mutableListOf() })
         for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
@@ -733,7 +719,7 @@ class CfgBuilder(val method: Method)
 
                     method.add(entry)
                 } else {
-                    bb = nodeToBlock.getOrPut(insn, getNextBlock)
+                    bb = nodeToBlock.getOrPut(insn, { BodyBlock("label", method) })
                     insnList = blockToNode.getOrPut(bb, { mutableListOf() })
                     if (!isTerminateInst(insn.previous)) {
                         val prev = nodeToBlock[insn.previous]
@@ -746,33 +732,34 @@ class CfgBuilder(val method: Method)
                 insnList = blockToNode.getOrPut(bb, { mutableListOf() })
                 if (insn is JumpInsnNode) {
                     if (insn.opcode != GOTO) {
-                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, getNextBlock)
+                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BodyBlock("if.else", method) })
                         bb.addSuccessor(falseSuccessor)
                         falseSuccessor.addPredecessor(bb)
                     }
-                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, getNextBlock)
+                    val trueSuccName = if (insn.opcode == GOTO) "goto" else "if.then"
+                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock(trueSuccName, method) })
                     bb.addSuccessor(trueSuccessor)
                     trueSuccessor.addPredecessor(bb)
                 } else if (insn is TableSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, getNextBlock)
+                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("tableswitch.default", method) })
                     bb.addSuccessors(default)
                     default.addPredecessor(bb)
                     for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, getNextBlock)
+                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("tableswitch", method) })
                         bb.addSuccessors(lblBB)
                         lblBB.addPredecessor(bb)
                     }
                 } else if (insn is LookupSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, getNextBlock)
+                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("switch.default", method) })
                     bb.addSuccessors(default)
                     default.addPredecessor(bb)
                     for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, getNextBlock)
+                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("switch", method) })
                         bb.addSuccessors(lblBB)
                         lblBB.addPredecessor(bb)
                     }
                 } else if (throwsException(insn) && insn.next != null) {
-                    val next = nodeToBlock.getOrPut(insn.next, getNextBlock)
+                    val next = nodeToBlock.getOrPut(insn.next, { BodyBlock("bb", method) })
                     if (!isTerminateInst(insn)) {
                         bb.addSuccessor(next)
                         next.addPredecessor(bb)

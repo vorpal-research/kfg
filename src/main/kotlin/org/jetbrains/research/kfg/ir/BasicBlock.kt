@@ -1,15 +1,13 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kfg.ir.value.UsableBlock
-import org.jetbrains.research.kfg.ir.value.User
+import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
 
-abstract class BasicBlock(val name: String, val parent: Method): BlockUser, UsableBlock, Iterable<Instruction>, GraphNode {
+abstract class BasicBlock(val name: BlockName, val parent: Method): BlockUser, UsableBlock, Iterable<Instruction>, GraphNode {
     override val users = mutableSetOf<User>()
 
     val predecessors = mutableSetOf<BasicBlock>()
@@ -103,7 +101,7 @@ abstract class BasicBlock(val name: String, val parent: Method): BlockUser, Usab
     override fun getPredSet() = predecessors.map { it as GraphNode }.toSet()
 }
 
-class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
+class BodyBlock(name: String, method: Method) : BasicBlock(BlockName(name), method) {
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
@@ -116,7 +114,7 @@ class BodyBlock(name: String, method: Method) : BasicBlock(name, method) {
     }
 }
 
-class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(name, method) {
+class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(BlockName(name), method) {
     val throwers = mutableSetOf<List<BasicBlock>>()
 
     fun getEntries(): Set<BasicBlock> {

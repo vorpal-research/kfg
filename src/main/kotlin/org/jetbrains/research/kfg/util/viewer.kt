@@ -18,20 +18,20 @@ fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
         val label = StringBuilder()
         label.append("${it.name}:\\l")
         it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
-        val node = Node(it.name).setShape(Shape.box).setLabel(label.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
+        val node = Node(it.name.toString()).setShape(Shape.box).setLabel(label.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
         graph.addNode(node)
     }
-    if (!method.isAbstract()) graph.addEdge(Edge(method.name, method.getEntry().name))
+    if (!method.isAbstract()) graph.addEdge(Edge(method.name, method.getEntry().name.toString()))
     method.basicBlocks.forEach {
         for (succ in it.successors) {
-            graph.addEdge(Edge(it.name, succ.name))
+            graph.addEdge(Edge(it.name.toString(), succ.name.toString()))
         }
     }
     if (viewCatchBlocks) {
         method.catchBlocks.forEach {
             it as CatchBlock
             for (thrower in it.getAllThrowers()) {
-                val edge = Edge(thrower.name, it.name).setStyle(Style.Edge.dotted)
+                val edge = Edge(thrower.name.toString(), it.name.toString()).setStyle(Style.Edge.dotted)
                 graph.addEdge(edge)
             }
         }
