@@ -11,7 +11,15 @@ import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.util.jar.*
 
-fun JarEntry.isClass() = this.name.endsWith(".class")
+internal fun getCurrentDirectory() = File(".").canonicalPath
+
+internal fun setCurrentDirectory(path: String){
+    val file = File(path)
+    if (!file.exists()) file.mkdirs()
+    System.setProperty("user.dir", path)
+}
+
+internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
 fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
     val classes = mutableMapOf<String, ClassNode>()
@@ -43,9 +51,12 @@ fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.clas
     fos.close()
 }
 
-fun writeJar(jar: JarFile, `package`: Package, suffix: String) {
+fun writeJar(jar: JarFile, `package`: Package, target: String) {
+    val workingDir = getCurrentDirectory()
+    setCurrentDirectory("$target/")
+    val currentDir = getCurrentDirectory()
     val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
-    val builder = JarBuilder("$jarName-$suffix.jar")
+    val builder = JarBuilder("$currentDir/$jarName.jar")
     val enumeration = jar.entries()
 
     for (it in jar.manifest.mainAttributes) {
@@ -62,16 +73,18 @@ fun writeJar(jar: JarFile, `package`: Package, suffix: String) {
 
         if (entry.isClass() && `package`.isParent(entry.name)) {
             val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-            val path = "${`class`.getFullname()}.class"
+            val localPath = "${`class`.getFullname()}.class"
+            val path = "$currentDir/$localPath"
             writeClass(`class`, path)
 
-            val newEntry = JarEntry(path.replace("\\", "/"))
+            val newEntry = JarEntry(localPath.replace("\\", "/"))
             builder.add(newEntry, FileInputStream(path))
         } else {
             builder.add(entry, jar.getInputStream(entry))
         }
     }
     builder.close()
+    setCurrentDirectory(workingDir)
 }
 
 class JarBuilder(val name: String) {
