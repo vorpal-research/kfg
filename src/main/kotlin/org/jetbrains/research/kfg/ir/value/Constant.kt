@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 
-abstract class Constant(name: String, type: Type) : Value(name, type)
+abstract class Constant(name: String, type: Type) : Value(ConstantName(name), type)
 
 class BoolConstant(val value: Boolean) : Constant(value.toString(), TF.getBoolType()) {
     override fun hashCode() = value.hashCode()

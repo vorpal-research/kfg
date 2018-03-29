@@ -3,9 +3,9 @@ package org.jetbrains.research.kfg.ir.value.instruction
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.ValueName
+import org.jetbrains.research.kfg.ir.value.Name
 
-class PhiInst(name: ValueName, type: Type, incomings: Map<BasicBlock, Value>)
+class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     : Instruction(name, type, incomings.values.toTypedArray()) {
     private val predecessors = incomings.keys.toTypedArray()
 

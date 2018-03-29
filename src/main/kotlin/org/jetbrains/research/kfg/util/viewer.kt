@@ -21,7 +21,7 @@ fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
         val node = Node(it.name).setShape(Shape.box).setLabel(label.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
         graph.addNode(node)
     }
-    graph.addEdge(Edge(method.name, method.getEntry().name))
+    if (!method.isAbstract()) graph.addEdge(Edge(method.name, method.getEntry().name))
     method.basicBlocks.forEach {
         for (succ in it.successors) {
             graph.addEdge(Edge(it.name, succ.name))
