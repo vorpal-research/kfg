@@ -30,7 +30,7 @@ class KfgConfig(args: Array<String>) {
         packageOpt.isRequired = false
         options.addOption(packageOpt)
 
-        val targetOpt = Option("t", "target", true, "resulting jar suffix")
+        val targetOpt = Option("t", "target", true, "result target directory")
         targetOpt.isRequired = false
         options.addOption(targetOpt)
     }
