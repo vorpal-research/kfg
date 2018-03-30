@@ -40,7 +40,7 @@ fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
     return classes
 }
 
-fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.class") {
+fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.class"): File {
     val cn = ClassBuilder(`class`).build()
     val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
     val cca = CheckClassAdapter(cw)
@@ -51,9 +51,10 @@ fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.clas
     val fos = FileOutputStream(file)
     fos.write(cw.toByteArray())
     fos.close()
+    return file
 }
 
-fun writeJar(jar: JarFile, `package`: Package, target: File) {
+fun writeJar(jar: JarFile, `package`: Package, target: File): JarFile {
     val workingDir = getCurrentDirectory()
     setCurrentDirectory(target)
     val currentDir = getCurrentDirectory()
@@ -87,6 +88,7 @@ fun writeJar(jar: JarFile, `package`: Package, target: File) {
     }
     builder.close()
     setCurrentDirectory(workingDir)
+    return JarFile(builder.name)
 }
 
 class JarBuilder(val name: String) {
