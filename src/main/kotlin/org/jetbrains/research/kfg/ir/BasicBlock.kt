@@ -7,9 +7,7 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
 
-abstract class BasicBlock(val name: BlockName, val parent: Method): BlockUser, UsableBlock, Iterable<Instruction>, GraphNode {
-    override val users = mutableSetOf<User>()
-
+abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Instruction>, GraphNode {
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
@@ -20,22 +18,6 @@ abstract class BasicBlock(val name: BlockName, val parent: Method): BlockUser, U
     fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
     fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
     fun addHandler(handle: CatchBlock) = handlers.add(handle)
-
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        if (predecessors.remove(from)) {
-            from.removeUser(this)
-            from.get().successors.remove(this)
-            predecessors.add(to.get())
-            to.addUser(this)
-        }
-        if (successors.remove(from)) {
-            from.removeUser(this)
-            from.get().successors.remove(this)
-            successors.add(to.get())
-            to.addUser(this)
-        }
-    }
-    override fun get() = this
 
     fun addInstruction(inst: Instruction) {
         instructions.add(inst)

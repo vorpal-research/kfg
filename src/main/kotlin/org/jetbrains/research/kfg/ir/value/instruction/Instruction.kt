@@ -28,21 +28,6 @@ abstract class Instruction(name: Name, type: Type, val operands: Array<Value>)
 }
 
 abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, val successors: Array<BasicBlock>):
-        Instruction(name, type, operands), BlockUser {
-
-    init {
-        successors.forEach { it.addUser(this) }
-    }
-
+        Instruction(name, type, operands) {
     override fun isTerminate() = true
-
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        (0 until successors.size)
-                .filter { successors[it] == from }
-                .forEach {
-                    successors[it].removeUser(this)
-                    successors[it] = to.get()
-                    to.addUser(this)
-                }
-    }
 }

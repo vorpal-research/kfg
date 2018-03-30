@@ -1,10 +1,8 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
-import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
-import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.tree.AnnotationNode

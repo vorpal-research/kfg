@@ -32,17 +32,20 @@ class KfgTest {
     val out = ByteArrayOutputStream()
     val err = ByteArrayOutputStream()
 
-    @before fun setUp() {
+    @before
+    fun setUp() {
         System.setOut(PrintStream(out))
         System.setErr(PrintStream(err))
     }
 
-    @after fun tearDown() {
+    @after
+    fun tearDown() {
         System.setOut(System.out)
         System.setErr(System.err)
     }
 
-    @test fun run() {
+    @test
+    fun run() {
         val jar = "target/kfg-0.1-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
         val target = File("instrumented/")
