@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.IF
 import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
+import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
@@ -25,22 +26,10 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
         val incomings = mutableMapOf<BasicBlock, Value>()
         for ((bb, `return`) in retvals) {
             bb.remove(`return`)
-            if (bb.isNotEmpty()) {
-                bb.addSuccessor(returnBlock)
-                returnBlock.addPredecessor(bb)
-                if (`return`.hasReturnValue()) incomings[bb] = `return`.getReturnValue()
-                bb.addInstruction(IF.getJump(returnBlock))
-            } else {
-                val preds = bb.predecessors
-                preds.forEach { it.successors.remove(bb) }
-                preds.forEach {
-                    it.addSuccessor(returnBlock)
-                    returnBlock.addPredecessor(it)
-                }
-                if (`return`.hasReturnValue()) preds.forEach { incomings[it] = `return`.getReturnValue() }
-                bb.replaceAllUsesWith(returnBlock)
-                method.remove(bb)
-            }
+            bb.addSuccessor(returnBlock)
+            returnBlock.addPredecessor(bb)
+            if (`return`.hasReturnValue()) incomings[bb] = `return`.getReturnValue()
+            bb.addInstruction(IF.getJump(returnBlock))
         }
         if (method.desc.retval.isVoid()) {
             val `return` = IF.getReturn()

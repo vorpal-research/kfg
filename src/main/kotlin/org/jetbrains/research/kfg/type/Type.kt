@@ -10,4 +10,5 @@ interface Type {
     fun isReal() = false
     fun isReference() = false
     fun getAsmDesc(): String
+    fun getCanonicalDesc() = getAsmDesc().replace('/', '.')
 }
