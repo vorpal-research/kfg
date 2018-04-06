@@ -58,14 +58,18 @@ class SlotTracker(val method: Method) {
     private val strings = mutableMapOf<String, MutableList<StringName>>()
     private val slots = mutableMapOf<Slot, Int>()
 
-    fun getBlockNumber(name: BlockName) = blocks[name.name]?.indexOf(name) ?: -1
-    fun getStringNumber(name: StringName) = strings[name.name]?.indexOf(name) ?: -1
-    fun getSlotNumber(slot: Slot) = slots.getOrDefault(slot, -1)
+    private val nameToValue = mutableMapOf<Name, Value>()
+    private val nameToBlock = mutableMapOf<BlockName, BasicBlock>()
+
+    internal fun getBlockNumber(name: BlockName) = blocks[name.name]?.indexOf(name) ?: -1
+    internal fun getStringNumber(name: StringName) = strings[name.name]?.indexOf(name) ?: -1
+    internal fun getSlotNumber(slot: Slot) = slots.getOrDefault(slot, -1)
 
     fun addBlock(block: BasicBlock) {
         val name = block.name
         name.st = this
         blocks.getOrPut(name.name, { mutableListOf() }).add(name)
+        nameToBlock[name] = block
     }
 
     fun addValue(value: Value) {
@@ -77,11 +81,27 @@ class SlotTracker(val method: Method) {
                 strings.getOrPut(name.name, { mutableListOf() }).add(name)
             }
         }
+        if (name !is UndefinedName) nameToValue[name] = value
     }
+
+    fun getBlock(name: String) = nameToBlock
+            .filter { it.key.toString() == name }
+            .map { it.value }
+            .firstOrNull()
+
+    fun getBlock(name: BlockName) = nameToBlock[name]
+
+    fun getValue(name: String) = nameToValue
+            .filter { it.key.toString() == name }
+            .map { it.value }
+            .firstOrNull()
+
+    fun getValue(name: Name) = nameToValue[name]
 
     fun rerun() {
         strings.clear()
         slots.clear()
+        blocks.clear()
         var slotCount = 0
         for (bb in method) {
             val names = blocks.getOrPut(bb.name.name, { mutableListOf() })

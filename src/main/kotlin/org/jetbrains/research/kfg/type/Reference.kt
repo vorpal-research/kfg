@@ -10,7 +10,7 @@ interface Reference : Type {
 }
 
 class ClassType(val `class`: Class) : Reference {
-    override val name = `class`.name
+    override val name = `class`.getFullname()
 
     override fun toString() = name
     override fun getAsmDesc() = "L${`class`.getFullname()};"
