@@ -33,7 +33,7 @@ class MethodDesc {
         return sb.toString()
     }
 
-    override fun hashCode() = defaultHashCode(args, retval)
+    override fun hashCode() = defaultHashCode(*args, retval)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
@@ -98,7 +98,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         return basicBlocks[start + 1]
     }
 
-    fun getPrototype() = "${`class`.name}.$name$desc"
+    fun getPrototype() = "$`class`.$name$desc"
 
     fun print(): String {
         val sb = StringBuilder()

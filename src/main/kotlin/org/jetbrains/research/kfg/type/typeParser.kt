@@ -106,3 +106,28 @@ fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
     val rettype = args.last()
     return Pair(args.dropLast(1).toTypedArray(), rettype)
 }
+
+fun parseStringToType(name: String) = when (name) {
+    "null" -> TF.getNullType()
+    "void" -> TF.getVoidType()
+    "bool" -> TF.getBoolType()
+    "short" -> TF.getShortType()
+    "long" -> TF.getLongType()
+    "char" -> TF.getCharType()
+    "int" -> TF.getIntType()
+    "float" -> TF.getFloatType()
+    "double" -> TF.getDoubleType()
+    else -> {
+        var arrCount = 0
+        val end = name.dropLastWhile {
+            if (it == '[') ++arrCount
+            it == '[' || it == ']'
+        }
+        var subtype = TF.getRefType(end)
+        while (arrCount > 0) {
+            --arrCount
+            subtype = TF.getArrayType(subtype)
+        }
+        subtype
+    }
+}

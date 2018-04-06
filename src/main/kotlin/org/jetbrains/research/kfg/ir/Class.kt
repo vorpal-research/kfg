@@ -8,8 +8,16 @@ import org.jetbrains.research.kfg.type.Type
 import org.objectweb.asm.tree.*
 
 abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
-    data class MethodKey(val name: String, val desc: MethodDesc) {
+    class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(name: String, desc: String) : this(name, MethodDesc(desc))
+
+        override fun hashCode() = defaultHashCode(name, desc)
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other?.javaClass != this.javaClass) return false
+            other as MethodKey
+            return this.name == other.name && this.desc == other.desc
+        }
     }
 
     val `package` = Package(cn.name.substringBeforeLast('/'))
