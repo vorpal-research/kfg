@@ -11,7 +11,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class RetvalBuilder(method: Method) : MethodVisitor(method) {
-    val returnBlock = BodyBlock("%bb.return", method)
+    val returnBlock = BodyBlock("bb.return", method)
     val retvals = mutableMapOf<BasicBlock, ReturnInst>()
 
     override fun visitReturnInst(inst: ReturnInst) {
