@@ -28,7 +28,7 @@ internal fun deleteDirectory(directory: File): Boolean {
 }
 
 // simple test: run kfg on itself and check nothing fails
-class KfgTest {
+class KfgIntegrationTest {
     val out = ByteArrayOutputStream()
     val err = ByteArrayOutputStream()
 
