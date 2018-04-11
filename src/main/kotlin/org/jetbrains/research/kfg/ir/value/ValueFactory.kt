@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.type.*
 
 object ValueFactory {
     fun getThis(type: Type): Value = ThisRef(type)
-    fun getArgument(name: String, method: Method, type: Type): Value = Argument(name, method, type)
+    fun getArgument(index: Int, method: Method, type: Type): Value = Argument(index, method, type)
     // constants
     fun getNullConstant(): Value = NullConstant
     fun getBoolConstant(value: Boolean): Value = BoolConstant(value)

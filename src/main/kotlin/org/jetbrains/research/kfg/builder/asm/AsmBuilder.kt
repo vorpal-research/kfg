@@ -50,7 +50,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
             locals[`this`] = getLocalFor(`this`)
         }
         for ((indx, type) in method.desc.args.withIndex()) {
-            val arg = VF.getArgument("arg$$indx", method, type)
+            val arg = VF.getArgument(indx, method, type)
             locals[arg] = getLocalFor(arg)
         }
     }

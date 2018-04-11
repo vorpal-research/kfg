@@ -953,7 +953,7 @@ class CfgBuilder(val method: Method)
             method.slottracker.addValue(`this`)
         }
         for ((indx, type) in method.desc.args.withIndex()) {
-            val arg = VF.getArgument("arg$$indx", method, type)
+            val arg = VF.getArgument(indx, method, type)
             locals[localIndx] = arg
             if (type.isDWord()) localIndx += 2
             else ++localIndx

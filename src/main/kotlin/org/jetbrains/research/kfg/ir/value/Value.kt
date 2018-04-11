@@ -14,14 +14,18 @@ abstract class Value(val name: Name, val type: Type) : UsableValue {
     override fun get() = this
 }
 
-class Argument(argName: String, val method: Method, type: Type) : Value(ConstantName(argName), type) {
+class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantName("$argPrefix$index"), type) {
+    companion object {
+        const val argPrefix = "arg\$"
+    }
+
     override fun hashCode() = defaultHashCode(name, type, method)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != javaClass) return false
         other as Argument
-        return this.name == other.name && this.type == other.type && this.method == other.method
+        return this.index == other.index && this.type == other.type && this.method == other.method
     }
 }
 
