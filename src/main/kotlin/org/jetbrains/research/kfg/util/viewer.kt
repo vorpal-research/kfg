@@ -28,7 +28,7 @@ fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
         }
     }
     if (viewCatchBlocks) {
-        method.catchBlocks.forEach {
+        method.catchEntries.forEach {
             it as CatchBlock
             for (thrower in it.getAllThrowers()) {
                 val edge = Edge(thrower.name.toString(), it.name.toString()).setStyle(Style.Edge.dotted)

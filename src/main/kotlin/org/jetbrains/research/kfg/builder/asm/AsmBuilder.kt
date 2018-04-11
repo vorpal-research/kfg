@@ -433,7 +433,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     private fun buildTryCatchBlocks(): List<TryCatchBlockNode> {
         val catchBlocks = mutableListOf<TryCatchBlockNode>()
-        method.catchBlocks.map { it as CatchBlock }
+        method.catchEntries.map { it as CatchBlock }
                 .forEach {
                     val `catch` = getLabel(it)
                     val exception = it.exception.toInternalDesc()
