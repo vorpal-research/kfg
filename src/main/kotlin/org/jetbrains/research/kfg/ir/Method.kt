@@ -8,6 +8,7 @@ import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
+import java.util.*
 
 class MethodDesc {
     val args: Array<Type>
@@ -56,7 +57,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     val parameters = mutableListOf<Parameter>()
     val exceptions = mutableSetOf<Class>()
     val basicBlocks = mutableListOf<BasicBlock>()
-    val catchBlocks = mutableSetOf<BasicBlock>()
+    val catchEntries = mutableSetOf<BasicBlock>()
     val slottracker = SlotTracker(this)
 
     init {
@@ -85,12 +86,29 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     }
 
     fun addCatchBlock(bb: BasicBlock) {
-        catchBlocks.add(bb)
+        catchEntries.add(bb)
     }
 
-    fun remove(bb: BasicBlock) {
-        basicBlocks.remove(bb)
-        catchBlocks.remove(bb)
+    fun getBodyBlocks(): List<BasicBlock> {
+        val catches = getCatchBlocks()
+        return basicBlocks.filter { it !in catches }.toList()
+    }
+
+    fun getCatchBlocks(): List<BasicBlock> {
+        val catchMap = mutableMapOf<BasicBlock, Boolean>()
+        val result = mutableListOf<BasicBlock>()
+        val queue = ArrayDeque<BasicBlock>()
+        queue.addAll(catchEntries)
+        while (queue.isNotEmpty()) {
+            val top = queue.first
+            val isCatch = top.predecessors.fold(true, { acc, bb -> acc and catchMap.getOrPut(bb, { false })})
+            if (isCatch) {
+                queue.addAll(top.successors)
+                catchMap[top] = true
+            }
+            queue.pollFirst()
+        }
+        return result
     }
 
     fun getNext(from: BasicBlock): BasicBlock {

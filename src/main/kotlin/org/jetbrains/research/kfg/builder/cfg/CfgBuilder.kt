@@ -968,7 +968,7 @@ class CfgBuilder(val method: Method)
         val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
         val order = mutableListOf<BasicBlock>()
 
-        val catches = method.catchBlocks.map { it as CatchBlock }
+        val catches = method.catchEntries.map { it as CatchBlock }
         catches.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
         val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
         order.addAll(o.reversed().map { it as BasicBlock })
