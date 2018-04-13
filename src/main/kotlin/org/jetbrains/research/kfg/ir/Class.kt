@@ -20,8 +20,10 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         }
     }
 
+    data class FieldKey(val name: String, val type: Type)
+
     val `package` = Package(cn.name.substringBeforeLast('/'))
-    val fields = mutableMapOf<String, Field>()
+    val fields = mutableMapOf<FieldKey, Field>()
     val methods = mutableMapOf<MethodKey, Method>()
 
     fun init() {
@@ -29,7 +31,8 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         addInvisibleAnnotations(cn.invisibleAnnotations as List<AnnotationNode>?)
         cn.fields.forEach {
             it as FieldNode
-            fields[it.name] = Field(it, this)
+            val field = Field(it, this)
+            fields.put(FieldKey(field.name, field.type), field)
         }
         cn.methods.forEach {
             it as MethodNode
@@ -68,7 +71,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 }
 
 class ConcreteClass(cn: ClassNode) : Class(cn) {
-    override fun getFieldConcrete(name: String, type: Type): Field? = fields.getOrElse(name, { getSuperClass()?.getFieldConcrete(name, type) })
+    override fun getFieldConcrete(name: String, type: Type): Field? = fields.getOrElse(FieldKey(name, type), { getSuperClass()?.getFieldConcrete(name, type) })
 
     override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = methods.getOrElse(MethodKey(name, desc), {
         val uppers = listOf(getSuperClass()).plus(getInterfaces()).filterNotNull()
@@ -82,7 +85,7 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
         res
     })
 
-    override fun getField(name: String, type: Type) = fields.getOrElse(name, {
+    override fun getField(name: String, type: Type) = fields.getOrElse(FieldKey(name, type), {
         getSuperClass()?.getFieldConcrete(name, type) ?: throw UnknownInstance("No field \"$name\" in class $this")
     })
 
@@ -112,7 +115,7 @@ class OuterClass(cn: ClassNode) : Class(cn) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
-    override fun getField(name: String, type: Type): Field = fields.getOrPut(name, {
+    override fun getField(name: String, type: Type): Field = fields.getOrPut(FieldKey(name, type), {
         val fn = FieldNode(0, name, type.getAsmDesc(), null, null)
         Field(fn, this)
     })
