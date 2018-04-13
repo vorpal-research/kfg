@@ -52,7 +52,7 @@ class KfgIntegrationTest {
 
         val jarFile = JarFile(jar)
         CM.parseJar(jarFile, `package`)
-        writeJar(jarFile, `package`, target)
+        writeJar(jarFile, target, `package`)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

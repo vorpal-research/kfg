@@ -54,7 +54,47 @@ fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.clas
     return file
 }
 
-fun writeJar(jar: JarFile, `package`: Package, target: File): JarFile {
+fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
+    val currentDir = getCurrentDirectory()
+    val enumeration = jar.entries()
+
+    while (enumeration.hasMoreElements()) {
+        val entry = enumeration.nextElement() as JarEntry
+        if (entry.name == "META-INF/MANIFEST.MF") continue
+
+        if (entry.isClass()) {
+            if (`package`.isParent(entry.name)) {
+                val `class` = CM.getByName(entry.name.removeSuffix(".class"))
+                val localPath = "${`class`.getFullname()}.class"
+                val path = "$currentDir/$localPath"
+                writeClass(`class`, path)
+            } else if (writeAllClasses) {
+                val path = "$currentDir/${entry.name}"
+                val classReader = ClassReader(jar.getInputStream(entry))
+                val classNode = ClassNode()
+                classReader.accept(classNode, 0)
+                val cw = ClassWriter(0)
+                val cca = CheckClassAdapter(cw)
+                classNode.accept(cca)
+
+                val file = File(path)
+                file.parentFile?.mkdirs()
+                val fos = FileOutputStream(file)
+                fos.write(cw.toByteArray())
+                fos.close()
+            }
+        }
+    }
+}
+
+fun writeClassesToTarget(jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
+    val workingDir = getCurrentDirectory()
+    setCurrentDirectory(target)
+    writeClasses(jar, `package`, writeAllClasses)
+    setCurrentDirectory(workingDir)
+}
+
+fun writeJar(jar: JarFile, target: File, `package`: Package): JarFile {
     val workingDir = getCurrentDirectory()
     setCurrentDirectory(target)
     val currentDir = getCurrentDirectory()
@@ -69,6 +109,7 @@ fun writeJar(jar: JarFile, `package`: Package, target: File): JarFile {
     for (it in jar.manifest.entries) {
         builder.addManifestEntry(it.key, it.value)
     }
+    writeClasses(jar, `package`)
 
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
@@ -78,7 +119,6 @@ fun writeJar(jar: JarFile, `package`: Package, target: File): JarFile {
             val `class` = CM.getByName(entry.name.removeSuffix(".class"))
             val localPath = "${`class`.getFullname()}.class"
             val path = "$currentDir/$localPath"
-            writeClass(`class`, path)
 
             val newEntry = JarEntry(localPath.replace("\\", "/"))
             builder.add(newEntry, FileInputStream(path))
