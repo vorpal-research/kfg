@@ -1,8 +1,10 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
+import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.tree.AnnotationNode
@@ -52,7 +54,7 @@ class MethodDesc {
     }
 }
 
-class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock> {
+class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
     val desc = MethodDesc(mn.desc)
     val parameters = mutableListOf<Parameter>()
     val exceptions = mutableSetOf<Class>()
@@ -82,10 +84,13 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         if (!basicBlocks.contains(bb)) {
             basicBlocks.add(bb)
             slottracker.addBlock(bb)
+            bb.addUser(this)
+            bb.parent = this
         }
     }
 
     fun addCatchBlock(bb: BasicBlock) {
+        assert(bb in basicBlocks)
         catchEntries.add(bb)
     }
 
@@ -138,5 +143,15 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         if (other?.javaClass != this.javaClass) return false
         other as Method
         return this.name == other.name && this.`class` == other.`class` && this.desc == other.desc
+    }
+
+    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+        (0 until basicBlocks.size)
+                .filter { basicBlocks[it] == from }
+                .forEach {
+                    basicBlocks[it].removeUser(this)
+                    basicBlocks[it] = to.get()
+                    to.addUser(this)
+                }
     }
 }
