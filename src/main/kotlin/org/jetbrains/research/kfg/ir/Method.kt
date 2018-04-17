@@ -72,8 +72,8 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
             mn.exceptions.forEach { exceptions.add(CM.getByName(it as String)) }
         }
 
-        addVisibleAnnotations(mn.visibleAnnotations as List<AnnotationNode>?)
-        addInvisibleAnnotations(mn.invisibleAnnotations as List<AnnotationNode>?)
+        addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.visibleAnnotations as List<AnnotationNode>?))
+        addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))
     }
 
     fun getEntry() = basicBlocks.first()
