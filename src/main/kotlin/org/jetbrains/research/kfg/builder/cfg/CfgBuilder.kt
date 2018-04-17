@@ -383,6 +383,7 @@ class CfgBuilder(val method: Method)
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun convertSwap(insn: InsnNode) {
         val top = stack.pop()
         val bot = stack.pop()
@@ -617,6 +618,7 @@ class CfgBuilder(val method: Method)
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode): Nothing = TODO()
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
@@ -642,6 +644,7 @@ class CfgBuilder(val method: Method)
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun convertLabel(lbl: LabelNode) {}
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
@@ -700,6 +703,7 @@ class CfgBuilder(val method: Method)
         stack.push(inst)
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun buildCFG() {
         for (insn in method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>) {
             val type = if (insn.type != null) TF.getRefType(insn.type) else CatchBlock.defaultException

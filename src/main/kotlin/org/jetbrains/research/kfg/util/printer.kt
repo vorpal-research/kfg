@@ -15,7 +15,7 @@ private val mp = TraceMethodVisitor(printer)
 fun ClassNode.print(): String {
     val sb = StringBuilder()
     sb.appendln("Class ${this.name}")
-    val methods = this.methods as MutableList<MethodNode>
+    val methods = @Suppress("UNCHECKED_CAST") (this.methods as MutableList<MethodNode>)
     for (mn in methods) {
         sb.appendln(mn.print())
     }

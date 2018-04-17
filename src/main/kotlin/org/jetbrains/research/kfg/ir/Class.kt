@@ -27,8 +27,8 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     val methods = mutableMapOf<MethodKey, Method>()
 
     fun init() {
-        addVisibleAnnotations(cn.visibleAnnotations as List<AnnotationNode>?)
-        addInvisibleAnnotations(cn.invisibleAnnotations as List<AnnotationNode>?)
+        addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.visibleAnnotations as List<AnnotationNode>?))
+        addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.invisibleAnnotations as List<AnnotationNode>?))
         cn.fields.forEach {
             it as FieldNode
             val field = Field(it, this)

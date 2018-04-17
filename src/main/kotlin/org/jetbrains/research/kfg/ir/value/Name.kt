@@ -80,6 +80,8 @@ class SlotTracker(val method: Method) {
             is StringName -> {
                 strings.getOrPut(name.name, { mutableListOf() }).add(name)
             }
+            else -> {
+            }
         }
         if (name !is UndefinedName) nameToValue[name] = value
     }
@@ -113,8 +115,11 @@ class SlotTracker(val method: Method) {
                             slots.getOrPut(value.name, { slotCount++ })
                         }
                         is StringName -> {
-                            val names = strings.getOrPut(value.name.name, { mutableListOf() })
-                            if (!names.contains(value.name)) names.add(value.name)
+                            val nameCopies = strings.getOrPut(value.name.name, { mutableListOf() })
+                            if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
+                        }
+                        else -> {
+
                         }
                     }
                 }

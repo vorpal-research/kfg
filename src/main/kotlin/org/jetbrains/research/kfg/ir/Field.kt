@@ -18,8 +18,9 @@ class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
         this.type = parseDesc(fn.desc)
         this.defaultValue = VF.getConstant(fn.value)
         this.builded = true
-        addVisibleAnnotations(fn.visibleAnnotations as List<AnnotationNode>?)
-        addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
+
+        @Suppress("UNCHECKED_CAST") addVisibleAnnotations(fn.visibleAnnotations as List<AnnotationNode>?)
+        @Suppress("UNCHECKED_CAST") addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
     }
 
     override fun hashCode() = defaultHashCode(name, `class`, type)
