@@ -23,25 +23,15 @@ internal fun setCurrentDirectory(path: File) {
 
 internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
-fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
-    val classes = mutableMapOf<String, ClassNode>()
-    val enumeration = jar.entries()
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-
-        if (entry.isClass() && `package`.isParent(entry.name)) {
-            val classReader = ClassReader(jar.getInputStream(entry))
-            val classNode = ClassNode()
-            classReader.accept(classNode, ClassReader.SKIP_DEBUG or ClassReader.SKIP_FRAMES)
-            classes[classNode.name] = classNode
-        }
-
-    }
-    return classes
+fun readClassNode(input: InputStream, skipDebug: Boolean = true): ClassNode {
+    val classReader = ClassReader(input)
+    val classNode = ClassNode()
+    classReader.accept(classNode, if (skipDebug) ClassReader.SKIP_DEBUG or ClassReader.SKIP_FRAMES else 0)
+    return classNode
 }
 
-fun writeClassNode(cn: ClassNode, filename: String): File {
-    val cw = ClassWriter(ClassWriter.COMPUTE_FRAMES)
+fun writeClassNode(cn: ClassNode, filename: String, computeFrames: Boolean = true): File {
+    val cw = ClassWriter(if (computeFrames) ClassWriter.COMPUTE_FRAMES else 0)
     val cca = CheckClassAdapter(cw)
     cn.accept(cca)
 
@@ -51,6 +41,21 @@ fun writeClassNode(cn: ClassNode, filename: String): File {
     fos.write(cw.toByteArray())
     fos.close()
     return file
+}
+
+fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
+    val classes = mutableMapOf<String, ClassNode>()
+    val enumeration = jar.entries()
+    while (enumeration.hasMoreElements()) {
+        val entry = enumeration.nextElement() as JarEntry
+
+        if (entry.isClass() && `package`.isParent(entry.name)) {
+            val classNode = readClassNode(jar.getInputStream(entry))
+            classes[classNode.name] = classNode
+        }
+
+    }
+    return classes
 }
 
 fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.class")
@@ -72,10 +77,8 @@ fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = fa
                 writeClass(`class`, path)
             } else if (writeAllClasses) {
                 val path = "$currentDir/${entry.name}"
-                val classReader = ClassReader(jar.getInputStream(entry))
-                val classNode = ClassNode()
-                classReader.accept(classNode, 0)
-                writeClassNode(classNode, path)
+                val classNode = readClassNode(jar.getInputStream(entry), false)
+                writeClassNode(classNode, path, false)
             }
         }
     }

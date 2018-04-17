@@ -4,9 +4,7 @@ import org.jetbrains.research.kfg.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 
-abstract class Value(val name: Name, val type: Type) : UsableValue {
-    override val users = mutableSetOf<User>()
-
+abstract class Value(val name: Name, val type: Type) : UsableValue() {
     fun isNameDefined() = name is UndefinedName
     fun hasRealName() = name is StringName
     override fun toString() = name.toString()

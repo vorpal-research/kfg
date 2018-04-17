@@ -7,22 +7,69 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
 
-abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Instruction>, GraphNode {
+abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode, BlockUser, UsableBlock() {
+    var parent: Method? = null
+        internal set(value) {
+            field = value
+            instructions.forEach { addValueToParent(it) }
+        }
     val predecessors = mutableSetOf<BasicBlock>()
     val successors = mutableSetOf<BasicBlock>()
     val instructions = mutableListOf<Instruction>()
     val handlers = mutableListOf<CatchBlock>()
 
-    fun addSuccessor(bb: BasicBlock) = successors.add(bb)
-    fun addSuccessors(vararg bbs: BasicBlock) = successors.addAll(bbs)
-    fun addPredecessor(bb: BasicBlock) = predecessors.add(bb)
-    fun addPredecessors(vararg bbs: BasicBlock) = predecessors.addAll(bbs)
-    fun addHandler(handle: CatchBlock) = handlers.add(handle)
+    private fun addValueToParent(value: Value) {
+        parent?.slottracker?.addValue(value)
+    }
+
+    fun addSuccessor(bb: BasicBlock) {
+        successors.add(bb)
+        bb.addUser(this)
+    }
+
+    fun addSuccessors(vararg bbs: BasicBlock) = bbs.forEach { addSuccessor(it) }
+    fun addPredecessor(bb: BasicBlock) {
+        predecessors.add(bb)
+        bb.addUser(this)
+    }
+
+    fun addPredecessors(vararg bbs: BasicBlock) = predecessors.forEach { addPredecessor(it) }
+    fun addHandler(handle: CatchBlock) {
+        handlers.add(handle)
+        handle.addUser(this)
+    }
+
+    fun removeSuccessor(bb: BasicBlock): Boolean {
+        if (successors.remove(bb)) {
+            bb.removeUser(this)
+            bb.removePredecessor(this)
+            return true
+        }
+        return false
+    }
+
+    fun removePredecessor(bb: BasicBlock): Boolean {
+        if (predecessors.remove(bb)) {
+            bb.removeUser(this)
+            bb.removeSuccessor(this)
+            return true
+        }
+        return false
+    }
+
+    fun removeHandler(handle: CatchBlock): Boolean {
+        if (handlers.remove(handle)) {
+            handle.removeUser(this)
+            handle.removeThrower(this)
+            return true
+        }
+        return false
+    }
 
     fun addInstruction(inst: Instruction) {
         instructions.add(inst)
         inst.parent = this
-        parent.slottracker.addValue(inst)
+        addValueToParent(inst)
     }
 
     fun addInstructions(vararg insts: Instruction) {
@@ -34,7 +81,7 @@ abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Ins
         for (inst in insts) {
             instructions.add(index++, inst)
             inst.parent = this
-            parent.slottracker.addValue(inst)
+            addValueToParent(inst)
         }
     }
 
@@ -43,7 +90,7 @@ abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Ins
         for (inst in insts) {
             instructions.add(index++, inst)
             inst.parent = this
-            parent.slottracker.addValue(inst)
+            addValueToParent(inst)
         }
     }
 
@@ -54,7 +101,7 @@ abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Ins
         }
     }
 
-    fun replace(from: Instruction, to: Instruction){
+    fun replace(from: Instruction, to: Instruction) {
         (0 until instructions.size).filter { instructions[it] == from }.forEach {
             instructions[it] = to
             to.parent = this
@@ -72,18 +119,34 @@ abstract class BasicBlock(val name: BlockName, val parent: Method): Iterable<Ins
     abstract fun print(): String
 
     override fun iterator() = instructions.iterator()
-    override fun hashCode() = defaultHashCode(name, parent)
-    override fun equals(other: Any?): Boolean {
-        if (other == null) return false
-        if (other !is BasicBlock) return false
-        return this.parent == other.parent && this.name == other.name
-    }
+//    override fun hashCode() = defaultHashCode(name, parent)
+//    override fun equals(other: Any?): Boolean {
+//        if (other == null) return false
+//        if (other !is BasicBlock) return false
+//        return this.parent == other.parent && this.name == other.name
+//    }
 
     override fun getSuccSet() = successors.map { it as GraphNode }.toSet()
     override fun getPredSet() = predecessors.map { it as GraphNode }.toSet()
+
+    override fun get() = this
+    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+        if (removePredecessor(from.get())) {
+            addPredecessor(to.get())
+        } else if (removeSuccessor(from.get())) {
+            addSuccessor(to.get())
+        } else if (handlers.contains(from.get())) {
+            assert(from.get() is CatchBlock)
+            val fromCatch = from.get() as CatchBlock
+            removeHandler(fromCatch)
+            assert(to.get() is CatchBlock)
+            val toCatch = to.get() as CatchBlock
+            toCatch.addThrowers(listOf(this))
+        }
+    }
 }
 
-class BodyBlock(name: String, method: Method) : BasicBlock(BlockName(name), method) {
+class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
@@ -96,8 +159,8 @@ class BodyBlock(name: String, method: Method) : BasicBlock(BlockName(name), meth
     }
 }
 
-class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock(BlockName(name), method) {
-    val throwers = mutableSetOf<List<BasicBlock>>()
+class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)) {
+    val throwers = mutableSetOf<MutableList<BasicBlock>>()
 
     fun getEntries(): Set<BasicBlock> {
         val entries = mutableSetOf<BasicBlock>()
@@ -109,7 +172,12 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
         return entries
     }
 
-    fun addThrowers(throwers: List<BasicBlock>) = this.throwers.add(throwers)
+    fun addThrowers(throwers: List<BasicBlock>) {
+        this.throwers.add(throwers.toMutableList())
+        throwers.forEach { it.addUser(this) }
+    }
+
+    fun removeThrower(bb: BasicBlock) = this.throwers.forEach { it.remove(bb) }
     fun getAllThrowers() = throwers.flatten().toSet()
     fun getAllPredecessors() = getAllThrowers().plus(getEntries())
 
@@ -127,5 +195,17 @@ class CatchBlock(name: String, method: Method, val exception: Type) : BasicBlock
 
     companion object {
         val defaultException = TF.getRefType("java/lang/Throwable")
+    }
+
+    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+        super.replaceUsesOf(from, to)
+        for (list in throwers) {
+            val index = list.indexOf(from)
+            if (index >= 0) {
+                from.removeUser(this)
+                list[index] = to.get()
+                to.addUser(this)
+            }
+        }
     }
 }
