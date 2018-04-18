@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
+import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
