@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kfg.util.viewCfg
 
 sealed class Name {
     internal var st: SlotTracker? = null
@@ -109,7 +110,7 @@ class SlotTracker(val method: Method) {
             val names = blocks.getOrPut(bb.name.name, { mutableListOf() })
             if (!names.contains(bb.name)) names.add(bb.name)
             for (inst in bb) {
-                for (value in inst.plus(inst)) {
+                for (value in inst.operands().plus(inst)) {
                     when (value.name) {
                         is Slot -> {
                             slots.getOrPut(value.name, { slotCount++ })
