@@ -1,11 +1,15 @@
 package org.jetbrains.research.kfg.util
 
+import org.jetbrains.research.kfg.ir.BasicBlock
+import java.util.*
 import kotlin.math.min
 
 interface GraphNode {
     fun getPredSet(): Set<GraphNode>
     fun getSuccSet(): Set<GraphNode>
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 class TopologicalSorter(val nodes: Set<GraphNode>) {
     private val order = mutableListOf<GraphNode>()
@@ -32,6 +36,26 @@ class TopologicalSorter(val nodes: Set<GraphNode>) {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+class DominatorTreeNode(val value: GraphNode): TreeNode {
+    internal var idom: DominatorTreeNode? = null
+    internal val dominates = mutableSetOf<DominatorTreeNode>()
+
+    override fun getChilds(): Set<DominatorTreeNode> = dominates
+    override fun getParent() = idom
+
+    fun dominates(node: GraphNode): Boolean {
+        for (it in dominates) {
+            if (it.value == node) return true
+        }
+        for (it in dominates) {
+            if (it.dominates(node)) return true
+        }
+        return false
+    }
+}
+
 class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
     val tree = mutableMapOf<GraphNode, DominatorTreeNode>()
 
@@ -45,14 +69,6 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
     private val dom = arrayListOf<Int>()
     private val dsu = arrayListOf<Int>()
     private val bucket = arrayListOf<MutableSet<Int>>()
-
-    class DominatorTreeNode(val value: GraphNode): TreeNode {
-        var idom: DominatorTreeNode? = null
-        val dominates = mutableSetOf<DominatorTreeNode>()
-
-        override fun getChilds() = dominates
-        override fun getParent() = idom
-    }
 
     init {
         for (i in nodes) {
@@ -129,5 +145,37 @@ class DominatorTreeBuilder(val nodes: Set<GraphNode>) {
             if (it.key == it.value.idom?.value) it.value.idom = null
         }
         return tree
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+class LoopDetector(val nodes: Set<GraphNode>) {
+    fun search(): Map<GraphNode, List<GraphNode>> {
+        val tree = DominatorTreeBuilder(nodes).build()
+        val backEdges = mutableListOf<Pair<GraphNode, GraphNode>>()
+        for ((current, treeNode) in tree) {
+            for (succ in current.getSuccSet()) {
+                val succTreeNode = tree.getValue(succ)
+                if (succTreeNode.dominates(current)) {
+                    backEdges.add(succ to current)
+                }
+            }
+        }
+        val result = mutableMapOf<GraphNode, MutableList<GraphNode>>()
+        for ((header, end) in backEdges) {
+            val body = mutableListOf(header)
+            val stack = Stack<GraphNode>()
+            stack.push(end)
+            while (stack.isNotEmpty()) {
+                val top = stack.pop()
+                if (top !in body) {
+                    body.add(top)
+                    top.getPredSet().forEach { stack.push(it) }
+                }
+            }
+            result.getOrPut(header, { mutableListOf() }).addAll(body)
+        }
+        return result
     }
 }

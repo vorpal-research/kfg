@@ -119,12 +119,6 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
     abstract fun print(): String
 
     override fun iterator() = instructions.iterator()
-//    override fun hashCode() = defaultHashCode(name, parent)
-//    override fun equals(other: Any?): Boolean {
-//        if (other == null) return false
-//        if (other !is BasicBlock) return false
-//        return this.parent == other.parent && this.name == other.name
-//    }
 
     override fun getSuccSet() = successors.map { it as GraphNode }.toSet()
     override fun getPredSet() = predecessors.map { it as GraphNode }.toSet()

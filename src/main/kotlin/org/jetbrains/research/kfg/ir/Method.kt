@@ -82,7 +82,20 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
+            assert(bb.parent == null, { "Block ${bb.name} already belongs to other method"})
             basicBlocks.add(bb)
+            slottracker.addBlock(bb)
+            bb.addUser(this)
+            bb.parent = this
+        }
+    }
+
+    fun addBefore(before: BasicBlock, bb: BasicBlock) {
+        if (!basicBlocks.contains(bb)) {
+            assert(bb.parent == null, { "Block ${bb.name} already belongs to other method"})
+            val index = basicBlocks.indexOf(before)
+            assert(index >= 0, { "Block ${before.name} does not belong to method $this"})
+            basicBlocks.add(index, bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
             bb.parent = this
