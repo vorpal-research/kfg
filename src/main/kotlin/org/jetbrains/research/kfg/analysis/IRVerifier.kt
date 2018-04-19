@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.value.Constant
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
+import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.util.viewCfg
 import org.jetbrains.research.kfg.visitor.MethodVisitor
@@ -38,20 +39,33 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
         super.visitInstruction(inst)
     }
 
+    override fun visitPhiInst(inst: PhiInst) {
+        val bb = inst.parent!!
+        inst.getPredecessors().forEach {
+            assert(method.basicBlocks.contains(it), { "Phi incoming from unknown block" })
+        }
+        assert(bb.predecessors.size == inst.getPredecessors().size, { "Phi insts predecessors are different from block predecessors" })
+        for (pred in inst.getPredecessors()) {
+            assert(bb.predecessors.contains(pred), { "Phi insts predecessors are different from block predecessors" })
+        }
+    }
+
     override fun visitTerminateInst(inst: TerminateInst) {
         val bb = inst.parent!!
         inst.successors().forEach {
             assert(method.basicBlocks.contains(it), { "Terminate inst to unknown block" })
         }
-        assert(bb.successors.size == inst.successors().size, { "Block terminate insts successors are different from block successors" })
+        assert(bb.successors.size == inst.successors().size, { "Terminate insts successors are different from block successors" })
         for (succ in inst.successors()) {
-            assert(bb.successors.contains(succ), { "Block terminate insts successors are different from block successors" })
+            assert(bb.successors.contains(succ), { "Terminate insts successors are different from block successors" })
         }
         super.visitTerminateInst(inst)
     }
 
     override fun visitBasicBlock(bb: BasicBlock) {
         assert(blockNameRegex.matches(bb.name.toString()), { "Incorrect value name format ${bb.name}" })
+        val storedVal = blockNames[bb.name.toString()]
+        assert(storedVal == null || storedVal == bb, { "Same names for two different blocks" })
         assert(bb.parent == method, { "Block parent points to other method" })
         if (bb is CatchBlock) {
             assert(bb in method.catchEntries, { "Catch block does not belong to method catch entries" })

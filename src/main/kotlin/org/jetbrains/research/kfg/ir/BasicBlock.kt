@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
+import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
@@ -113,6 +114,7 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
 
     fun front() = instructions.first()
     fun back() = instructions.last()
+    fun getTerminator() = back() as TerminateInst
 
     override fun toString() = print()
 
