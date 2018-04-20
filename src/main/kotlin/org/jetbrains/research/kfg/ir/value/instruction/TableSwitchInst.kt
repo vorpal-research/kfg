@@ -20,4 +20,6 @@ class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock,
         sb.append("tableswitch (${getIndex()}) {}")
         return sb.toString()
     }
+
+    override fun clone(): Instruction = TableSwitchInst(getIndex(), getMin(), getMax(), getDefault(), getBranches())
 }

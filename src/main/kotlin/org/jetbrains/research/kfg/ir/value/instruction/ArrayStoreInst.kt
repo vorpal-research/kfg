@@ -11,4 +11,5 @@ class ArrayStoreInst(arrayRef: Value, index: Value, value: Value)
     fun getValue() = operands[2]
 
     override fun print() = "${getArrayRef()}[${getIndex()}] = ${getValue()}"
+    override fun clone(): Instruction = ArrayStoreInst(getArrayRef(), getIndex(), getValue())
 }

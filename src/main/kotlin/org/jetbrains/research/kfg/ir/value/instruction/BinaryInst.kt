@@ -10,4 +10,5 @@ class BinaryInst(name: Name, val opcode: BinaryOpcode, lhv: Value, rhv: Value)
     fun getRhv() = operands[1]
 
     override fun print()= "$name = ${getLhv()} $opcode ${getRhv()}"
+    override fun clone(): Instruction = BinaryInst(name.clone(), opcode, getLhv(), getRhv())
 }

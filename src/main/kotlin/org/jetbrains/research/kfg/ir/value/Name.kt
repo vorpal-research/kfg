@@ -9,11 +9,13 @@ import org.jetbrains.research.kfg.util.viewCfg
 sealed class Name {
     internal var st: SlotTracker? = null
 
+    abstract fun clone(): Name
     override fun hashCode() = System.identityHashCode(this)
     override fun equals(other: Any?) = this === other
 }
 
 class StringName(val name: String) : Name() {
+    override fun clone() = StringName(name)
     private fun getNumber() = st?.getStringNumber(this) ?: -1
     override fun toString(): String {
         val number = getNumber()
@@ -23,6 +25,7 @@ class StringName(val name: String) : Name() {
 }
 
 class Slot : Name() {
+    override fun clone() = Slot()
     private fun getNumber() = st?.getSlotNumber(this) ?: -1
     override fun toString(): String {
         val num = this.getNumber()
@@ -31,6 +34,7 @@ class Slot : Name() {
 }
 
 class BlockName(val name: String) : Name() {
+    override fun clone() = BlockName(name)
     private fun getNumber() = st?.getBlockNumber(this) ?: -1
     override fun toString(): String {
         val number = getNumber()
@@ -40,6 +44,7 @@ class BlockName(val name: String) : Name() {
 }
 
 class ConstantName(val name: String) : Name() {
+    override fun clone() = ConstantName(name)
     override fun toString() = name
     override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
@@ -51,6 +56,7 @@ class ConstantName(val name: String) : Name() {
 }
 
 object UndefinedName : Name() {
+    override fun clone() = this
     override fun toString(): String = throw UnexpectedException("Trying to print undefined name")
 }
 

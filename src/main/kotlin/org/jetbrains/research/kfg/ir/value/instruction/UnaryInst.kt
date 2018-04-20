@@ -20,4 +20,6 @@ class UnaryInst(name: Name, val opcode: UnaryOpcode, obj: Value)
         sb.append(if (opcode == UnaryOpcode.LENGTH) "${getOperand()}.length" else "-${getOperand()}")
         return sb.toString()
     }
+
+    override fun clone(): Instruction = UnaryInst(name.clone(), opcode, getOperand())
 }

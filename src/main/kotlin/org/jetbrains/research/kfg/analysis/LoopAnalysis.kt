@@ -10,23 +10,57 @@ import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class Loop(val header: BasicBlock, internal val body: MutableSet<BasicBlock>) {
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
+    var parent: Loop? = null
+    val subloops = mutableSetOf<Loop>()
+
     fun getExitingBlocks() = body.filter { !body.containsAll(it.successors) }.toSet()
     fun hasPreheader() = header.predecessors.filter { !body.contains(it) }.size == 1
     fun getPreheader() = header.predecessors.first { !body.contains(it) }
-    fun getLatches() = body.filter { it.successors.contains(header) }.toSet()
+    fun hasLatch() = body.filter { it.successors.contains(header) }.toSet().size == 1
+    fun getLatch() = body.filter { it.successors.contains(header) }.toSet().first()
     fun contains(bb: BasicBlock) = body.contains(bb)
 
     fun addBlock(bb: BasicBlock) = body.add(bb)
+    fun addSubloop(loop: Loop) = subloops.add(loop)
 }
 
 class LoopAnalysis(method: Method) : MethodVisitor(method) {
     val loops = mutableListOf<Loop>()
     override fun visit() {
         val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
-        LoopDetector(nodes).search()
+        val allLoops = LoopDetector(nodes).search()
                 .map { Loop(it.key as BasicBlock, it.value.map { it as BasicBlock }.toMutableSet()) }
-                .forEach { loops.add(it) }
+        val parents = mutableMapOf<Loop, MutableSet<Loop>>()
+        allLoops.forEach {
+            for (parent in allLoops) {
+                val set = parents.getOrPut(it, { mutableSetOf() })
+                if (it != parent && parent.contains(it.header))
+                    set.add(parent)
+            }
+        }
+        loops.addAll(parents.filter { it.value.isEmpty() }.keys)
+        var numLoops = loops.size
+        while (numLoops < allLoops.size) {
+            val remove = mutableSetOf<Loop>()
+            val removableParents = mutableSetOf<Loop>()
+            for (it in parents) {
+                if (it.value.size == 1) {
+                    it.value.first().addSubloop(it.key)
+                    it.key.parent = it.value.first()
+
+                    remove.add(it.key)
+                    removableParents.add(it.value.first())
+                    ++numLoops
+                }
+            }
+            for (it in remove) parents.remove(it)
+            for (it in removableParents) {
+                for ((_, possibleParents) in parents) {
+                    possibleParents.remove(it)
+                }
+            }
+        }
     }
 }
 
@@ -82,10 +116,10 @@ class LoopSimplifier(method: Method, val loops: List<Loop>) : MethodVisitor(meth
     }
 
     private fun buildLatch(loop: Loop) {
-        val latches = loop.getLatches()
+        val header = loop.header
+        val latches = loop.body.filter { it.successors.contains(header) }.toSet()
         if (latches.size == 1) return
 
-        val header = loop.header
         val latch = BodyBlock("loop.latch")
         latches.forEach { remapBlocks(it, header, latch) }
         latch.addSuccessor(header)

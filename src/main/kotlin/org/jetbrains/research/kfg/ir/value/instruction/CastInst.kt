@@ -8,4 +8,5 @@ class CastInst(name: Name, type: Type, obj: Value) : Instruction(name, type, arr
     fun getOperand() = operands[0]
 
     override fun print()= "$name = (${type.name}) ${getOperand()}"
+    override fun clone(): Instruction = CastInst(name.clone(), type, getOperand())
 }

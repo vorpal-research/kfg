@@ -19,4 +19,6 @@ class ReturnInst : TerminateInst {
         if (hasReturnValue()) sb.append(getReturnValue())
         return sb.toString()
     }
+
+    override fun clone(): Instruction = if (hasReturnValue()) ReturnInst(getReturnValue()) else ReturnInst()
 }

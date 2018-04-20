@@ -10,4 +10,5 @@ class JumpInst(successor: BasicBlock)
 
     override fun isTerminate() = true
     override fun print() = "goto ${getSuccessor().name}"
+    override fun clone(): Instruction = JumpInst(getSuccessor())
 }

@@ -9,4 +9,5 @@ class ExitMonitorInst(owner: Value)
     fun getOwner() = operands[0]
 
     override fun print() = "exit monitor ${getOwner()}"
+    override fun clone(): Instruction = ExitMonitorInst(getOwner())
 }
