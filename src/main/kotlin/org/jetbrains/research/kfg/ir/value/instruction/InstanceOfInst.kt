@@ -11,4 +11,5 @@ class InstanceOfInst(name: Name, val targetType: Type, obj: Value)
     fun getOperand() = operands[0]
 
     override fun print() = "$name = ${getOperand()} instanceOf ${targetType.name}"
+    override fun clone(): Instruction = InstanceOfInst(name.clone(), targetType, getOperand())
 }

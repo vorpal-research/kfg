@@ -8,4 +8,5 @@ class ThrowInst(exc: Value) : TerminateInst(UndefinedName, TF.getVoidType(), arr
     fun getThrowable() = operands[0]
 
     override fun print() = "throw ${getThrowable()}"
+    override fun clone(): Instruction = ThrowInst(getThrowable())
 }

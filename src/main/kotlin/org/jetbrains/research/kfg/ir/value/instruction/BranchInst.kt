@@ -13,4 +13,5 @@ class BranchInst(cond: Value, trueSuccessor: BasicBlock, falseSuccessor: BasicBl
 
     override fun isTerminate() = true
     override fun print() = "if (${getCond()}) goto ${getTrueSuccessor().name} else ${getFalseSuccessor().name}"
+    override fun clone(): Instruction = BranchInst(getCond(), getTrueSuccessor(), getFalseSuccessor())
 }

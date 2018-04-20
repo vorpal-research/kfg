@@ -28,6 +28,13 @@ abstract class Instruction(name: Name, type: Type, protected val operands: Array
                     to.addUser(this)
                 }
     }
+
+    abstract fun clone(): Instruction
+    open fun update(remapping: Map<Value, Value>): Instruction {
+        val new = clone()
+        remapping.forEach { from, to -> new.replaceUsesOf(from, to) }
+        return new
+    }
 }
 
 abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, protected val successors: Array<BasicBlock>) :

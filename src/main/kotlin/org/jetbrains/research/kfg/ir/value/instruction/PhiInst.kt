@@ -22,4 +22,6 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
         sb.append("}")
         return sb.toString()
     }
+
+    override fun clone(): Instruction = PhiInst(name.clone(), type, getIncomings())
 }

@@ -9,4 +9,5 @@ class EnterMonitorInst(owner: Value)
     fun getOwner() = operands[0]
 
     override fun print() = "enter monitor ${getOwner()}"
+    override fun clone(): Instruction = EnterMonitorInst(getOwner())
 }

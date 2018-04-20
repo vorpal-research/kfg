@@ -13,4 +13,6 @@ class ArrayLoadInst(name: Name, arrayRef: Value, index: Value)
     fun getIndex() = operands[1]
 
     override fun print() = "$name = ${getArrayRef()}[${getIndex()}]"
+
+    override fun clone(): Instruction = ArrayLoadInst(name.clone(), getArrayRef(), getIndex())
 }

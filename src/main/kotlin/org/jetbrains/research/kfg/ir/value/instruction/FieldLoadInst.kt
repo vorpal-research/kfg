@@ -28,4 +28,6 @@ class FieldLoadInst : Instruction {
         sb.append(field.name)
         return sb.toString()
     }
+
+    override fun clone(): Instruction = if (isStatic) FieldLoadInst(name.clone(), field) else FieldLoadInst(name.clone(), getOwner()!!, field)
 }

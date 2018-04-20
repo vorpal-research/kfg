@@ -31,4 +31,6 @@ class FieldStoreInst : Instruction {
         sb.append("${field.name} = ${getValue()}")
         return sb.toString()
     }
+
+    override fun clone(): Instruction = if (isStatic) FieldStoreInst(field, getValue()) else FieldStoreInst(getOwner()!!, field, getValue())
 }

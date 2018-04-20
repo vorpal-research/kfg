@@ -59,4 +59,8 @@ class CallInst : Instruction {
         sb.append(")")
         return sb.toString()
     }
+
+    override fun clone(): Instruction =
+            if (isStatic) CallInst(opcode, name.clone(), method, `class`, getArgs())
+            else CallInst(opcode, name.clone(), method, `class`, getCallee()!!, getArgs())
 }

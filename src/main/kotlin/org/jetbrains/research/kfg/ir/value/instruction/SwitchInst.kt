@@ -19,4 +19,6 @@ class SwitchInst(key: Value, default: BasicBlock, branches: Map<Value, BasicBloc
         sb.append("else -> ${getDefault().name}}")
         return sb.toString()
     }
+
+    override fun clone(): Instruction = SwitchInst(getKey(), getDefault(), getBranches())
 }
