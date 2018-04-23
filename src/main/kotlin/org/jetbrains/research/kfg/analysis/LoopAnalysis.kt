@@ -15,7 +15,8 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
     var parent: Loop? = null
     val subloops = mutableSetOf<Loop>()
 
-    fun getExitingBlocks() = body.filter { !body.containsAll(it.successors) }.toSet()
+    fun getExitingBlocks() = body.filterNot { body.containsAll(it.successors) }.toSet()
+    fun getLoopExits() = body.flatMap { it.successors }.filterNot { body.contains(it) }.toSet()
     fun hasSinglePreheader() = header.predecessors.filter { !body.contains(it) }.size == 1
     fun getPreheaders() = header.predecessors.filter { !body.contains(it) }
     fun getPreheader() = header.predecessors.first { !body.contains(it) }
@@ -25,8 +26,15 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
     fun contains(bb: BasicBlock) = body.contains(bb)
     fun containsAll(blocks: Collection<BasicBlock>) = body.containsAll(blocks)
 
-    fun addBlock(bb: BasicBlock) = body.add(bb)
+    fun addBlock(bb: BasicBlock) {
+        body.add(bb)
+        parent?.addBlock(bb)
+    }
     fun addSubloop(loop: Loop) = subloops.add(loop)
+    fun removeBlock(bb: BasicBlock) {
+        body.remove(bb)
+        parent?.removeBlock(bb)
+    }
 }
 
 object LoopManager {

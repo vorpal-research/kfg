@@ -102,6 +102,16 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         }
     }
 
+    fun remove(block: BasicBlock) {
+        if (basicBlocks.contains(block)) {
+            assert(block.parent == this, { "Block ${block.name} don't belong to $this"})
+            assert(block.users().size == 1, { "Block ${block.name} have users, cannot delete it" })
+            basicBlocks.remove(block)
+            block.removeUser(this)
+            block.parent = null
+        }
+    }
+
     fun addCatchBlock(bb: BasicBlock) {
         assert(bb in basicBlocks)
         catchEntries.add(bb)
