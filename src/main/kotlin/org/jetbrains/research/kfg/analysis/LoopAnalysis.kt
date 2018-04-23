@@ -8,6 +8,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.LoopDetector
+import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
@@ -15,14 +16,50 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
     val subloops = mutableSetOf<Loop>()
 
     fun getExitingBlocks() = body.filter { !body.containsAll(it.successors) }.toSet()
-    fun hasPreheader() = header.predecessors.filter { !body.contains(it) }.size == 1
+    fun hasSinglePreheader() = header.predecessors.filter { !body.contains(it) }.size == 1
+    fun getPreheaders() = header.predecessors.filter { !body.contains(it) }
     fun getPreheader() = header.predecessors.first { !body.contains(it) }
-    fun hasLatch() = body.filter { it.successors.contains(header) }.toSet().size == 1
+    fun hasSingleLatch() = body.filter { it.successors.contains(header) }.toSet().size == 1
+    fun getLatches() = body.filter { it.successors.contains(header) }.toSet()
     fun getLatch() = body.filter { it.successors.contains(header) }.toSet().first()
     fun contains(bb: BasicBlock) = body.contains(bb)
+    fun containsAll(blocks: Collection<BasicBlock>) = body.containsAll(blocks)
 
     fun addBlock(bb: BasicBlock) = body.add(bb)
     fun addSubloop(loop: Loop) = subloops.add(loop)
+}
+
+object LoopManager {
+    private class LoopInfo {
+        var valid = false
+        val loops: List<Loop>
+
+        constructor() {
+            this.valid = false
+            this.loops = listOf()
+        }
+
+        constructor(loops: List<Loop>) {
+            this.valid = true
+            this.loops = loops
+        }
+    }
+
+    private val loopInfo = mutableMapOf<Method, LoopInfo>()
+
+    fun setInvalid(method: Method) {
+        loopInfo.getOrPut(method, { LoopInfo() }).valid = false
+    }
+
+    fun getMethodLoopInfo(method: Method): List<Loop> {
+        val info = loopInfo.getOrPut(method, { LoopInfo() })
+        return if (!info.valid) {
+            val la = LoopAnalysis(method)
+            la.visit()
+            loopInfo[method] = LoopInfo(la.loops)
+            la.loops
+        } else info.loops
+    }
 }
 
 class LoopAnalysis(method: Method) : MethodVisitor(method) {
@@ -61,23 +98,35 @@ class LoopAnalysis(method: Method) : MethodVisitor(method) {
                 }
             }
         }
+
+        for (loop in allLoops) {
+            val headers = loop.body.map {
+                loop.body.fold(0, { acc, basicBlock -> if (loop.containsAll(basicBlock.predecessors)) acc + 1 else acc })
+            }.filter { it > 0 }
+            assert(headers.size == 1, { "Only loops with single header are supported" })
+        }
     }
 }
 
-class LoopSimplifier(method: Method, val loops: List<Loop>) : MethodVisitor(method) {
+class LoopSimplifier(method: Method) : LoopVisitor(method) {
+    override fun preservesLoopInfo() = false
+
     override fun visit() {
-        loops.forEach {
-            buildPreheader(it)
-            buildLatch(it)
-        }
+        super.visit()
         IRVerifier(method).visit()
+    }
+
+    override fun visitLoop(loop: Loop) {
+        super.visitLoop(loop)
+        buildPreheader(loop)
+        buildLatch(loop)
     }
 
     private fun remapBlocks(target: BasicBlock, from: BasicBlock, to: BasicBlock) {
         target.removeSuccessor(from)
         from.removePredecessor(target)
         target.addSuccessor(to)
-        from.addPredecessor(target)
+        to.addPredecessor(target)
         (target.back() as TerminateInst).replaceUsesOf(from, to)
     }
 

@@ -5,12 +5,15 @@ import info.leadinglight.jdot.Graph
 import info.leadinglight.jdot.Node
 import info.leadinglight.jdot.enums.Shape
 import info.leadinglight.jdot.enums.Style
+import info.leadinglight.jdot.impl.Util
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
+import java.io.File
+import java.nio.file.Files
 
 fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
-    Graph.DEFAULT_CMD = "/usr/bin/dot"
-    Graph.DEFAULT_BROWSER_CMD = arrayOf("/usr/bin/chromium")
+    Graph.setDefaultCmd("/usr/bin/dot")
+    val defaultBrowserCmd = arrayOf("/usr/bin/chromium")
     val graph = Graph(method.name)
     val name = Node(method.name).setShape(Shape.oval).setLabel(method.toString()).setFontName("ttf-fira-mono").setFontSize(12.0)
     graph.addNode(name)
@@ -36,5 +39,8 @@ fun viewCfg(method: Method, viewCatchBlocks: Boolean = false) {
             }
         }
     }
-    graph.viewSvg()
+    val file = graph.dot2file("svg")
+    val newFile = "${file.removeSuffix("out")}svg"
+    Files.move(File(file).toPath(), File(newFile).toPath())
+    Util.sh(defaultBrowserCmd.plus("file://$newFile"))
 }
