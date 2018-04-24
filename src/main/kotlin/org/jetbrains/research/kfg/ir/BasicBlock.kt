@@ -106,6 +106,7 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
         (0 until instructions.size).filter { instructions[it] == from }.forEach {
             instructions[it] = to
             to.parent = this
+            addValueToParent(to)
         }
     }
 
