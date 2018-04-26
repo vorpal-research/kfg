@@ -59,7 +59,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     val parameters = mutableListOf<Parameter>()
     val exceptions = mutableSetOf<Class>()
     val basicBlocks = mutableListOf<BasicBlock>()
-    val catchEntries = mutableSetOf<BasicBlock>()
+    val catchEntries = mutableSetOf<CatchBlock>()
     val slottracker = SlotTracker(this)
 
     init {
@@ -112,7 +112,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         }
     }
 
-    fun addCatchBlock(bb: BasicBlock) {
+    fun addCatchBlock(bb: CatchBlock) {
         assert(bb in basicBlocks)
         catchEntries.add(bb)
     }

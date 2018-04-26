@@ -447,16 +447,15 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     private fun buildTryCatchBlocks(): List<TryCatchBlockNode> {
         val catchBlocks = mutableListOf<TryCatchBlockNode>()
-        method.catchEntries.map { it as CatchBlock }
-                .forEach {
-                    val `catch` = getLabel(it)
-                    val exception = it.exception.toInternalDesc()
-                    for (throwers in it.throwers) {
-                        val from = getLabel(throwers.first())
-                        val to = getLabel(method.getNext(throwers.last()))
-                        catchBlocks.add(TryCatchBlockNode(from, to, `catch`, exception))
-                    }
-                }
+        method.catchEntries.forEach {
+            val `catch` = getLabel(it)
+            val exception = it.exception.toInternalDesc()
+            for (throwers in it.throwers) {
+                val from = getLabel(throwers.first())
+                val to = getLabel(method.getNext(throwers.last()))
+                catchBlocks.add(TryCatchBlockNode(from, to, `catch`, exception))
+            }
+        }
         return catchBlocks
     }
 

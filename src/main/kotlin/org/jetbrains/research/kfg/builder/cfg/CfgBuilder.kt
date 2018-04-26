@@ -969,12 +969,10 @@ class CfgBuilder(val method: Method)
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
-
-        val catches = method.catchEntries.map { it as CatchBlock }
-        catches.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
+        method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
         val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.getEntry())
         cycleEntries.addAll(c)
-        catches.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
+        method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 
 
         for (bb in order.reversed()) {
