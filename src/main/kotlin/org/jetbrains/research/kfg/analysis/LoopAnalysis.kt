@@ -73,9 +73,8 @@ object LoopManager {
 class LoopAnalysis(method: Method) : MethodVisitor(method) {
     val loops = mutableListOf<Loop>()
     override fun visit() {
-        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
-        val allLoops = LoopDetector(nodes).search()
-                .map { Loop(it.key as BasicBlock, it.value.map { it as BasicBlock }.toMutableSet()) }
+        val allLoops = LoopDetector(method.basicBlocks.toSet()).search()
+                .map { Loop(it.key, it.value.toMutableSet()) }
         val parents = mutableMapOf<Loop, MutableSet<Loop>>()
         allLoops.forEach {
             for (parent in allLoops) {
