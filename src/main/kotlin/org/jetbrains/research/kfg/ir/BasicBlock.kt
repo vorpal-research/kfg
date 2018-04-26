@@ -157,7 +157,7 @@ class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
 }
 
 class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)) {
-    val throwers = mutableSetOf<MutableList<BasicBlock>>()
+    val throwers = mutableSetOf<BasicBlock>()
 
     fun getEntries(): Set<BasicBlock> {
         val entries = mutableSetOf<BasicBlock>()
@@ -170,12 +170,14 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     fun addThrowers(throwers: List<BasicBlock>) {
-        this.throwers.add(throwers.toMutableList())
-        throwers.forEach { it.addUser(this) }
+        throwers.forEach {
+            this.throwers.add(it)
+            it.addUser(this)
+        }
     }
 
-    fun removeThrower(bb: BasicBlock) = this.throwers.forEach { it.remove(bb) }
-    fun getAllThrowers() = throwers.flatten().toSet()
+    fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)
+    fun getAllThrowers() = throwers.toSet()
     fun getAllPredecessors() = getAllThrowers().plus(getEntries())
 
     override fun print(): String {
@@ -196,13 +198,10 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
         super.replaceUsesOf(from, to)
-        for (list in throwers) {
-            val index = list.indexOf(from)
-            if (index >= 0) {
-                from.removeUser(this)
-                list[index] = to.get()
-                to.addUser(this)
-            }
+        if (throwers.remove(from)) {
+            from.removeUser(this)
+            throwers.add(to.get())
+            to.addUser(this)
         }
     }
 }

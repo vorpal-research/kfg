@@ -450,9 +450,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         method.catchEntries.forEach {
             val `catch` = getLabel(it)
             val exception = it.exception.toInternalDesc()
-            for (throwers in it.throwers) {
-                val from = getLabel(throwers.first())
-                val to = getLabel(method.getNext(throwers.last()))
+            for (thrower in it.throwers) {
+                val from = getLabel(thrower)
+                val to = getLabel(method.getNext(thrower))
                 catchBlocks.add(TryCatchBlockNode(from, to, `catch`, exception))
             }
         }
