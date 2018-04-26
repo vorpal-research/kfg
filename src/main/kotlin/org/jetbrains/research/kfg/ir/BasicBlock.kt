@@ -8,7 +8,7 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.defaultHashCode
 
-abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode, BlockUser, UsableBlock() {
+abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser, UsableBlock() {
     var parent: Method? = null
         internal set(value) {
             field = value
@@ -34,7 +34,7 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
         bb.addUser(this)
     }
 
-    fun addPredecessors(vararg bbs: BasicBlock) = predecessors.forEach { addPredecessor(it) }
+    fun addPredecessors(vararg bbs: BasicBlock) = bbs.forEach { addPredecessor(it) }
     fun addHandler(handle: CatchBlock) {
         handlers.add(handle)
         handle.addUser(this)
@@ -123,8 +123,8 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
 
     override fun iterator() = instructions.iterator()
 
-    override fun getSuccSet() = successors.map { it as GraphNode }.toSet()
-    override fun getPredSet() = predecessors.map { it as GraphNode }.toSet()
+    override fun getSuccSet() = successors.toSet()
+    override fun getPredSet() = predecessors.toSet()
 
     override fun get() = this
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {

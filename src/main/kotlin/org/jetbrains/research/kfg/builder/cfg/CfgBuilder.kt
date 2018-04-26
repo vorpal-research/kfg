@@ -805,16 +805,15 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildPhiBlocks() {
-        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
-        val dominatorTree = DominatorTreeBuilder(nodes).build()
+        val dominatorTree = DominatorTreeBuilder(method.basicBlocks.toSet()).build()
 
         for (it in dominatorTree) {
             val preds = it.key.getPredSet()
             if (preds.size > 1) {
                 for (pred in preds) {
-                    var runner: GraphNode? = pred
+                    var runner: BasicBlock? = pred
                     while (runner != null && runner != it.value.idom?.value) {
-                        phiBlocks.add(it.key as BasicBlock)
+                        phiBlocks.add(it.key)
                         runner = dominatorTree.getValue(runner).idom?.value
                     }
                 }
@@ -970,18 +969,15 @@ class CfgBuilder(val method: Method)
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
-        val nodes = method.basicBlocks.map { it as GraphNode }.toSet()
-        val order = mutableListOf<BasicBlock>()
 
         val catches = method.catchEntries.map { it as CatchBlock }
         catches.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
-        val (o, c) = TopologicalSorter(nodes).sort(method.getEntry())
-        order.addAll(o.reversed().map { it as BasicBlock })
-        cycleEntries.addAll(c.map { it as BasicBlock })
+        val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.getEntry())
+        cycleEntries.addAll(c)
         catches.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 
 
-        for (bb in order) {
+        for (bb in order.reversed()) {
             recoverState(bb)
             for (insn in blockToNode.getValue(bb)) {
                 when (insn) {
