@@ -16,9 +16,9 @@ object InstructionFactory {
     fun getNewArray(name: Name, componentType: Type, count: Value): Instruction = NewArrayInst(name, componentType, count)
     fun getNewArray(componentType: Type, count: Value): Instruction = NewArrayInst(Slot(), componentType, count)
 
-    fun getMultiNewArray(name: String, type: Type, dims: Int): Instruction = getMultiNewArray(StringName(name), type, dims)
-    fun getMultiNewArray(name: Name, type: Type, dims: Int): Instruction = MultiNewArrayInst(name, type, dims)
-    fun getMultiNewArray(type: Type, dims: Int): Instruction = MultiNewArrayInst(Slot(), type, dims)
+    fun getMultiNewArray(name: String, type: Type, dimensions: Array<Value>): Instruction = getMultiNewArray(StringName(name), type, dimensions)
+    fun getMultiNewArray(name: Name, type: Type, dimensions: Array<Value>): Instruction = MultiNewArrayInst(name, type, dimensions)
+    fun getMultiNewArray(type: Type, dimensions: Array<Value>): Instruction = MultiNewArrayInst(Slot(), type, dimensions)
 
     fun getArrayLoad(name: String, arrayRef: Value, index: Value): Instruction = getArrayLoad(StringName(name), arrayRef, index)
     fun getArrayLoad(name: Name, arrayRef: Value, index: Value): Instruction = ArrayLoadInst(name, arrayRef, index)
