@@ -296,8 +296,10 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitMultiNewArrayInst(inst: MultiNewArrayInst) {
-        val insn = MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.dims)
+        val insn = MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions())
+        addOperandsToStack(inst.getDimensions())
         currentInsnList.add(insn)
+        inst.getDimensions().forEach { stackPop() }
         stackPush(inst)
     }
 

@@ -698,8 +698,10 @@ class CfgBuilder(val method: Method)
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         super.visitMultiANewArrayInsn(insn.desc, insn.dims)
+        val dimensions = mutableListOf<Value>()
+        for (it in 0 until insn.dims) dimensions.add(stack.pop())
         val type = parseDesc(insn.desc)
-        val inst = IF.getMultiNewArray(type, insn.dims)
+        val inst = IF.getMultiNewArray(type, dimensions.toTypedArray())
         bb.addInstruction(inst)
         stack.push(inst)
     }
