@@ -30,6 +30,7 @@ class  TopologicalSorter<T: GraphNode<T>>(val nodes: Set<T>) {
     }
 
     fun sort(node: T): Pair<List<T>, Set<T>> {
+        assert(node in nodes)
         dfs(node)
         return Pair(order, cycled)
     }
