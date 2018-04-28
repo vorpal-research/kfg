@@ -17,7 +17,9 @@ class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock,
 
     override fun print(): String {
         val sb = StringBuilder()
-        sb.append("tableswitch (${getIndex()}) {}")
+        sb.append("tableswitch (${getIndex()}) {")
+        getBranches().withIndex().forEach { (index, successor) -> sb.append("$index -> ${successor.name}; ") }
+        sb.append("else -> ${getDefault().name}}")
         return sb.toString()
     }
 
