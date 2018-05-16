@@ -11,8 +11,8 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     : Instruction(name, type, incomings.values.toTypedArray()), BlockUser {
     private val predecessors = incomings.keys.toTypedArray()
 
-    fun getPredecessors() = predecessors
-    fun getIncomingValues() = operands
+    fun getPredecessors() = predecessors.toList()
+    fun getIncomingValues() = operands.toList()
     fun getIncomings() = predecessors.zip(operands).toMap()
 
     override fun print(): String {

@@ -13,7 +13,7 @@ abstract class Instruction(name: Name, type: Type, protected val operands: Array
         operands.forEach { it.addUser(this) }
     }
 
-    fun operands() = operands.clone()
+    fun operands() = operands.toList()
 
     abstract fun print(): String
     open fun isTerminate() = false
@@ -43,7 +43,7 @@ abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, pro
         successors.forEach { it.addUser(this) }
     }
 
-    fun successors() = successors.clone()
+    fun successors() = successors.toList()
     override fun isTerminate() = true
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {

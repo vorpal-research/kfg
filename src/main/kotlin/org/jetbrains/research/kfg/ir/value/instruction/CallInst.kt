@@ -45,7 +45,7 @@ class CallInst : Instruction {
     }
 
     fun getCallee(): Value? = if (isStatic) null else operands[0]
-    fun getArgs(): Array<Value> = if (isStatic) operands else operands.drop(1).toTypedArray()
+    fun getArgs()= if (isStatic) operands.toList() else operands.drop(1)
 
     override fun print(): String {
         val sb = StringBuilder()
@@ -61,6 +61,6 @@ class CallInst : Instruction {
     }
 
     override fun clone(): Instruction =
-            if (isStatic) CallInst(opcode, name.clone(), method, `class`, getArgs())
-            else CallInst(opcode, name.clone(), method, `class`, getCallee()!!, getArgs())
+            if (isStatic) CallInst(opcode, name.clone(), method, `class`, getArgs().toTypedArray())
+            else CallInst(opcode, name.clone(), method, `class`, getCallee()!!, getArgs().toTypedArray())
 }

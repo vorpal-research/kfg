@@ -17,7 +17,7 @@ class MultiNewArrayInst(name: Name, type: Type, dimentions: Array<Value>): Instr
         this.component = current
     }
 
-    fun getDimensions() = operands
+    fun getDimensions() = operands.toList()
     fun numDimensions() = operands.size
 
     override fun print(): String {

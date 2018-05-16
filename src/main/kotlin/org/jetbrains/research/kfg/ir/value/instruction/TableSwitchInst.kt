@@ -13,7 +13,7 @@ class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock,
     fun getMax() = operands[2]
 
     fun getDefault() = successors[0]
-    fun getBranches() = successors.drop(1).toTypedArray()
+    fun getBranches() = successors.drop(1)
 
     override fun print(): String {
         val sb = StringBuilder()
@@ -23,5 +23,5 @@ class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock,
         return sb.toString()
     }
 
-    override fun clone(): Instruction = TableSwitchInst(getIndex(), getMin(), getMax(), getDefault(), getBranches())
+    override fun clone(): Instruction = TableSwitchInst(getIndex(), getMin(), getMax(), getDefault(), getBranches().toTypedArray())
 }
