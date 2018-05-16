@@ -115,7 +115,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     // add all instructions for loading required arguments to stack
-    private fun addOperandsToStack(operands: Array<Value>) {
+    private fun addOperandsToStack(operands: List<Value>) {
         stackSave()
         for (operand in operands) {
             val insn = when (operand) {
@@ -330,7 +330,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitSwitchInst(inst: SwitchInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(arrayOf(inst.getKey()))
+        addOperandsToStack(listOf(inst.getKey()))
         val default = getLabel(inst.getDefault())
         val branches = inst.getBranches()
         val keys = branches.keys.map { (it as IntConstant).value }.toIntArray()
@@ -371,7 +371,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitTableSwitchInst(inst: TableSwitchInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(arrayOf(inst.getIndex()))
+        addOperandsToStack(listOf(inst.getIndex()))
         val min = (inst.getMin() as IntConstant).value
         val max = (inst.getMax() as IntConstant).value
         val default = getLabel(inst.getDefault())
