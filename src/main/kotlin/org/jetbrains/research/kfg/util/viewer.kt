@@ -6,7 +6,6 @@ import info.leadinglight.jdot.Node
 import info.leadinglight.jdot.enums.Shape
 import info.leadinglight.jdot.enums.Style
 import info.leadinglight.jdot.impl.Util
-import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import java.io.File
 import java.nio.file.Files
