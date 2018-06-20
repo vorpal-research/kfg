@@ -14,12 +14,8 @@
     <version>0.1</version>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kotlin.version>1.2.30</kotlin.version>
-        <junit.version>4.12</junit.version>
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
-        <compiler-plugin.version>3.5.1</compiler-plugin.version>
         <asm.version>5.2</asm.version>
         <commons-cli.version>1.4</commons-cli.version>
     </properties>
