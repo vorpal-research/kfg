@@ -5,8 +5,7 @@ import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.util.GraphNode
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.algorithm.GraphNode
 
 abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser, UsableBlock() {
     var parent: Method? = null

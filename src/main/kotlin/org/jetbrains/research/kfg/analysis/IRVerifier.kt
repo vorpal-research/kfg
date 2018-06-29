@@ -9,7 +9,6 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
-import org.jetbrains.research.kfg.util.viewCfg
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class IRVerifier(method: Method) : MethodVisitor(method) {

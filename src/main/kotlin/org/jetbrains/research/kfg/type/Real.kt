@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.util.defaultHashCode
 
 interface Real : Type {
     override fun isPrimary() = true

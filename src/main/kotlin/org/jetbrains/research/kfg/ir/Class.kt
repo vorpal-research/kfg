@@ -3,7 +3,7 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.type.Type
 import org.objectweb.asm.tree.*
 

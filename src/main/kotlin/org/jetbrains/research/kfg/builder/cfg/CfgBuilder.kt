@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
+import org.jetbrains.research.kex.algorithm.DominatorTreeBuilder
+import org.jetbrains.research.kex.algorithm.TopologicalSorter
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.ir.*

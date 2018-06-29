@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.VF
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
