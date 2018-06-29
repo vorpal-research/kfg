@@ -1,8 +1,9 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kex.algorithm.GraphView
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
@@ -178,3 +179,36 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
                 }
     }
 }
+
+fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
+    val nodes = mutableMapOf<String, GraphView>()
+    nodes[name] = GraphView(name, name)
+    basicBlocks.map {
+        val label = StringBuilder()
+        label.append("${it.name}:\\l")
+        it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
+        nodes[it.name.toString()] = GraphView(name, label.toString())
+    }
+    if (!isAbstract()) {
+        val entryNode = nodes.getValue(getEntry().name.toString())
+        nodes.getValue(name).successors.add(entryNode)
+    }
+    basicBlocks.forEach {
+        val current = nodes.getValue(it.name.toString())
+        for (succ in it.successors) {
+            current.successors.add(nodes.getValue(succ.name.toString()))
+        }
+    }
+    if (viewCatchBlocks) {
+        catchEntries.forEach {
+            val current = nodes.getValue(it.name.toString())
+            for (thrower in it.getAllThrowers()) {
+                current.successors.add(nodes.getValue(thrower.name.toString()))
+            }
+        }
+    }
+    return nodes.values.toList()
+}
+
+fun Method.viewCfg(viewCatchBlocks: Boolean = false, dot: String = "/usr/bin/dot", browser: String = "/usr/bin/chromium")
+        = org.jetbrains.research.kex.algorithm.viewCfg(name, graphView(viewCatchBlocks), dot, browser)

@@ -3,8 +3,7 @@ package org.jetbrains.research.kfg.ir.value
 import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.util.defaultHashCode
-import org.jetbrains.research.kfg.util.viewCfg
+import org.jetbrains.research.kex.util.defaultHashCode
 
 sealed class Name {
     internal var st: SlotTracker? = null

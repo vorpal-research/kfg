@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
-import org.jetbrains.research.kfg.util.defaultHashCode
+import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.util.parseJarClasses
 import org.objectweb.asm.tree.*
 import java.util.jar.JarFile
