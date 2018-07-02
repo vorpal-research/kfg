@@ -111,7 +111,6 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         is StringConstant -> LdcInsnNode(`const`.value)
         is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.getAsmDesc()))
         is MethodConstant -> TODO()
-        else -> throw UnexpectedException("Unknown constant type $`const`")
     }
 
     // add all instructions for loading required arguments to stack
