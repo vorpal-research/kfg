@@ -9,7 +9,7 @@ interface Reference : Type {
     override fun isReference() = true
 }
 
-class ClassType(val `class`: Class) : Reference {
+open class ClassType(val `class`: Class) : Reference {
     override val name = `class`.getFullname()
 
     override fun toString() = name
@@ -24,7 +24,7 @@ class ClassType(val `class`: Class) : Reference {
     }
 }
 
-class ArrayType(val component: Type) : Reference {
+open class ArrayType(val component: Type) : Reference {
     override val name = "$component[]"
     override fun toString() = name
     override fun getAsmDesc() = "[${component.getAsmDesc()}"
