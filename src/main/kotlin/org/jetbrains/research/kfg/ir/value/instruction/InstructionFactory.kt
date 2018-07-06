@@ -12,13 +12,13 @@ import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.type.Type
 
 object InstructionFactory {
-    fun getNewArray(name: String, componentType: Type, count: Value): Instruction = getNewArray(StringName(name), componentType, count)
-    fun getNewArray(name: Name, componentType: Type, count: Value): Instruction = NewArrayInst(name, componentType, count)
-    fun getNewArray(componentType: Type, count: Value): Instruction = NewArrayInst(Slot(), componentType, count)
+    fun getNewArray(name: String, componentType: Type, count: Value): Instruction = getNewArray(StringName(name), TF.getArrayType(componentType), count)
+    fun getNewArray(name: Name, componentType: Type, count: Value): Instruction = NewArrayInst(name, TF.getArrayType(componentType), arrayOf(count))
+    fun getNewArray(componentType: Type, count: Value): Instruction = NewArrayInst(Slot(), TF.getArrayType(componentType), arrayOf(count))
 
-    fun getMultiNewArray(name: String, type: Type, dimensions: Array<Value>): Instruction = getMultiNewArray(StringName(name), type, dimensions)
-    fun getMultiNewArray(name: Name, type: Type, dimensions: Array<Value>): Instruction = MultiNewArrayInst(name, type, dimensions)
-    fun getMultiNewArray(type: Type, dimensions: Array<Value>): Instruction = MultiNewArrayInst(Slot(), type, dimensions)
+    fun getNewArray(name: String, type: Type, dimensions: Array<Value>): Instruction = getNewArray(StringName(name), type, dimensions)
+    fun getNewArray(name: Name, type: Type, dimensions: Array<Value>): Instruction = NewArrayInst(name, type, dimensions)
+    fun getNewArray(type: Type, dimensions: Array<Value>): Instruction = NewArrayInst(Slot(), type, dimensions)
 
     fun getArrayLoad(name: String, arrayRef: Value, index: Value): Instruction = getArrayLoad(StringName(name), arrayRef, index)
     fun getArrayLoad(name: Name, arrayRef: Value, index: Value): Instruction = ArrayLoadInst(name, arrayRef, index)

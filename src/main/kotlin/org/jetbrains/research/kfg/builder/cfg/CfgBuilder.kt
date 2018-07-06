@@ -703,7 +703,7 @@ class CfgBuilder(val method: Method)
         val dimensions = mutableListOf<Value>()
         for (it in 0 until insn.dims) dimensions.add(stack.pop())
         val type = parseDesc(insn.desc)
-        val inst = IF.getMultiNewArray(type, dimensions.toTypedArray())
+        val inst = IF.getNewArray(type, dimensions.toTypedArray())
         bb.addInstruction(inst)
         stack.push(inst)
     }

@@ -1,15 +1,32 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.Name
+import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.type.ArrayType
+import org.jetbrains.research.kfg.type.Type
 
-class NewArrayInst(name: Name, val compType: Type, count: Value)
-    : Instruction(name, TF.getArrayType(compType), arrayOf(count)) {
+class NewArrayInst(name: Name, type: Type, dimentions: Array<Value>): Instruction(name, type, dimentions) {
+    val component: Type
 
-    fun getCount() = operands[0]
+    init {
+        var current = type
+        repeat(numDimensions()) {
+            assert(current is ArrayType)
+            current = (current as ArrayType).component
+        }
+        this.component = current
+    }
 
-    override fun print() = "$name = new ${compType.name}[${getCount()}]"
-    override fun clone(): Instruction = NewArrayInst(name.clone(), compType, getCount())
+    fun getDimensions() = operands.toList()
+    fun numDimensions() = operands.size
+
+    override fun print(): String {
+        val sb = StringBuilder()
+        sb.append("$name = new ${type.name}")
+        getDimensions().forEach {
+            sb.append("[$it]")
+        }
+        return sb.toString()
+    }
+    override fun clone(): Instruction = NewArrayInst(name.clone(), type, operands)
 }
