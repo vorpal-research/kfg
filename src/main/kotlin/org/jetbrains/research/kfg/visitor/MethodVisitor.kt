@@ -34,7 +34,6 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
             is FieldLoadInst -> visitFieldLoadInst(inst)
             is FieldStoreInst -> visitFieldStoreInst(inst)
             is InstanceOfInst -> visitInstanceOfInst(inst)
-            is MultiNewArrayInst -> visitMultiNewArrayInst(inst)
             is NewArrayInst -> visitNewArrayInst(inst)
             is NewInst -> visitNewInst(inst)
             is PhiInst -> visitPhiInst(inst)
@@ -69,7 +68,6 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
     open fun visitFieldLoadInst(inst: FieldLoadInst) {}
     open fun visitFieldStoreInst(inst: FieldStoreInst) {}
     open fun visitInstanceOfInst(inst: InstanceOfInst) {}
-    open fun visitMultiNewArrayInst(inst: MultiNewArrayInst) {}
     open fun visitNewArrayInst(inst: NewArrayInst) {}
     open fun visitNewInst(inst: NewInst) {}
     open fun visitPhiInst(inst: PhiInst) {}

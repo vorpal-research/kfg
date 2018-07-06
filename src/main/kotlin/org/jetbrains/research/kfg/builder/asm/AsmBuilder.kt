@@ -2,7 +2,6 @@ package org.jetbrains.research.kfg.builder.asm
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
@@ -281,24 +280,16 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitNewArrayInst(inst: NewArrayInst) {
-        val component = inst.compType
-        val insn = if (component.isPrimary()) {
-            IntInsnNode(NEWARRAY, primaryTypeToInt(component))
-        } else {
-            TypeInsnNode(ANEWARRAY, component.toInternalDesc())
+        val component = inst.component
+        val insn = when {
+            inst.numDimensions() > 1 -> MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions())
+            component.isPrimary() -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
+            else -> TypeInsnNode(ANEWARRAY, component.toInternalDesc())
         }
         val operands = inst.operands()
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
-        stackPush(inst)
-    }
-
-    override fun visitMultiNewArrayInst(inst: MultiNewArrayInst) {
-        val insn = MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions())
-        addOperandsToStack(inst.getDimensions())
-        currentInsnList.add(insn)
-        inst.getDimensions().forEach { stackPop() }
         stackPush(inst)
     }
 
