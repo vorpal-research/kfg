@@ -440,7 +440,8 @@ class CfgBuilder(val method: Method)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val op = toCmpOpcode(insn.opcode)
-        val inst = IF.getCmp(op, lhv, rhv)
+        val resType = getCmpResultType(op)
+        val inst = IF.getCmp(resType, op, lhv, rhv)
         bb.addInstruction(inst)
         stack.push(inst)
     }
@@ -636,14 +637,16 @@ class CfgBuilder(val method: Method)
             val name = Slot()
             val rhv = stack.pop()
             val opc = toCmpOpcode(insn.opcode)
+            val resType = getCmpResultType(opc)
             val cond = when (insn.opcode) {
-                in IFEQ..IFLE -> IF.getCmp(name, opc, rhv, VF.getZeroConstant(rhv.type))
-                in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, opc, stack.pop(), rhv)
-                in IFNULL..IFNONNULL -> IF.getCmp(name, opc, rhv, VF.getNullConstant())
+                in IFEQ..IFLE -> IF.getCmp(name, resType, opc, rhv, VF.getZeroConstant(rhv.type))
+                in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, resType, opc, stack.pop(), rhv)
+                in IFNULL..IFNONNULL -> IF.getCmp(name, resType, opc, rhv, VF.getNullConstant())
                 else -> throw UnexpectedOpcodeException("Jump opcode ${insn.opcode}")
             }
             bb.addInstruction(cond)
-            bb.addInstruction(IF.getBranch(cond, trueSuccessor, falseSuccessor))
+            val castedCond = if (cond.type is BoolType) cond else IF.getCast(TF.getBoolType(), cond)
+            bb.addInstruction(IF.getBranch(castedCond, trueSuccessor, falseSuccessor))
         }
     }
 

@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import org.jetbrains.research.kfg.TF
 import org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.UnexpectedOpcodeException
 
@@ -67,12 +68,19 @@ fun toCmpOpcode(opcode: Int) = when (opcode) {
     Opcodes.IF_ICMPLE -> CmpOpcode.Le()
     Opcodes.IF_ACMPEQ -> CmpOpcode.Eq()
     Opcodes.IF_ACMPNE -> CmpOpcode.Neq()
-    Opcodes.LCMP -> CmpOpcode.Eq()
+    Opcodes.LCMP -> CmpOpcode.Cmp()
     Opcodes.FCMPL -> CmpOpcode.Cmpl()
     Opcodes.FCMPG -> CmpOpcode.Cmpg()
     Opcodes.DCMPL -> CmpOpcode.Cmpl()
     Opcodes.DCMPG -> CmpOpcode.Cmpg()
     else -> throw UnexpectedOpcodeException("Cmp opcode $opcode")
+}
+
+fun getCmpResultType(opcode: CmpOpcode) = when (opcode) {
+    is CmpOpcode.Cmp -> TF.getIntType()
+    is CmpOpcode.Cmpl -> TF.getIntType()
+    is CmpOpcode.Cmpg -> TF.getIntType()
+    else -> TF.getBoolType()
 }
 
 sealed class CmpOpcode {
@@ -86,6 +94,7 @@ sealed class CmpOpcode {
     class Gt(override val name: String = ">") : CmpOpcode()
     class Le(override val name: String = "<=") : CmpOpcode()
     class Ge(override val name: String = ">=") : CmpOpcode()
+    class Cmp(override val name: String = "cmp") : CmpOpcode()
     class Cmpg(override val name: String = "cmpg") : CmpOpcode()
     class Cmpl(override val name: String = "cmpl") : CmpOpcode()
 }
