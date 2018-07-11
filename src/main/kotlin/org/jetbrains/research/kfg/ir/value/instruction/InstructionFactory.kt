@@ -43,9 +43,12 @@ object InstructionFactory {
     fun getBinary(name: Name, opcode: BinaryOpcode, lhv: Value, rhv: Value): Instruction = BinaryInst(name, opcode, lhv, rhv)
     fun getBinary(opcode: BinaryOpcode, lhv: Value, rhv: Value): Instruction = BinaryInst(Slot(), opcode, lhv, rhv)
 
-    fun getCmp(name: String, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction = getCmp(StringName(name), opcode, lhv, rhv)
-    fun getCmp(name: Name, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction = CmpInst(name, opcode, lhv, rhv)
-    fun getCmp(opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction = CmpInst(Slot(), opcode, lhv, rhv)
+    fun getCmp(name: String, type: Type, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction =
+            getCmp(StringName(name), type, opcode, lhv, rhv)
+    fun getCmp(name: Name, type: Type, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction =
+            CmpInst(name, type, opcode, lhv, rhv)
+    fun getCmp(type: Type, opcode: CmpOpcode, lhv: Value, rhv: Value): Instruction =
+            getCmp(Slot(), type, opcode, lhv, rhv)
 
     fun getCast(name: String, type: Type, obj: Value): Instruction = getCast(StringName(name), type, obj)
     fun getCast(name: Name, type: Type, obj: Value): Instruction = CastInst(name, type, obj)

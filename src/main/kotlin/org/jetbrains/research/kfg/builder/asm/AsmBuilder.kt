@@ -62,6 +62,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         if (stack.size > maxStack) maxStack = stack.size
         return res
     }
+
     private fun stackSave() {
         while (stack.isNotEmpty()) {
             val operand = stackPop()
@@ -382,15 +383,14 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitCmpInst(inst: CmpInst) {
-        val isBranch = !((inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
-                || (inst.opcode is CmpOpcode.Eq && inst.getLhv().type is LongType))
+        val isBranch = !(inst.opcode is CmpOpcode.Cmp || inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
         if (isBranch) {
             // this kind of cmp insts are handled in visitBranch
             assert(inst.users().size == 1, { "Unsupported usage of cmp inst" })
             assert(inst.users().first() is BranchInst, { "Unsupported usage of cmp inst" })
         } else {
             val opcode = when (inst.opcode) {
-                is CmpOpcode.Eq -> LCMP
+                is CmpOpcode.Cmp -> LCMP
                 is CmpOpcode.Cmpg -> when (inst.getLhv().type) {
                     is FloatType -> FCMPG
                     is DoubleType -> DCMPG
