@@ -4,8 +4,8 @@ import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
-import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.util.parseJarClasses
+import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.*
 import java.util.jar.JarFile
 
@@ -24,7 +24,7 @@ class Package(name: String) {
     fun isChild(name: String) = isChild(Package(name))
 
     override fun toString() = "$name${if (isConcrete) "" else "*"}"
-    override fun hashCode() = defaultHashCode(name, isConcrete)
+    override fun hashCode() = simpleHash(name, isConcrete)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

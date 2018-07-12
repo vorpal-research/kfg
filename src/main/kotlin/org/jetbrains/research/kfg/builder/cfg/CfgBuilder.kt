@@ -1,14 +1,13 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import org.jetbrains.research.kex.algorithm.DominatorTreeBuilder
-import org.jetbrains.research.kex.algorithm.TopologicalSorter
 import org.jetbrains.research.kfg.*
-import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.*
+import org.jetbrains.research.kfg.util.DominatorTreeBuilder
+import org.jetbrains.research.kfg.util.TopologicalSorter
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*

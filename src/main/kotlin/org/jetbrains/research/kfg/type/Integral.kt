@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kex.util.defaultHashCode
+import org.jetbrains.research.kfg.util.simpleHash
 
 interface Integral : Type {
     val width: Int
@@ -24,7 +24,7 @@ object BoolType : Integral {
     override fun getAsmDesc() = "Z"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -39,7 +39,7 @@ object ByteType : Integral {
     override fun getAsmDesc() = "B"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -54,7 +54,7 @@ object ShortType : Integral {
     override fun getAsmDesc() = "S"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -69,7 +69,7 @@ object IntType : Integral {
     override fun getAsmDesc() = "I"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -85,7 +85,7 @@ object LongType : Integral {
     override fun getAsmDesc() = "J"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -100,7 +100,7 @@ object CharType : Integral {
     override fun getAsmDesc() = "C"
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = simpleHash(width, signed)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass

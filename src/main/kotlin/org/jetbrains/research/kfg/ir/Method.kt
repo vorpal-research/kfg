@@ -1,13 +1,13 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kex.algorithm.GraphView
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseMethodDesc
+import org.jetbrains.research.kfg.util.GraphView
+import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
@@ -37,7 +37,7 @@ class MethodDesc {
         return sb.toString()
     }
 
-    override fun hashCode() = defaultHashCode(*args, retval)
+    override fun hashCode() = simpleHash(*args, retval)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
@@ -161,7 +161,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     override fun toString() = getPrototype()
     override fun iterator() = basicBlocks.iterator()
 
-    override fun hashCode() = defaultHashCode(name, `class`, desc)
+    override fun hashCode() = simpleHash(name, `class`, desc)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
@@ -210,5 +210,5 @@ fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
     return nodes.values.toList()
 }
 
-fun Method.viewCfg(viewCatchBlocks: Boolean = false, dot: String = "/usr/bin/dot", browser: String = "/usr/bin/chromium")
-        = org.jetbrains.research.kex.algorithm.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+fun Method.viewCfg(viewCatchBlocks: Boolean = false, dot: String, browser: String)
+        = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)

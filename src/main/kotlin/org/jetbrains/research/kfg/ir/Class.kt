@@ -3,15 +3,15 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
-import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.*
 
 abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
     class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(name: String, desc: String) : this(name, MethodDesc(desc))
 
-        override fun hashCode() = defaultHashCode(name, desc)
+        override fun hashCode() = simpleHash(name, desc)
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other?.javaClass != this.javaClass) return false
@@ -61,7 +61,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = getFullname()
-    override fun hashCode() = defaultHashCode(name, `package`)
+    override fun hashCode() = simpleHash(name, `package`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
