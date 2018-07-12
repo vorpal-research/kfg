@@ -4,16 +4,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <artifactId>kex</artifactId>
-        <groupId>org.jetbrains.research</groupId>
-        <version>0.1</version>
-    </parent>
-
+    <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
     <version>0.1</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <kotlin.version>1.2.30</kotlin.version>
+        <junit.version>4.12</junit.version>
+        <compiler-plugin.version>3.5.1</compiler-plugin.version>
+
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
         <asm.version>5.2</asm.version>
@@ -22,9 +22,26 @@
 
     <dependencies>
         <dependency>
-            <groupId>info.leadinglight</groupId>
-            <artifactId>jdot</artifactId>
-            <version>1.0</version>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test-junit</artifactId>
+            <version>${kotlin.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-reflect</artifactId>
+            <version>${kotlin.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test</artifactId>
+            <version>${kotlin.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -36,7 +53,7 @@
         <dependency>
             <groupId>org.jetbrains.research</groupId>
             <artifactId>util</artifactId>
-            <version>0.1</version>
+            <version>${version}</version>
         </dependency>
 
         <dependency>
