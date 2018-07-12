@@ -1,10 +1,10 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.VF
-import org.jetbrains.research.kex.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
+import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.FieldNode
 
@@ -23,7 +23,7 @@ class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
         @Suppress("UNCHECKED_CAST") addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
     }
 
-    override fun hashCode() = defaultHashCode(name, `class`, type)
+    override fun hashCode() = simpleHash(name, `class`, type)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

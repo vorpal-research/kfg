@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
-import org.jetbrains.research.kex.algorithm.LoopDetector
+import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 

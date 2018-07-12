@@ -3,7 +3,7 @@ package org.jetbrains.research.kfg.ir.value
 import org.jetbrains.research.kfg.UnexpectedException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kex.util.defaultHashCode
+import org.jetbrains.research.kfg.util.simpleHash
 
 sealed class Name {
     internal var st: SlotTracker? = null
@@ -45,7 +45,7 @@ class BlockName(val name: String) : Name() {
 class ConstantName(val name: String) : Name() {
     override fun clone() = ConstantName(name)
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(name)
+    override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (this.javaClass != other?.javaClass) return false
