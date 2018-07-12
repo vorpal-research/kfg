@@ -94,7 +94,7 @@ class GraphView(
 }
 
 fun viewCfg(name: String, nodes: List<GraphView>, dot: String = "/usr/bin/dot", browser: String = "/usr/bin/chromium") {
-    Graph.setDefaultCmd("/usr/bin/dot")
+    Graph.setDefaultCmd(dot)
     val graph = Graph(name)
     graph.addNodes(*nodes.map {
         Node(it.name).setShape(Shape.box).setLabel(it.label).setFontSize(12.0)
