@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
+import org.jetbrains.research.kfg.ir.viewCfg
 import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
@@ -29,6 +30,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
         body.add(bb)
         parent?.addBlock(bb)
     }
+
     fun addSubloop(loop: Loop) = subloops.add(loop)
     fun removeBlock(bb: BasicBlock) {
         body.remove(bb)
@@ -106,10 +108,10 @@ class LoopAnalysis(method: Method) : MethodVisitor(method) {
         }
 
         for (loop in allLoops) {
-            val headers = loop.body.map {
-                loop.body.fold(0, { acc, basicBlock -> if (loop.containsAll(basicBlock.predecessors)) acc + 1 else acc })
-            }.filter { it > 0 }
-            assert(headers.size == 1, { "Only loops with single header are supported" })
+            val headers = loop.body.fold(0) { acc, basicBlock ->
+                if (loop.containsAll(basicBlock.predecessors)) acc else acc + 1
+            }
+            assert(headers == 1, { "Only loops with single header are supported" })
         }
     }
 }

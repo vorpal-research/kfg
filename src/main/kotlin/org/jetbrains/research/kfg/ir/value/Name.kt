@@ -115,7 +115,7 @@ class SlotTracker(val method: Method) {
             val names = blocks.getOrPut(bb.name.name, { mutableListOf() })
             if (!names.contains(bb.name)) names.add(bb.name)
             for (inst in bb) {
-                for (value in inst.operands().plus(inst)) {
+                for (value in inst.operands().plus(inst.get())) {
                     when (value.name) {
                         is Slot -> {
                             slots.getOrPut(value.name, { slotCount++ })
