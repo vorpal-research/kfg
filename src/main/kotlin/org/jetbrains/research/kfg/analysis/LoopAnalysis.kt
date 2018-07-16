@@ -74,6 +74,7 @@ object LoopManager {
 class LoopAnalysis(method: Method) : MethodVisitor(method) {
     val loops = mutableListOf<Loop>()
     override fun visit() {
+        loops.clear()
         val allLoops = LoopDetector(method.basicBlocks.toSet()).search()
                 .map { Loop(it.key, it.value.toMutableSet()) }
         val parents = mutableMapOf<Loop, MutableSet<Loop>>()
