@@ -22,7 +22,7 @@ class NewArrayInst(name: Name, type: Type, dimentions: Array<Value>): Instructio
 
     override fun print(): String {
         val sb = StringBuilder()
-        sb.append("$name = new ${type.name}")
+        sb.append("$name = new ${component.name}")
         getDimensions().forEach {
             sb.append("[$it]")
         }
