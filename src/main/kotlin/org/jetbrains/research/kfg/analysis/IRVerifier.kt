@@ -1,8 +1,6 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.CatchBlock
-import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Constant
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
@@ -43,9 +41,15 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
         inst.getPredecessors().forEach {
             assert(method.basicBlocks.contains(it), { "Phi incoming from unknown block" })
         }
-        assert(bb.predecessors.size == inst.getPredecessors().size, { "Phi insts predecessors are different from block predecessors" })
+        val predecessors = when (bb) {
+            is BodyBlock -> bb.predecessors
+            is CatchBlock -> bb.getAllPredecessors()
+            else -> setOf()
+        }
+
+        assert(predecessors.size == inst.getPredecessors().size, { "Phi insts predecessors are different from block predecessors" })
         for (pred in inst.getPredecessors()) {
-            assert(bb.predecessors.contains(pred), { "Phi insts predecessors are different from block predecessors" })
+            assert(predecessors.contains(pred), { "Phi insts predecessors are different from block predecessors" })
         }
     }
 

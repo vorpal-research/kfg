@@ -888,8 +888,8 @@ class CfgBuilder(val method: Method)
 
             val predFrames = ((bb as? CatchBlock)?.getAllPredecessors() ?: bb.predecessors).map { frames.getValue(it) }
             val stacks = predFrames.map { it.stack }
-            val stackSizes = stacks.map { it.size }.toSet()
-            assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
+//            val stackSizes = stacks.map { it.size }.toSet()
+//            assert(stackSizes.size == 1, { "Stack sizes of ${bb.name} predecessors are different" })
 
             recoverStackPhis(sf, predFrames)
 

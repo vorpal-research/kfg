@@ -106,7 +106,6 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     fun remove(block: BasicBlock) {
         if (basicBlocks.contains(block)) {
             assert(block.parent == this, { "Block ${block.name} don't belong to $this"})
-            assert(block.users().size == 1, { "Block ${block.name} have users, cannot delete it" })
             basicBlocks.remove(block)
             block.removeUser(this)
             block.parent = null
@@ -187,7 +186,7 @@ fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
         val label = StringBuilder()
         label.append("${it.name}:\\l")
         it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
-        nodes[it.name.toString()] = GraphView(name, label.toString())
+        nodes[it.name.toString()] = GraphView(it.name.toString(), label.toString())
     }
     if (!isAbstract()) {
         val entryNode = nodes.getValue(getEntry().name.toString())
