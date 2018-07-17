@@ -140,6 +140,19 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
             toCatch.addThrowers(listOf(this))
         }
     }
+
+    fun replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) {
+        if (removeSuccessor(from.get())) {
+            addSuccessor(to.get())
+        } else if (handlers.contains(from.get())) {
+            assert(from.get() is CatchBlock)
+            val fromCatch = from.get() as CatchBlock
+            removeHandler(fromCatch)
+            assert(to.get() is CatchBlock)
+            val toCatch = to.get() as CatchBlock
+            toCatch.addThrowers(listOf(this))
+        }
+    }
 }
 
 class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
