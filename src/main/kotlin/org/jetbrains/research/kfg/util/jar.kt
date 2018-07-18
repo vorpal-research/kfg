@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.util.jar.*
@@ -23,10 +24,20 @@ internal fun setCurrentDirectory(path: File) {
 
 internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
-fun readClassNode(input: InputStream, skipDebug: Boolean = true): ClassNode {
+class Flags(val value: Int) {
+    companion object {
+        fun getEmpty() = Flags(0)
+        fun getNoDebug() = Flags(ClassReader.SKIP_DEBUG)
+        fun getNoFrames() = Flags(ClassReader.SKIP_FRAMES)
+    }
+
+    fun merge(other: Flags) = Flags(this.value or other.value)
+}
+
+fun readClassNode(input: InputStream, flags: Flags = Flags.getEmpty()): ClassNode {
     val classReader = ClassReader(input)
     val classNode = ClassNode()
-    classReader.accept(classNode, if (skipDebug) ClassReader.SKIP_DEBUG or ClassReader.SKIP_FRAMES else 0)
+    classReader.accept(classNode, flags.value)
     return classNode
 }
 
@@ -43,14 +54,14 @@ fun writeClassNode(cn: ClassNode, filename: String, computeFrames: Boolean = tru
     return file
 }
 
-fun parseJarClasses(jar: JarFile, `package`: Package): Map<String, ClassNode> {
+fun parseJarClasses(jar: JarFile, `package`: Package, flags: Flags): Map<String, ClassNode> {
     val classes = mutableMapOf<String, ClassNode>()
     val enumeration = jar.entries()
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
 
         if (entry.isClass() && `package`.isParent(entry.name)) {
-            val classNode = readClassNode(jar.getInputStream(entry))
+            val classNode = readClassNode(jar.getInputStream(entry), flags)
             classes[classNode.name] = classNode
         }
 
@@ -77,7 +88,7 @@ fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = fa
                 writeClass(`class`, path)
             } else if (writeAllClasses) {
                 val path = "$currentDir/${entry.name}"
-                val classNode = readClassNode(jar.getInputStream(entry), false)
+                val classNode = readClassNode(jar.getInputStream(entry))
                 writeClassNode(classNode, path, false)
             }
         }

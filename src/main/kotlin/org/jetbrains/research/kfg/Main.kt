@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg
 
+import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.writeJar
 import java.io.File
 import java.util.jar.JarFile
@@ -11,6 +12,6 @@ fun main(args: Array<String>) {
     val `package` = Package(cfg.getStringValue("package", "*"))
     val target = File(cfg.getStringValue("target", "instrumented/"))
 
-    CM.parseJar(jar, `package`)
+    CM.parseJar(jar, `package`, Flags.getNoFrames())
     writeJar(jar, target, `package`)
 }

@@ -464,6 +464,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         method.mn.tryCatchBlocks = buildTryCatchBlocks()
         method.mn.maxLocals = maxLocals
         method.mn.maxStack = maxStack + 1
+        // remove all info about local variables, because we don't kepp it updated
+        method.mn.localVariables?.clear()
         return method.mn
     }
 }
