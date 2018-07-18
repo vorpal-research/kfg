@@ -29,7 +29,10 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
             bb.addSuccessor(returnBlock)
             returnBlock.addPredecessor(bb)
             if (`return`.hasReturnValue()) incomings[bb] = `return`.getReturnValue()
-            bb.addInstruction(IF.getJump(returnBlock))
+
+            val jump = IF.getJump(returnBlock)
+            jump.location = `return`.location
+            bb.addInstruction(jump)
         }
         if (method.desc.retval.isVoid()) {
             val `return` = IF.getReturn()

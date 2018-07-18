@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
+import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.parseJarClasses
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.*
@@ -37,8 +38,8 @@ object ClassManager {
     val classNodes = mutableMapOf<String, ClassNode>()
     val classes = mutableMapOf<String, Class>()
 
-    fun parseJar(jar: JarFile, `package`: Package = Package("*")) {
-        val jarClasses = parseJarClasses(jar, `package`)
+    fun parseJar(jar: JarFile, `package`: Package = Package("*"), flags: Flags = Flags.getNoFrames()) {
+        val jarClasses = parseJarClasses(jar, `package`, flags)
         classNodes.putAll(jarClasses)
         jarClasses.forEach { (name, cn) ->
             classes.getOrPut(name, { ConcreteClass(cn) }).init()

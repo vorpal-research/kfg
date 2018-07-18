@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
+import org.jetbrains.research.kfg.ir.Location
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 
@@ -8,6 +9,7 @@ abstract class Instruction(name: Name, type: Type, protected val operands: Array
     : Value(name, type), ValueUser, Iterable<Value> {
     var parent: BasicBlock? = null
         internal set
+    var location = Location()
 
     init {
         operands.forEach { it.addUser(this) }
