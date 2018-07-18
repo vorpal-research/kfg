@@ -745,60 +745,70 @@ class CfgBuilder(val method: Method)
         var insnList = blockToNode.getOrPut(bb, { mutableListOf() })
         for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
-                if (insn.previous == null) { // when first instruction of method is label
-                    bb = nodeToBlock.getOrPut(insn, { bb })
-                    val entry = BodyBlock("entry")
-                    addInstruction(entry, IF.getJump(bb))
-                    entry.addSuccessor(bb)
-                    blockToNode[entry] = mutableListOf()
-                    bb.addPredecessor(entry)
+                when {
+                    insn.next == null -> { /* ignore label if it's the last node of method */ }
+                    insn.previous == null -> {
+                        // add entry block if first insn of method is label
+                        bb = nodeToBlock.getOrPut(insn, { bb })
+                        val entry = BodyBlock("entry")
+                        addInstruction(entry, IF.getJump(bb))
+                        entry.addSuccessor(bb)
+                        blockToNode[entry] = mutableListOf()
+                        bb.addPredecessor(entry)
 
-                    method.add(entry)
-                } else {
-                    bb = nodeToBlock.getOrPut(insn, { BodyBlock("label") })
-                    insnList = blockToNode.getOrPut(bb, { mutableListOf() })
-                    if (!isTerminateInst(insn.previous)) {
-                        val prev = nodeToBlock[insn.previous]
-                        bb.addPredecessor(prev!!)
-                        prev.addSuccessor(bb)
+                        method.add(entry)
+                    }
+                    else -> {
+                        bb = nodeToBlock.getOrPut(insn, { BodyBlock("label") })
+                        insnList = blockToNode.getOrPut(bb, { mutableListOf() })
+                        if (!isTerminateInst(insn.previous)) {
+                            val prev = nodeToBlock[insn.previous]
+                            bb.addPredecessor(prev!!)
+                            prev.addSuccessor(bb)
+                        }
                     }
                 }
             } else {
                 bb = nodeToBlock.getOrPut(insn as AbstractInsnNode, { bb })
                 insnList = blockToNode.getOrPut(bb, { mutableListOf() })
-                if (insn is JumpInsnNode) {
-                    if (insn.opcode != GOTO) {
-                        val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BodyBlock("if.else") })
-                        bb.addSuccessor(falseSuccessor)
-                        falseSuccessor.addPredecessor(bb)
+                when (insn) {
+                    is JumpInsnNode -> {
+                        if (insn.opcode != GOTO) {
+                            val falseSuccessor = nodeToBlock.getOrPut(insn.next, { BodyBlock("if.else") })
+                            bb.addSuccessor(falseSuccessor)
+                            falseSuccessor.addPredecessor(bb)
+                        }
+                        val trueSuccName = if (insn.opcode == GOTO) "goto" else "if.then"
+                        val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock(trueSuccName) })
+                        bb.addSuccessor(trueSuccessor)
+                        trueSuccessor.addPredecessor(bb)
                     }
-                    val trueSuccName = if (insn.opcode == GOTO) "goto" else "if.then"
-                    val trueSuccessor = nodeToBlock.getOrPut(insn.label, { BodyBlock(trueSuccName) })
-                    bb.addSuccessor(trueSuccessor)
-                    trueSuccessor.addPredecessor(bb)
-                } else if (insn is TableSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("tableswitch.default") })
-                    bb.addSuccessors(default)
-                    default.addPredecessor(bb)
-                    for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("tableswitch") })
-                        bb.addSuccessors(lblBB)
-                        lblBB.addPredecessor(bb)
+                    is TableSwitchInsnNode -> {
+                        val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("tableswitch.default") })
+                        bb.addSuccessors(default)
+                        default.addPredecessor(bb)
+                        for (lbl in insn.labels as MutableList<LabelNode>) {
+                            val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("tableswitch") })
+                            bb.addSuccessors(lblBB)
+                            lblBB.addPredecessor(bb)
+                        }
                     }
-                } else if (insn is LookupSwitchInsnNode) {
-                    val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("switch.default") })
-                    bb.addSuccessors(default)
-                    default.addPredecessor(bb)
-                    for (lbl in insn.labels as MutableList<LabelNode>) {
-                        val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("switch") })
-                        bb.addSuccessors(lblBB)
-                        lblBB.addPredecessor(bb)
+                    is LookupSwitchInsnNode -> {
+                        val default = nodeToBlock.getOrPut(insn.dflt, { BodyBlock("switch.default") })
+                        bb.addSuccessors(default)
+                        default.addPredecessor(bb)
+                        for (lbl in insn.labels as MutableList<LabelNode>) {
+                            val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("switch") })
+                            bb.addSuccessors(lblBB)
+                            lblBB.addPredecessor(bb)
+                        }
                     }
-                } else if (throwsException(insn) && insn.next != null) {
-                    val next = nodeToBlock.getOrPut(insn.next, { BodyBlock("bb") })
-                    if (!isTerminateInst(insn)) {
-                        bb.addSuccessor(next)
-                        next.addPredecessor(bb)
+                    throwsException(insn) && insn.next != null -> {
+                        val next = nodeToBlock.getOrPut(insn.next, { BodyBlock("bb") })
+                        if (!isTerminateInst(insn)) {
+                            bb.addSuccessor(next)
+                            next.addPredecessor(bb)
+                        }
                     }
                 }
             }
@@ -857,13 +867,16 @@ class CfgBuilder(val method: Method)
         for ((indx, phi) in sf.stackPhis.withIndex()) {
             val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
             val incomingValues = incomings.values.toSet()
-            if (incomingValues.size > 1) {
-                val newPhi = IF.getPhi(phi.name, phi.type, incomings)
-                phi.replaceAllUsesWith(newPhi)
-                bb.replace(phi, newPhi)
-            } else {
-                phi.replaceAllUsesWith(incomingValues.first())
-                bb.remove(phi)
+            when {
+                incomingValues.size > 1 -> {
+                    val newPhi = IF.getPhi(phi.name, phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    bb.replace(phi, newPhi)
+                }
+                else -> {
+                    phi.replaceAllUsesWith(incomingValues.first())
+                    bb.remove(phi)
+                }
             }
             phi.operands().forEach { it.removeUser(phi) }
         }
@@ -884,20 +897,24 @@ class CfgBuilder(val method: Method)
             }
 
             val incomingValues = incomings.values.toSet()
-            if (incomingValues.size > 1) {
-                val type = mergeTypes(incomingValues.map { it.type }.toSet())
-                if (type == null) {
-                    removablePhis.add(phi)
-                } else {
-                    val newPhi = IF.getPhi(phi.name, type, incomings)
-                    phi.replaceAllUsesWith(newPhi)
-                    phi.operands().forEach { it.removeUser(phi) }
-                    bb.replace(phi, newPhi)
+            when {
+                incomingValues.size > 1 -> {
+                    val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                    when (type) {
+                        null -> removablePhis.add(phi)
+                        else -> {
+                            val newPhi = IF.getPhi(phi.name, type, incomings)
+                            phi.replaceAllUsesWith(newPhi)
+                            phi.operands().forEach { it.removeUser(phi) }
+                            bb.replace(phi, newPhi)
+                        }
+                    }
                 }
-            } else {
-                phi.replaceAllUsesWith(incomingValues.first())
-                phi.operands().forEach { it.removeUser(phi) }
-                bb.remove(phi)
+                else -> {
+                    phi.replaceAllUsesWith(incomingValues.first())
+                    phi.operands().forEach { it.removeUser(phi) }
+                    bb.remove(phi)
+                }
             }
         }
         return removablePhis
@@ -925,13 +942,15 @@ class CfgBuilder(val method: Method)
             if (it is PhiInst) {
                 val incomings = it.getIncomingValues()
                 val instUsers = it.users().mapNotNull { it as? Instruction }
-                if (instUsers.isEmpty()) removablePhis.add(it)
-                else if (instUsers.size == 1 && instUsers.first() == it) removablePhis.add(it)
-                else if (incomings.size == 2 && incomings.contains(it)) {
-                    if (incomings.first() == it) it.replaceAllUsesWith(incomings.last())
-                    else it.replaceAllUsesWith(incomings.first())
-                    it.operands().forEach { op -> op.removeUser(it) }
-                    instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                when {
+                    instUsers.isEmpty() -> removablePhis.add(it)
+                    instUsers.size == 1 && instUsers.first() == it -> removablePhis.add(it)
+                    incomings.size == 2 && incomings.contains(it) -> {
+                        if (incomings.first() == it) it.replaceAllUsesWith(incomings.last())
+                        else it.replaceAllUsesWith(incomings.first())
+                        it.operands().forEach { op -> op.removeUser(it) }
+                        instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                    }
                 }
             }
         }
