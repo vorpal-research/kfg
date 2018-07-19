@@ -15,7 +15,7 @@ class Location(val `package`: Package, val file: String, val line: Int) {
     fun isKnown() = (`package` != UNKNOWN_PACKAGE) and (file != UNKNOWN_SOURCE) and (line != UNKNOWN_LINE)
 
     override fun toString() = when {
-        isKnown() -> "$`package`.$file:$line"
+        isKnown() -> "$`package`/$file:$line"
         else -> UNKNOWN_SOURCE
     }
     override fun hashCode() = simpleHash(`package`, file, line)

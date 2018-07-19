@@ -144,6 +144,8 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         return basicBlocks[start + 1]
     }
 
+    fun getBlockByLocation(location: Location) = basicBlocks.find { it.getLocation() == location }
+
     fun getPrototype() = "$`class`.$name$desc"
 
     fun print(): String {
