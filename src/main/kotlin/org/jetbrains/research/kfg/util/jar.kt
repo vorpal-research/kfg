@@ -7,7 +7,6 @@ import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.util.jar.*
@@ -26,15 +25,17 @@ internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
 class Flags(val value: Int) {
     companion object {
-        fun getEmpty() = Flags(0)
+        fun getAll() = Flags(0)
         fun getNoDebug() = Flags(ClassReader.SKIP_DEBUG)
         fun getNoFrames() = Flags(ClassReader.SKIP_FRAMES)
+        fun getCodeOnly() = getNoDebug() + getNoFrames()
     }
 
     fun merge(other: Flags) = Flags(this.value or other.value)
+    operator fun plus(other: Flags) = this.merge(other)
 }
 
-fun readClassNode(input: InputStream, flags: Flags = Flags.getEmpty()): ClassNode {
+fun readClassNode(input: InputStream, flags: Flags = Flags.getAll()): ClassNode {
     val classReader = ClassReader(input)
     val classNode = ClassNode()
     classReader.accept(classNode, flags.value)

@@ -8,10 +8,16 @@ import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kfg.util.DominatorTreeBuilder
 import org.jetbrains.research.kfg.util.TopologicalSorter
+import org.objectweb.asm.AnnotationVisitor
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.TypePath
 import org.objectweb.asm.tree.*
 import java.util.*
+import com.sun.org.apache.bcel.internal.generic.NEW
+import com.sun.org.apache.bcel.internal.generic.INSTANCEOF
+
 
 class LocalArray(private val locals: MutableMap<Int, Value> = mutableMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
@@ -663,7 +669,8 @@ class CfgBuilder(val method: Method)
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun convertLabel(lbl: LabelNode) {}
+    private fun convertLabel(lbl: LabelNode) {
+    }
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
         val cst = insn.cst
@@ -1001,7 +1008,6 @@ class CfgBuilder(val method: Method)
             method.slottracker.addValue(arg)
         }
 
-        // if the first instruction of method is label, add special BB before it, so method entry have no predecessors
         buildCFG()  // build basic blocks graph
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
@@ -1010,7 +1016,6 @@ class CfgBuilder(val method: Method)
         val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.getEntry())
         cycleEntries.addAll(c)
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
-
 
         for (bb in order.reversed()) {
             recoverState(bb)
