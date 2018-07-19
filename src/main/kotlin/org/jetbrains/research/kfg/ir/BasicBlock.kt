@@ -116,6 +116,8 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
     fun back() = instructions.last()
     fun getTerminator() = back() as TerminateInst
 
+    fun getLocation() = instructions.first().location
+
     override fun toString() = print()
 
     abstract fun print(): String
