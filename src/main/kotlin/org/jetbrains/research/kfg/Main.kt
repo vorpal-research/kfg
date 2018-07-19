@@ -12,6 +12,6 @@ fun main(args: Array<String>) {
     val `package` = Package(cfg.getStringValue("package", "*"))
     val target = File(cfg.getStringValue("target", "instrumented/"))
 
-    CM.parseJar(jar, `package`, Flags.getNoFrames())
+    CM.parseJar(jar, `package`, Flags.getAll())
     writeJar(jar, target, `package`)
 }

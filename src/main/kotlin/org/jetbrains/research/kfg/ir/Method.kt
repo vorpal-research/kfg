@@ -148,7 +148,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun print(): String {
         val sb = StringBuilder()
-        sb.appendln(desc)
+        sb.appendln(getPrototype())
         basicBlocks.take(1).forEach { sb.appendln(it) }
         basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
         basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
