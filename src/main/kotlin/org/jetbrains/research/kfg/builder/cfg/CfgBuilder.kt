@@ -2,14 +2,17 @@ package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.*
-import org.jetbrains.research.kfg.ir.value.*
+import org.jetbrains.research.kfg.ir.value.Slot
+import org.jetbrains.research.kfg.ir.value.UsableValue
+import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.ValueUser
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
-import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kfg.util.DominatorTreeBuilder
 import org.jetbrains.research.kfg.util.TopologicalSorter
-import org.objectweb.asm.commons.JSRInlinerAdapter
+import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.*
 import java.util.*
 
@@ -663,7 +666,8 @@ class CfgBuilder(val method: Method)
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun convertLabel(lbl: LabelNode) {}
+    private fun convertLabel(lbl: LabelNode) {
+    }
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
         val cst = insn.cst
@@ -746,7 +750,8 @@ class CfgBuilder(val method: Method)
         for (insn in method.mn.instructions) {
             if (insn is LabelNode) {
                 when {
-                    insn.next == null -> { /* ignore label if it's the last node of method */ }
+                    insn.next == null -> { /* ignore label if it's the last node of method */
+                    }
                     insn.previous == null -> {
                         // add entry block if first insn of method is label
                         bb = nodeToBlock.getOrPut(insn, { bb })
@@ -1020,7 +1025,6 @@ class CfgBuilder(val method: Method)
             method.slottracker.addValue(arg)
         }
 
-        // if the first instruction of method is label, add special BB before it, so method entry have no predecessors
         buildCFG()  // build basic blocks graph
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
@@ -1029,7 +1033,6 @@ class CfgBuilder(val method: Method)
         val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.getEntry())
         cycleEntries.addAll(c)
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
-
 
         for (bb in order.reversed()) {
             recoverState(bb)
