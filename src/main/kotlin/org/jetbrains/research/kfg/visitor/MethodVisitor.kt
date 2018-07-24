@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.visitor
 
-import org.jetbrains.research.kfg.UnknownInst
+import org.jetbrains.research.kfg.InvalidInstructionError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Parameter
@@ -39,7 +39,7 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
             is PhiInst -> visitPhiInst(inst)
             is UnaryInst -> visitUnaryInst(inst)
             is TerminateInst -> visitTerminateInst(inst)
-            else -> throw UnknownInst(inst)
+            else -> throw InvalidInstructionError(inst)
         }
     }
 
@@ -51,7 +51,7 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
             is SwitchInst -> visitSwitchInst(inst)
             is TableSwitchInst -> visitTableSwitchInst(inst)
             is ThrowInst -> visitThrowInst(inst)
-            else -> throw UnknownInst(inst)
+            else -> throw InvalidInstructionError(inst)
         }
     }
 

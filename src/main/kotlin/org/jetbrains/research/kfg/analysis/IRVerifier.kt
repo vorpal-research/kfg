@@ -10,36 +10,32 @@ import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class IRVerifier(method: Method) : MethodVisitor(method) {
-    private val valueNameRegex = Regex("(\\%([a-zA-Z][\\w\\.]*|\\d+)|arg\\$\\d+|this)")
-    private val blockNameRegex = Regex("\\%[a-zA-Z][\\w\\.\$]+")
-    private val valueNames = mutableMapOf<String, Value>()
-    private val blockNames = mutableMapOf<String, BasicBlock>()
+    private val valueNameRegex = "(\\%([a-zA-Z][\\w\\.]*|\\d+)|arg\\$\\d+|this)".toRegex()
+    private val blockNameRegex = "\\%[a-zA-Z][\\w\\.\$]+".toRegex()
+    private val valueNames = hashMapOf<String, Value>()
+    private val blockNames = hashMapOf<String, BasicBlock>()
 
     private fun visitValue(value: Value) {
-        if (value.name !is UndefinedName) {
-            if (value is Constant) {
-
-            } else {
-                assert(valueNameRegex.matches(value.name.toString()), { "Incorrect value name format $value" })
-                val storedVal = valueNames[value.name.toString()]
-                assert(storedVal == null || storedVal == value, { "Same names for two different values" })
-                valueNames[value.name.toString()] = value
-            }
+        if (value.name !== UndefinedName && value !is Constant) {
+            require(valueNameRegex.matches(value.name.toString())) { "Incorrect value name format $value" }
+            val storedVal = valueNames[value.name.toString()]
+            require(storedVal == null || storedVal == value) { "Same names for two different values" }
+            valueNames[value.name.toString()] = value
         }
     }
 
     override fun visitInstruction(inst: Instruction) {
-        inst.operands().forEach { visitValue(it) }
+        inst.operands.forEach { visitValue(it) }
         visitValue(inst)
-        assert(inst.parent != null, { "Instruction $inst with no parent in method" })
-        assert(method.basicBlocks.contains(inst.parent), { "Instruction parent does not belong to method" })
+        require(inst.parent != null) { "Instruction $inst with no parent in method" }
+        require(method.basicBlocks.contains(inst.parent)) { "Instruction parent does not belong to method" }
         super.visitInstruction(inst)
     }
 
     override fun visitPhiInst(inst: PhiInst) {
         val bb = inst.parent!!
-        inst.getPredecessors().forEach {
-            assert(method.basicBlocks.contains(it), { "Phi incoming from unknown block" })
+        inst.predecessors.forEach {
+            require(method.basicBlocks.contains(it)) { "Phi incoming from unknown block" }
         }
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
@@ -47,44 +43,42 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
             else -> setOf()
         }
 
-        assert(predecessors.size == inst.getPredecessors().size, { "Phi insts predecessors are different from block predecessors" })
-        for (pred in inst.getPredecessors()) {
-            assert(predecessors.contains(pred), { "Phi insts predecessors are different from block predecessors" })
+        require(predecessors.size == inst.predecessors.size) { "Phi insts predecessors are different from block predecessors" }
+        inst.predecessors.forEach {
+            require(predecessors.contains(it)) { "Phi insts predecessors are different from block predecessors" }
         }
     }
 
     override fun visitTerminateInst(inst: TerminateInst) {
         val bb = inst.parent!!
-        inst.successors().forEach {
-            assert(method.basicBlocks.contains(it), { "Terminate inst to unknown block" })
-        }
-        assert(bb.successors.size == inst.successors().size, { "Terminate insts successors are different from block successors" })
-        for (succ in inst.successors()) {
-            assert(bb.successors.contains(succ), { "Terminate insts successors are different from block successors" })
+        require(bb.successors.size == inst.successors.size) { "Terminate insts successors are different from block successors" }
+        inst.successors.forEach {
+            require(method.basicBlocks.contains(it)) { "Terminate inst to unknown block" }
+            require(bb.successors.contains(it)) { "Terminate insts successors are different from block successors" }
         }
         super.visitTerminateInst(inst)
     }
 
     override fun visitBasicBlock(bb: BasicBlock) {
-        assert(blockNameRegex.matches(bb.name.toString()), { "Incorrect value name format ${bb.name}" })
+        require(blockNameRegex.matches(bb.name.toString())) { "Incorrect value name format ${bb.name}" }
         val storedVal = blockNames[bb.name.toString()]
-        assert(storedVal == null || storedVal == bb, { "Same names for two different blocks" })
-        assert(bb.parent == method, { "Block parent points to other method" })
-        if (bb is CatchBlock) {
-            assert(bb in method.catchEntries, { "Catch block does not belong to method catch entries" })
-            assert(bb.predecessors.isEmpty(), { "Catch block should not have predecessors" })
-        } else if (bb == method.getEntry()) {
-            assert(bb.predecessors.isEmpty(), { "Entry block should not have predecessors" })
-        } else {
-            bb.predecessors.forEach {
-                assert(method.basicBlocks.contains(it), { "Block predecessor does not belong to method" })
+        require(storedVal == null || storedVal == bb) { "Same names for two different blocks" }
+        require(bb.parent == method) { "Block parent points to other method" }
+        when (bb) {
+            is CatchBlock -> {
+                require(bb in method.catchEntries) { "Catch block does not belong to method catch entries" }
+                require(bb.predecessors.isEmpty()) { "Catch block should not have predecessors" }
+            }
+            method.getEntry() -> require(bb.predecessors.isEmpty()) { "Entry block should not have predecessors" }
+            else -> bb.predecessors.forEach {
+                require(method.basicBlocks.contains(it)) { "Block predecessor does not belong to method" }
             }
         }
         bb.successors.forEach {
-            assert(method.basicBlocks.contains(it), { "Block successor does not belong to method" })
+            require(method.basicBlocks.contains(it)) { "Block successor does not belong to method" }
         }
-        assert(bb.last() is TerminateInst, { "Block should end with terminate inst" })
-        assert(bb.mapNotNull { it as? TerminateInst }.size == 1, { "Block should have exactly one terminator" })
+        require(bb.last() is TerminateInst) { "Block should end with terminate inst" }
+        require(bb.mapNotNull { it as? TerminateInst }.size == 1) { "Block should have exactly one terminator" }
         super.visitBasicBlock(bb)
     }
 }

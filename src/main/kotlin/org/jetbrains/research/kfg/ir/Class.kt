@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.*
 
 abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
     class MethodKey(val name: String, val desc: MethodDesc) {
-        constructor(name: String, desc: String) : this(name, MethodDesc(desc))
+        constructor(name: String, desc: String) : this(name, MethodDesc.fromDesc(desc))
 
         override fun hashCode() = simpleHash(name, desc)
         override fun equals(other: Any?): Boolean {
@@ -57,7 +57,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 
     abstract fun getField(name: String, type: Type): Field
 
-    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc(desc))
+    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(desc))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = getFullname()

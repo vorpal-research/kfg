@@ -15,10 +15,16 @@ class Package(name: String) {
     val isConcrete: Boolean = name.lastOrNull() != '*'
 
     init {
-        this.name = if (isConcrete) name else name.dropLast(1)
+        this.name = when {
+            isConcrete -> name
+            else -> name.dropLast(1)
+        }
     }
 
-    fun isParent(other: Package) = if (isConcrete) this.name == other.name else other.name.startsWith(this.name)
+    fun isParent(other: Package) = when {
+        isConcrete -> this.name == other.name
+        else -> other.name.startsWith(this.name)
+    }
     fun isChild(other: Package) = other.isParent(this)
 
     fun isParent(name: String) = isParent(Package(name))
@@ -35,8 +41,8 @@ class Package(name: String) {
 }
 
 object ClassManager {
-    val classNodes = mutableMapOf<String, ClassNode>()
-    val classes = mutableMapOf<String, Class>()
+    val classNodes = hashMapOf<String, ClassNode>()
+    val classes = hashMapOf<String, Class>()
 
     fun parseJar(jar: JarFile, `package`: Package = Package("*"), flags: Flags = Flags.getNoFrames()) {
         val jarClasses = parseJarClasses(jar, `package`, flags)
@@ -51,7 +57,7 @@ object ClassManager {
         }
     }
 
-    fun get(cn: ClassNode) = classes.getOrPut(cn.name, { ConcreteClass(cn) })
+    fun get(cn: ClassNode) = classes.getOrPut(cn.name) { ConcreteClass(cn) }
     fun getConcreteClasses() = classes.values.mapNotNull { it as? ConcreteClass }
 
     fun getByName(name: String): Class {

@@ -6,9 +6,8 @@ import org.jetbrains.research.kfg.TF
 
 class JumpInst(successor: BasicBlock)
     : TerminateInst(UndefinedName, TF.getVoidType(), arrayOf(), arrayOf(successor)) {
-    fun getSuccessor() = successors[0]
+    val successor get() = succs[0]
 
-    override fun isTerminate() = true
-    override fun print() = "goto ${getSuccessor().name}"
-    override fun clone(): Instruction = JumpInst(getSuccessor())
+    override fun print() = "goto ${successor.name}"
+    override fun clone(): Instruction = JumpInst(successor)
 }

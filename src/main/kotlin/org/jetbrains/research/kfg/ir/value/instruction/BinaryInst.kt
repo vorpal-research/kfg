@@ -6,9 +6,9 @@ import org.jetbrains.research.kfg.ir.value.Name
 class BinaryInst(name: Name, val opcode: BinaryOpcode, lhv: Value, rhv: Value)
     : Instruction(name, lhv.type, arrayOf(lhv, rhv)) {
 
-    fun getLhv() = operands[0]
-    fun getRhv() = operands[1]
+    val lhv get() = ops[0]
+    val rhv get() = ops[1]
 
-    override fun print()= "$name = ${getLhv()} $opcode ${getRhv()}"
-    override fun clone(): Instruction = BinaryInst(name.clone(), opcode, getLhv(), getRhv())
+    override fun print()= "$name = $lhv $opcode $rhv"
+    override fun clone(): Instruction = BinaryInst(name.clone(), opcode, lhv, rhv)
 }

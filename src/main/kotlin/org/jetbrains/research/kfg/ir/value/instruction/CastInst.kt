@@ -5,8 +5,8 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.Name
 
 class CastInst(name: Name, type: Type, obj: Value) : Instruction(name, type, arrayOf(obj)) {
-    fun getOperand() = operands[0]
+    val operand get() = ops[0]
 
-    override fun print()= "$name = (${type.name}) ${getOperand()}"
-    override fun clone(): Instruction = CastInst(name.clone(), type, getOperand())
+    override fun print()= "$name = (${type.name}) $operand"
+    override fun clone(): Instruction = CastInst(name.clone(), type, operand)
 }

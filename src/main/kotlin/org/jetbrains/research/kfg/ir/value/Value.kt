@@ -5,7 +5,8 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.simpleHash
 
 abstract class Value(val name: Name, val type: Type) : UsableValue() {
-    fun isNameDefined() = name is UndefinedName
+    val isNameDefined get() = name is UndefinedName
+
     fun hasRealName() = name is StringName
     override fun toString() = name.toString()
 

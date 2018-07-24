@@ -8,8 +8,8 @@ import org.jetbrains.research.kfg.type.Type
 class InstanceOfInst(name: Name, val targetType: Type, obj: Value)
     : Instruction(name, TF.getIntType(), arrayOf(obj)) {
 
-    fun getOperand() = operands[0]
+    val operand get() = ops[0]
 
-    override fun print() = "$name = ${getOperand()} instanceOf ${targetType.name}"
-    override fun clone(): Instruction = InstanceOfInst(name.clone(), targetType, getOperand())
+    override fun print() = "$name = $operand instanceOf ${targetType.name}"
+    override fun clone(): Instruction = InstanceOfInst(name.clone(), targetType, operand)
 }

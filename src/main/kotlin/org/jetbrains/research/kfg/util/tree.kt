@@ -13,7 +13,7 @@ interface TreeNode {
 class DominatorTreeNode<T : GraphNode<T>>(val value: T) : TreeNode {
     var idom: DominatorTreeNode<T>? = null
         internal set
-    val dominates = mutableSetOf<DominatorTreeNode<T>>()
+    val dominates = hashSetOf<DominatorTreeNode<T>>()
 
     override fun getChilds(): Set<DominatorTreeNode<T>> = dominates
     override fun getParent() = idom
@@ -38,7 +38,7 @@ class DominatorTreeBuilder<T : GraphNode<T>>(val nodes: Set<T>) {
     val tree = DominatorTree<T>()
 
     private var nodeCounter: Int = 0
-    private val dfsTree = mutableMapOf<T, Int>()
+    private val dfsTree = hashMapOf<T, Int>()
     private val reverseMapping = arrayListOf<T?>()
     private val reverseGraph = arrayListOf<ArrayList<Int>>()
     private val parents = arrayListOf<Int>()

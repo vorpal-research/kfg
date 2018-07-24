@@ -12,14 +12,14 @@ enum class UnaryOpcode {
 class UnaryInst(name: Name, val opcode: UnaryOpcode, obj: Value)
     : Instruction(name, if (opcode == UnaryOpcode.LENGTH) TF.getIntType() else obj.type, arrayOf(obj)) {
 
-    fun getOperand() = operands[0]
+    val operand get() = ops[0]
 
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name = ")
-        sb.append(if (opcode == UnaryOpcode.LENGTH) "${getOperand()}.length" else "-${getOperand()}")
+        sb.append(if (opcode == UnaryOpcode.LENGTH) "$operand.length" else "-$operand")
         return sb.toString()
     }
 
-    override fun clone(): Instruction = UnaryInst(name.clone(), opcode, getOperand())
+    override fun clone(): Instruction = UnaryInst(name.clone(), opcode, operand)
 }

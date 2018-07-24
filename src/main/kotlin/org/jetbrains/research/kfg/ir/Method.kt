@@ -13,19 +13,13 @@ import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
 import java.util.*
 
-class MethodDesc {
-    val args: Array<Type>
-    val retval: Type
+data class MethodDesc(val args: Array<Type>, val retval: Type) {
 
-    constructor(desc: String) {
-        val (args, retval) = parseMethodDesc(desc)
-        this.args = args
-        this.retval = retval
-    }
-
-    constructor(args: Array<Type>, retval: Type) {
-        this.args = args
-        this.retval = retval
+    companion object {
+        fun fromDesc(desc: String): MethodDesc {
+            val (args, retval) = parseMethodDesc(desc)
+            return MethodDesc(args, retval)
+        }
     }
 
     fun getAsmDesc(): String {
@@ -56,11 +50,11 @@ class MethodDesc {
 }
 
 class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
-    val desc = MethodDesc(mn.desc)
-    val parameters = mutableListOf<Parameter>()
-    val exceptions = mutableSetOf<Class>()
-    val basicBlocks = mutableListOf<BasicBlock>()
-    val catchEntries = mutableSetOf<CatchBlock>()
+    val desc = MethodDesc.fromDesc(mn.desc)
+    val parameters = arrayListOf<Parameter>()
+    val exceptions = hashSetOf<Class>()
+    val basicBlocks = arrayListOf<BasicBlock>()
+    val catchEntries = hashSetOf<CatchBlock>()
     val slottracker = SlotTracker(this)
 
     init {
@@ -83,7 +77,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            assert(bb.parent == null, { "Block ${bb.name} already belongs to other method"})
+            require(bb.parent == null) { "Block ${bb.name} already belongs to other method"}
             basicBlocks.add(bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
@@ -93,9 +87,10 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            assert(bb.parent == null, { "Block ${bb.name} already belongs to other method"})
+            require(bb.parent == null) { "Block ${bb.name} already belongs to other method"}
             val index = basicBlocks.indexOf(before)
-            assert(index >= 0, { "Block ${before.name} does not belong to method $this"})
+            require(index >= 0) { "Block ${before.name} does not belong to method $this"}
+
             basicBlocks.add(index, bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
@@ -105,7 +100,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun remove(block: BasicBlock) {
         if (basicBlocks.contains(block)) {
-            assert(block.parent == this, { "Block ${block.name} don't belong to $this"})
+            require(block.parent == this) { "Block ${block.name} don't belong to $this"}
             basicBlocks.remove(block)
             block.removeUser(this)
             block.parent = null
@@ -113,7 +108,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     }
 
     fun addCatchBlock(bb: CatchBlock) {
-        assert(bb in basicBlocks)
+        require(bb in basicBlocks)
         catchEntries.add(bb)
     }
 
@@ -123,13 +118,13 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     }
 
     fun getCatchBlocks(): List<BasicBlock> {
-        val catchMap = mutableMapOf<BasicBlock, Boolean>()
-        val result = mutableListOf<BasicBlock>()
+        val catchMap = hashMapOf<BasicBlock, Boolean>()
+        val result = arrayListOf<BasicBlock>()
         val queue = ArrayDeque<BasicBlock>()
         queue.addAll(catchEntries)
         while (queue.isNotEmpty()) {
             val top = queue.first
-            val isCatch = top.predecessors.fold(true, { acc, bb -> acc and catchMap.getOrPut(bb, { false })})
+            val isCatch = top.predecessors.fold(true) { acc, bb -> acc and catchMap.getOrPut(bb) { false } }
             if (isCatch) {
                 queue.addAll(top.successors)
                 catchMap[top] = true
@@ -144,7 +139,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         return basicBlocks[start + 1]
     }
 
-    fun getBlockByLocation(location: Location) = basicBlocks.find { it.getLocation() == location }
+    fun getBlockByLocation(location: Location) = basicBlocks.find { it.location == location }
 
     fun getPrototype() = "$`class`.$name$desc"
 
@@ -182,7 +177,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 }
 
 fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
-    val nodes = mutableMapOf<String, GraphView>()
+    val nodes = hashMapOf<String, GraphView>()
     nodes[name] = GraphView(name, name)
     basicBlocks.map {
         val label = StringBuilder()
@@ -203,7 +198,7 @@ fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
     if (viewCatchBlocks) {
         catchEntries.forEach {
             val current = nodes.getValue(it.name.toString())
-            for (thrower in it.getAllThrowers()) {
+            for (thrower in it.throwers) {
                 current.successors.add(nodes.getValue(thrower.name.toString()))
             }
         }

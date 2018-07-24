@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import org.jetbrains.research.kfg.InvalidAccessError
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.UndefinedName
@@ -11,6 +12,18 @@ class CallInst : Instruction {
     val method: Method
     val `class`: Class
     val isStatic: Boolean
+
+    val callee: Value
+        get() = when {
+            !isStatic -> ops[0]
+            else -> throw InvalidAccessError("Trying to get callee of static call")
+        }
+
+    val args: List<Value>
+        get() = when {
+            isStatic -> ops.toList()
+            else -> ops.drop(1)
+        }
 
     constructor(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>)
             : super(UndefinedName, method.desc.retval, args) {
@@ -44,23 +57,22 @@ class CallInst : Instruction {
         this.isStatic = false
     }
 
-    fun getCallee(): Value? = if (isStatic) null else operands[0]
-    fun getArgs()= if (isStatic) operands.toList() else operands.drop(1)
-
     override fun print(): String {
         val sb = StringBuilder()
-        if (name !is UndefinedName) sb.append("$name = ")
+        if (name !== UndefinedName) sb.append("$name = ")
+
         sb.append("$opcode ")
         if (isStatic) sb.append(`class`.name)
-        else sb.append(operands[0].name)
+        else sb.append(callee.name)
         sb.append(".${method.name}(")
-        getArgs().dropLast(1).forEach { sb.append("$it, ") }
-        getArgs().takeLast(1).forEach { sb.append("$it") }
+        args.dropLast(1).forEach { sb.append("$it, ") }
+        args.takeLast(1).forEach { sb.append("$it") }
         sb.append(")")
         return sb.toString()
     }
 
-    override fun clone(): Instruction =
-            if (isStatic) CallInst(opcode, name.clone(), method, `class`, getArgs().toTypedArray())
-            else CallInst(opcode, name.clone(), method, `class`, getCallee()!!, getArgs().toTypedArray())
+    override fun clone(): Instruction = when {
+        isStatic -> CallInst(opcode, name.clone(), method, `class`, args.toTypedArray())
+        else -> CallInst(opcode, name.clone(), method, `class`, callee, args.toTypedArray())
+    }
 }

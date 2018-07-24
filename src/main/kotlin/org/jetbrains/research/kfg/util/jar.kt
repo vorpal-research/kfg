@@ -23,7 +23,7 @@ internal fun setCurrentDirectory(path: File) {
 
 internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
-class Flags(val value: Int) {
+data class Flags(val value: Int) {
     companion object {
         fun getAll() = Flags(0)
         fun getNoDebug() = Flags(ClassReader.SKIP_DEBUG)
