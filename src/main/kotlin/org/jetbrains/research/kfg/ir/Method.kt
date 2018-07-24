@@ -174,37 +174,37 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
                     to.addUser(this)
                 }
     }
-}
 
-fun Method.graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
-    val nodes = hashMapOf<String, GraphView>()
-    nodes[name] = GraphView(name, name)
-    basicBlocks.map {
-        val label = StringBuilder()
-        label.append("${it.name}:\\l")
-        it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
-        nodes[it.name.toString()] = GraphView(it.name.toString(), label.toString())
-    }
-    if (!isAbstract()) {
-        val entryNode = nodes.getValue(getEntry().name.toString())
-        nodes.getValue(name).successors.add(entryNode)
-    }
-    basicBlocks.forEach {
-        val current = nodes.getValue(it.name.toString())
-        for (succ in it.successors) {
-            current.successors.add(nodes.getValue(succ.name.toString()))
+    fun graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
+        val nodes = hashMapOf<String, GraphView>()
+        nodes[name] = GraphView(name, name)
+        basicBlocks.map {
+            val label = StringBuilder()
+            label.append("${it.name}:\\l")
+            it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
+            nodes[it.name.toString()] = GraphView(it.name.toString(), label.toString())
         }
-    }
-    if (viewCatchBlocks) {
-        catchEntries.forEach {
+        if (!isAbstract()) {
+            val entryNode = nodes.getValue(getEntry().name.toString())
+            nodes.getValue(name).successors.add(entryNode)
+        }
+        basicBlocks.forEach {
             val current = nodes.getValue(it.name.toString())
-            for (thrower in it.throwers) {
-                current.successors.add(nodes.getValue(thrower.name.toString()))
+            for (succ in it.successors) {
+                current.successors.add(nodes.getValue(succ.name.toString()))
             }
         }
+        if (viewCatchBlocks) {
+            catchEntries.forEach {
+                val current = nodes.getValue(it.name.toString())
+                for (thrower in it.throwers) {
+                    current.successors.add(nodes.getValue(thrower.name.toString()))
+                }
+            }
+        }
+        return nodes.values.toList()
     }
-    return nodes.values.toList()
-}
 
-fun Method.viewCfg(viewCatchBlocks: Boolean = false, dot: String, browser: String)
-        = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false)
+            = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+}
