@@ -20,7 +20,7 @@ fun typeToFullInt(type: Type) = when (type) {
     is FloatType -> 2
     is DoubleType -> 3
     is Reference -> 4
-    else -> throw UnexpectedException("Unexpected type for conversion: ${type.name}")
+    else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
 }
 
 fun typeToInt(type: Type) = when (type) {
@@ -29,15 +29,15 @@ fun typeToInt(type: Type) = when (type) {
     is FloatType -> 2
     is DoubleType -> 3
     is Reference -> 4
-    else -> throw UnexpectedException("Unexpected type for conversion: ${type.name}")
+    else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
 }
 
 class AsmBuilder(method: Method) : MethodVisitor(method) {
-    private val bbInsns = mutableMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
-    private val terminateInsns = mutableMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
+    private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
+    private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.map { it to LabelNode() }.toMap()
-    private val stack = mutableListOf<Value>()
-    private val locals = mutableMapOf<Value, Int>()
+    private val stack = arrayListOf<Value>()
+    private val locals = hashMapOf<Value, Int>()
 
     var currentInsnList = mutableListOf<AbstractInsnNode>()
     var maxLocals = 0
@@ -54,8 +54,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
     }
 
-    private fun getInsnList(bb: BasicBlock) = bbInsns.getOrPut(bb, { mutableListOf() })
-    private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, { mutableListOf() })
+    private fun getInsnList(bb: BasicBlock) = bbInsns.getOrPut(bb, ::arrayListOf)
+    private fun getTerminateInsnList(bb: BasicBlock) = terminateInsns.getOrPut(bb, ::arrayListOf)
     private fun stackPop() = stack.removeAt(stack.size - 1)
     private fun stackPush(value: Value): Boolean {
         val res = stack.add(value)
@@ -73,13 +73,16 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
     }
 
-    private fun getLocalFor(value: Value) = locals.getOrPut(value, {
+    private fun getLocalFor(value: Value) = locals.getOrPut(value) {
         val old = maxLocals
-        maxLocals += if (value.type.isDWord()) 2 else 1
+        maxLocals += when {
+            value.type.isDWord() -> 2
+            else -> 1
+        }
         old
-    })
+    }
 
-    private fun getLabel(bb: BasicBlock) = labels[bb] ?: throw UnexpectedException("Unknown basic block ${bb.name}")
+    private fun getLabel(bb: BasicBlock) = labels[bb] ?: throw InvalidStateError("Unknown basic block ${bb.name}")
 
     private fun convertConstantToInsn(`const`: Constant) = when (`const`) {
         is BoolConstant -> InsnNode(if (`const`.value) ICONST_1 else ICONST_0)
@@ -110,7 +113,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(`const`.value)
         is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.getAsmDesc()))
-        is MethodConstant -> TODO()
+        is MethodConstant -> throw IllegalArgumentException("Cannot convert constant $`const`")
     }
 
     // add all instructions for loading required arguments to stack
@@ -139,7 +142,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitArrayLoadInst(inst: ArrayLoadInst) {
         val opcode = IALOAD + typeToFullInt(inst.type)
         val insn = InsnNode(opcode)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -147,9 +150,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
-        val opcode = IASTORE + typeToFullInt(inst.getValue().type)
+        val opcode = IASTORE + typeToFullInt(inst.value.type)
         val insn = InsnNode(opcode)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -158,7 +161,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitBinaryInst(inst: BinaryInst) {
         val opcode = inst.opcode.toAsmOpcode() + typeToInt(inst.type)
         val insn = InsnNode(opcode)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -168,7 +171,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitJumpInst(inst: JumpInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        val successor = getLabel(inst.getSuccessor())
+        val successor = getLabel(inst.successor)
         val insn = JumpInsnNode(GOTO, successor)
         currentInsnList.add(insn)
     }
@@ -182,8 +185,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitReturnInst(inst: ReturnInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(inst.operands())
-        val opcode = if (inst.hasReturnValue()) IRETURN + typeToInt(inst.getReturnType()) else RETURN
+        addOperandsToStack(inst.operands)
+        val opcode = if (inst.hasReturnValue) IRETURN + typeToInt(inst.returnType) else RETURN
         val insn = InsnNode(opcode)
         currentInsnList.add(insn)
     }
@@ -192,12 +195,12 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
 
-        val cond = inst.getCond() as? CmpInst ?: error("Unknown branch condition: ${inst.print()}")
-        val opcode = if (cond.getLhv().type is Reference) {
+        val cond = inst.cond as? CmpInst ?: error("Unknown branch condition: ${inst.print()}")
+        val opcode = if (cond.lhv.type is Reference) {
             when (cond.opcode) {
                 is CmpOpcode.Eq -> IF_ACMPEQ
                 is CmpOpcode.Neq -> IF_ACMPNE
-                else -> throw UnexpectedOpcodeException("Branch cmp opcode ${cond.opcode}")
+                else -> throw InvalidOpcodeError("Branch cmp opcode ${cond.opcode}")
             }
         } else {
             when (cond.opcode) {
@@ -207,20 +210,20 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                 is CmpOpcode.Gt -> IF_ICMPGT
                 is CmpOpcode.Le -> IF_ICMPLE
                 is CmpOpcode.Ge -> IF_ICMPGE
-                else -> throw UnexpectedOpcodeException("Branch cmp opcode ${cond.opcode}")
+                else -> throw InvalidOpcodeError("Branch cmp opcode ${cond.opcode}")
             }
         }
-        addOperandsToStack(cond.operands())
-        val insn = JumpInsnNode(opcode, getLabel(inst.getTrueSuccessor()))
+        addOperandsToStack(cond.operands)
+        val insn = JumpInsnNode(opcode, getLabel(inst.trueSuccessor))
         currentInsnList.add(insn)
-        inst.operands().forEach { stackPop() }
+        inst.operands.forEach { stackPop() }
 
-        val jump = JumpInsnNode(GOTO, getLabel(inst.getFalseSuccessor()))
+        val jump = JumpInsnNode(GOTO, getLabel(inst.falseSuccessor))
         currentInsnList.add(jump)
     }
 
     override fun visitCastInst(inst: CastInst) {
-        val originalType = inst.getOperand().type
+        val originalType = inst.operand.type
         val targetType = inst.type
         val insn = if (originalType.isPrimary() and targetType.isPrimary()) {
             val opcode = when (originalType) {
@@ -228,7 +231,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                     is IntType -> L2I
                     is FloatType -> L2F
                     is DoubleType -> L2D
-                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                    else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
                 is Integral -> when (targetType) {
                     is LongType -> I2L
@@ -237,27 +240,27 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                     is ByteType -> I2B
                     is CharType -> I2C
                     is ShortType -> I2S
-                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                    else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
                 is FloatType -> when (targetType) {
                     is IntType -> F2I
                     is LongType -> F2L
                     is DoubleType -> F2D
-                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                    else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
                 is DoubleType -> when (targetType) {
                     is IntType -> D2I
                     is LongType -> D2L
                     is FloatType -> D2F
-                    else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                    else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
-                else -> throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
+                else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
             }
             InsnNode(opcode)
         } else {
             TypeInsnNode(CHECKCAST, targetType.toInternalDesc())
         }
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -266,7 +269,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitEnterMonitorInst(inst: EnterMonitorInst) {
         val insn = InsnNode(MONITORENTER)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -274,7 +277,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitExitMonitorInst(inst: ExitMonitorInst) {
         val insn = InsnNode(MONITOREXIT)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -283,11 +286,11 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitNewArrayInst(inst: NewArrayInst) {
         val component = inst.component
         val insn = when {
-            inst.numDimensions() > 1 -> MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions())
+            inst.numDimensions > 1 -> MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions)
             component.isPrimary() -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
             else -> TypeInsnNode(ANEWARRAY, component.toInternalDesc())
         }
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -298,10 +301,10 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val opcode = if (inst.opcode == UnaryOpcode.LENGTH) {
             ARRAYLENGTH
         } else {
-            INEG + typeToInt(inst.getOperand().type)
+            INEG + typeToInt(inst.operand.type)
         }
         val insn = InsnNode(opcode)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -311,7 +314,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitThrowInst(inst: ThrowInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         val insn = InsnNode(ATHROW)
         currentInsnList.add(insn)
@@ -321,9 +324,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitSwitchInst(inst: SwitchInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(listOf(inst.getKey()))
-        val default = getLabel(inst.getDefault())
-        val branches = inst.getBranches()
+        addOperandsToStack(listOf(inst.key))
+        val default = getLabel(inst.default)
+        val branches = inst.branches
         val keys = branches.keys.map { (it as IntConstant).value }.toIntArray()
         val labels = branches.values.map { getLabel(it) }.toTypedArray()
         val insn = LookupSwitchInsnNode(default, keys, labels)
@@ -334,7 +337,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
         val opcode = if (inst.isStatic) GETSTATIC else GETFIELD
         val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -344,7 +347,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val opcode = if (inst.isStatic) PUTSTATIC else PUTFIELD
         val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -352,7 +355,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitInstanceOfInst(inst: InstanceOfInst) {
         val insn = TypeInsnNode(INSTANCEOF, inst.targetType.toInternalDesc())
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -362,9 +365,9 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitTableSwitchInst(inst: TableSwitchInst) {
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
-        addOperandsToStack(listOf(inst.getIndex()))
-        val min = (inst.getMin() as IntConstant).value
-        val max = (inst.getMax() as IntConstant).value
+        addOperandsToStack(listOf(inst.index))
+        val min = (inst.min as IntConstant).value
+        val max = (inst.max as IntConstant).value
         val default = getLabel(inst.getDefault())
         val labels = inst.getBranches().map { getLabel(it) }.toTypedArray()
         val insn = TableSwitchInsnNode(min, max, default, *labels)
@@ -375,7 +378,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitCallInst(inst: CallInst) {
         val opcode = inst.opcode.toAsmOpcode()
         val insn = MethodInsnNode(opcode, inst.`class`.getFullname(), inst.method.name, inst.method.getAsmDesc(), opcode == INVOKEINTERFACE)
-        val operands = inst.operands()
+        val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
@@ -386,25 +389,25 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val isBranch = !(inst.opcode is CmpOpcode.Cmp || inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
         if (isBranch) {
             // this kind of cmp insts are handled in visitBranch
-            assert(inst.users().size == 1, { "Unsupported usage of cmp inst" })
-            assert(inst.users().first() is BranchInst, { "Unsupported usage of cmp inst" })
+            assert(inst.users.size == 1, { "Unsupported usage of cmp inst" })
+            assert(inst.users.first() is BranchInst, { "Unsupported usage of cmp inst" })
         } else {
             val opcode = when (inst.opcode) {
                 is CmpOpcode.Cmp -> LCMP
-                is CmpOpcode.Cmpg -> when (inst.getLhv().type) {
+                is CmpOpcode.Cmpg -> when (inst.lhv.type) {
                     is FloatType -> FCMPG
                     is DoubleType -> DCMPG
-                    else -> throw InvalidOperandException("Non-real operands of CMPG inst")
+                    else -> throw InvalidOperandError("Non-real operands of CMPG inst")
                 }
-                is CmpOpcode.Cmpl -> when (inst.getLhv().type) {
+                is CmpOpcode.Cmpl -> when (inst.lhv.type) {
                     is FloatType -> FCMPL
                     is DoubleType -> DCMPL
-                    else -> throw InvalidOperandException("Non-real operands of CMPL inst")
+                    else -> throw InvalidOperandError("Non-real operands of CMPL inst")
                 }
-                else -> throw UnexpectedException("Unknown non-branch cmp inst ${inst.print()}")
+                else -> throw InvalidStateError("Unknown non-branch cmp inst ${inst.print()}")
             }
             val insn = InsnNode(opcode)
-            val operands = inst.operands()
+            val operands = inst.operands
             addOperandsToStack(operands)
             currentInsnList.add(insn)
             operands.forEach { stackPop() }
@@ -421,7 +424,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     private fun buildPhiInst(inst: PhiInst) {
         val storeOpcode = ISTORE + typeToInt(inst.type)
         val local = getLocalFor(inst)
-        for ((bb, value) in inst.getIncomings()) {
+        for ((bb, value) in inst.incomings) {
             val bbInsns = getInsnList(bb)
             val loadIncoming = when (value) {
                 is Constant -> convertConstantToInsn(value)

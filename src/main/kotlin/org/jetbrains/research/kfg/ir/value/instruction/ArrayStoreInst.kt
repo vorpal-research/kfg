@@ -6,10 +6,10 @@ import org.jetbrains.research.kfg.ir.value.Value
 
 class ArrayStoreInst(arrayRef: Value, index: Value, value: Value)
     : Instruction(UndefinedName, TF.getVoidType(), arrayOf(arrayRef, index, value)) {
-    fun getArrayRef() = operands[0]
-    fun getIndex() = operands[1]
-    fun getValue() = operands[2]
+    val arrayRef get() = ops[0]
+    val index get() = ops[1]
+    val value get() = ops[2]
 
-    override fun print() = "${getArrayRef()}[${getIndex()}] = ${getValue()}"
-    override fun clone(): Instruction = ArrayStoreInst(getArrayRef(), getIndex(), getValue())
+    override fun print() = "$arrayRef[$index] = $value"
+    override fun clone(): Instruction = ArrayStoreInst(arrayRef, index, value)
 }

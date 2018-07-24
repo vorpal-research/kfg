@@ -5,28 +5,30 @@ import org.jetbrains.research.kfg.ir.Location
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 
-abstract class Instruction(name: Name, type: Type, protected val operands: Array<Value>)
+abstract class Instruction(name: Name, type: Type, protected val ops: Array<Value>)
     : Value(name, type), ValueUser, Iterable<Value> {
+
     var parent: BasicBlock? = null
-        internal set
     var location = Location()
+    open val isTerminate = false
+
+    val operands: List<Value>
+        get() = ops.toList()
 
     init {
-        operands.forEach { it.addUser(this) }
+        ops.forEach { it.addUser(this) }
     }
 
-    fun operands() = operands.toList()
 
     abstract fun print(): String
-    open fun isTerminate() = false
-    override fun iterator(): Iterator<Value> = operands.iterator()
+    override fun iterator(): Iterator<Value> = ops.iterator()
 
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
-        (0 until operands.size)
-                .filter { operands[it] == from }
+        (0..ops.lastIndex)
+                .filter { ops[it] == from }
                 .forEach {
-                    operands[it].removeUser(this)
-                    operands[it] = to.get()
+                    ops[it].removeUser(this)
+                    ops[it] = to.get()
                     to.addUser(this)
                 }
     }
@@ -39,21 +41,24 @@ abstract class Instruction(name: Name, type: Type, protected val operands: Array
     }
 }
 
-abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, protected val successors: Array<BasicBlock>) :
+abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, protected val succs: Array<BasicBlock>) :
         Instruction(name, type, operands), BlockUser {
+
+    val successors: List<BasicBlock>
+        get() = succs.toList()
+
+    override val isTerminate = true
+
     init {
-        successors.forEach { it.addUser(this) }
+        succs.forEach { it.addUser(this) }
     }
 
-    fun successors() = successors.toList()
-    override fun isTerminate() = true
-
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        (0 until successors.size)
-                .filter { successors[it] == from }
+        (0..succs.lastIndex)
+                .filter { succs[it] == from }
                 .forEach {
-                    successors[it].removeUser(this)
-                    successors[it] = to.get()
+                    succs[it].removeUser(this)
+                    succs[it] = to.get()
                     to.addUser(this)
                 }
     }

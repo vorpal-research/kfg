@@ -1,27 +1,26 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.UnexpectedException
-import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 
 object ValueFactory {
-    fun getThis(type: Type): Value = ThisRef(type)
-    fun getArgument(index: Int, method: Method, type: Type): Value = Argument(index, method, type)
+    fun getThis(type: Type) = ThisRef(type)
+    fun getArgument(index: Int, method: Method, type: Type) = Argument(index, method, type)
     // constants
-    fun getNullConstant(): Value = NullConstant
-    fun getBoolConstant(value: Boolean): Value = BoolConstant(value)
-    fun getByteConstant(value: Byte): Value = ByteConstant(value)
-    fun getCharConstant(value: Char): Value = CharConstant(value)
-    fun getIntConstant(value: Int): Value = IntConstant(value)
-    fun getLongConstant(value: Long): Value = LongConstant(value)
-    fun getFloatConstant(value: Float): Value = FloatConstant(value)
-    fun getDoubleConstant(value: Double): Value = DoubleConstant(value)
-    fun getStringConstant(value: String): Value = StringConstant(value)
-    fun getClassConstant(desc: String): Value = ClassConstant(parseDesc(desc))
-    fun getMethodConstant(method: Method): Value = MethodConstant(method)
+    fun getNullConstant() = NullConstant
+    fun getBoolConstant(value: Boolean) = BoolConstant(value)
+    fun getByteConstant(value: Byte) = ByteConstant(value)
+    fun getCharConstant(value: Char) = CharConstant(value)
+    fun getIntConstant(value: Int) = IntConstant(value)
+    fun getLongConstant(value: Long) = LongConstant(value)
+    fun getFloatConstant(value: Float) = FloatConstant(value)
+    fun getDoubleConstant(value: Double) = DoubleConstant(value)
+    fun getStringConstant(value: String) = StringConstant(value)
+    fun getClassConstant(desc: String) = ClassConstant(parseDesc(desc))
+    fun getMethodConstant(method: Method) = MethodConstant(method)
 
-    fun getZeroConstant(type: Type): Value = when(type) {
+    fun getZeroConstant(type: Type) = when(type) {
         is BoolType -> getBoolConstant(false)
         is ByteType -> getByteConstant(0.toByte())
         is CharType -> getCharConstant(0.toChar())
@@ -30,10 +29,10 @@ object ValueFactory {
         is FloatType -> getFloatConstant(0.0f)
         is DoubleType -> getDoubleConstant(0.0)
         is Reference -> getNullConstant()
-        else -> throw UnexpectedException("Unknown type: ${type.name}")
+        else -> throw InvalidStateError("Unknown type: ${type.name}")
     }
 
-    fun getConstant(value: Any?): Value? = when (value) {
+    fun getConstant(value: Any?) = when (value) {
         is Int -> getIntConstant(value)
         is Float -> getFloatConstant(value)
         is Long -> getLongConstant(value)

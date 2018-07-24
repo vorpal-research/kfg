@@ -7,9 +7,9 @@ import org.jetbrains.research.kfg.ir.value.Name
 class CmpInst(name: Name, type: Type, val opcode: CmpOpcode, lhv: Value, rhv: Value)
     : Instruction(name, type, arrayOf(lhv, rhv)) {
 
-    fun getLhv() = operands[0]
-    fun getRhv() = operands[1]
+    val lhv get() = ops[0]
+    val rhv get() = ops[1]
 
-    override fun print() = "$name = (${getLhv()} $opcode ${getRhv()})"
-    override fun clone(): Instruction = CmpInst(name.clone(), type, opcode, getLhv(), getRhv())
+    override fun print() = "$name = ($lhv $opcode $rhv)"
+    override fun clone(): Instruction = CmpInst(name.clone(), type, opcode, lhv, rhv)
 }

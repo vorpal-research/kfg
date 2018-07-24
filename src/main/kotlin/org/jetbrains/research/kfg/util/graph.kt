@@ -17,15 +17,15 @@ interface GraphNode<out T : Any> {
 ///////////////////////////////////////////////////////////////////////////////
 
 class TopologicalSorter<T : GraphNode<T>>(val nodes: Set<T>) {
-    private val order = mutableListOf<T>()
-    private val cycled = mutableSetOf<T>()
-    private val colors = mutableMapOf<T, Color>()
+    private val order = arrayListOf<T>()
+    private val cycled = hashSetOf<T>()
+    private val colors = hashMapOf<T, Color>()
 
     private enum class Color { WHITE, GREY, BLACK }
 
     private fun dfs(node: T) {
-        if (colors.getOrPut(node, { Color.WHITE }) == Color.BLACK) return
-        if (colors[node]!! == Color.GREY) {
+        if (colors.getOrPut(node) { Color.WHITE } == Color.BLACK) return
+        if (colors.getValue(node) == Color.GREY) {
             cycled.add(node)
             return
         }
@@ -37,7 +37,7 @@ class TopologicalSorter<T : GraphNode<T>>(val nodes: Set<T>) {
     }
 
     fun sort(node: T): Pair<List<T>, Set<T>> {
-        assert(node in nodes)
+        require(node in nodes)
         dfs(node)
         return Pair(order, cycled)
     }
@@ -48,7 +48,8 @@ class TopologicalSorter<T : GraphNode<T>>(val nodes: Set<T>) {
 class LoopDetector<T : GraphNode<T>>(val nodes: Set<T>) {
     fun search(): Map<T, List<T>> {
         val tree = DominatorTreeBuilder(nodes).build()
-        val backEdges = mutableListOf<Pair<T, T>>()
+        val backEdges = arrayListOf<Pair<T, T>>()
+
         for ((current, _) in tree) {
             for (succ in current.getSuccSet()) {
                 val succTreeNode = tree.getValue(succ)
@@ -57,9 +58,10 @@ class LoopDetector<T : GraphNode<T>>(val nodes: Set<T>) {
                 }
             }
         }
-        val result = mutableMapOf<T, MutableList<T>>()
+
+        val result = hashMapOf<T, MutableList<T>>()
         for ((header, end) in backEdges) {
-            val body = mutableListOf(header)
+            val body = arrayListOf(header)
             val stack = Stack<T>()
             stack.push(end)
             while (stack.isNotEmpty()) {
@@ -69,7 +71,7 @@ class LoopDetector<T : GraphNode<T>>(val nodes: Set<T>) {
                     top.getPredSet().forEach { stack.push(it) }
                 }
             }
-            result.getOrPut(header, { mutableListOf() }).addAll(body)
+            result.getOrPut(header, ::arrayListOf).addAll(body)
         }
         return result
     }

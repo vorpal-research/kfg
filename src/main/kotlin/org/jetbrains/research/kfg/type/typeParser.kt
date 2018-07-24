@@ -1,11 +1,9 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.InvalidTypeDescException
+import org.jetbrains.research.kfg.InvalidTypeDescError
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.UnexpectedException
-import org.jetbrains.research.kfg.UnexpectedOpcodeException
-import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.ir.value.NullConstant
+import org.jetbrains.research.kfg.InvalidStateError
+import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
@@ -17,7 +15,7 @@ fun Type.toInternalDesc(): String =
             else component.toInternalDesc()
             "[$sub"
         }
-        else throw UnexpectedException("Unknown type ${this.name}")
+        else throw InvalidStateError("Unknown type ${this.name}")
 
 fun mergeTypes(types: Set<Type>) : Type? {
     if (types.size == 1) return types.first()
@@ -38,7 +36,7 @@ fun mergeTypes(types: Set<Type>) : Type? {
                     is NullType -> true
                     is ArrayType -> false
                     is ClassType -> current.`class`.isAncestor(`class`.`class`)
-                    else -> throw UnexpectedException("Unknown ref type $`class`")
+                    else -> throw InvalidStateError("Unknown ref type $`class`")
                 }
             })
             if (isAncestor) return current
@@ -60,11 +58,11 @@ fun parseDesc(desc: String): Type {
         'F' -> TF.getFloatType()
         'D' -> TF.getDoubleType()
         'L' -> {
-            if (desc.last() != ';') throw InvalidTypeDescException(desc)
+            if (desc.last() != ';') throw InvalidTypeDescError(desc)
             TF.getRefType(desc.substring(1).substringBeforeLast(';'))
         }
         '[' -> TF.getArrayType(parseDesc(desc.substring(1)))
-        else -> throw InvalidTypeDescException(desc)
+        else -> throw InvalidTypeDescError(desc)
     }
 }
 
@@ -78,7 +76,7 @@ fun parsePrimaryType(opcode: Int): Type {
         Opcodes.T_INT -> TF.getIntType()
         Opcodes.T_LONG -> TF.getLongType()
         Opcodes.T_SHORT -> TF.getShortType()
-        else -> throw UnexpectedOpcodeException("PrimaryType opcode $opcode")
+        else -> throw InvalidOpcodeError("PrimaryType opcode $opcode")
     }
 }
 
@@ -92,7 +90,7 @@ fun primaryTypeToInt(type: Type): Int {
         is IntType -> Opcodes.T_INT
         is LongType -> Opcodes.T_LONG
         is ShortType -> Opcodes.T_SHORT
-        else -> throw UnexpectedOpcodeException("${type.name} is not primary type")
+        else -> throw InvalidOpcodeError("${type.name} is not primary type")
     }
 }
 

@@ -13,10 +13,21 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
             field = value
             instructions.forEach { addValueToParent(it) }
         }
-    val predecessors = mutableSetOf<BasicBlock>()
-    val successors = mutableSetOf<BasicBlock>()
-    val instructions = mutableListOf<Instruction>()
-    val handlers = mutableListOf<CatchBlock>()
+    val predecessors = hashSetOf<BasicBlock>()
+    val successors = hashSetOf<BasicBlock>()
+    val instructions = arrayListOf<Instruction>()
+    val handlers = arrayListOf<CatchBlock>()
+
+    val terminator: TerminateInst
+        get() = last() as TerminateInst
+
+    val isEmpty: Boolean
+            get() = instructions.isEmpty()
+    val isNotEmpty: Boolean
+            get() = !isEmpty
+
+    val location: Location
+        get() = instructions.first().location
 
     private fun addValueToParent(value: Value) {
         parent?.slottracker?.addValue(value)
@@ -39,31 +50,31 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
         handle.addUser(this)
     }
 
-    fun removeSuccessor(bb: BasicBlock): Boolean {
-        if (successors.remove(bb)) {
+    fun removeSuccessor(bb: BasicBlock) = when {
+        successors.remove(bb) -> {
             bb.removeUser(this)
             bb.removePredecessor(this)
-            return true
+            true
         }
-        return false
+        else -> false
     }
 
-    fun removePredecessor(bb: BasicBlock): Boolean {
-        if (predecessors.remove(bb)) {
+    fun removePredecessor(bb: BasicBlock): Boolean = when {
+        predecessors.remove(bb) -> {
             bb.removeUser(this)
             bb.removeSuccessor(this)
-            return true
+            true
         }
-        return false
+        else -> false
     }
 
-    fun removeHandler(handle: CatchBlock): Boolean {
-        if (handlers.remove(handle)) {
+    fun removeHandler(handle: CatchBlock) = when {
+        handlers.remove(handle) -> {
             handle.removeUser(this)
             handle.removeThrower(this)
-            return true
+            true
         }
-        return false
+        else -> false
     }
 
     fun addInstruction(inst: Instruction) {
@@ -102,21 +113,12 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
     }
 
     fun replace(from: Instruction, to: Instruction) {
-        (0 until instructions.size).filter { instructions[it] == from }.forEach {
+        (0..instructions.lastIndex).filter { instructions[it] == from }.forEach {
             instructions[it] = to
             to.parent = this
             addValueToParent(to)
         }
     }
-
-    fun isEmpty() = instructions.isEmpty()
-    fun isNotEmpty() = !isEmpty()
-
-    fun front() = instructions.first()
-    fun back() = instructions.last()
-    fun getTerminator() = back() as TerminateInst
-
-    fun getLocation() = instructions.first().location
 
     override fun toString() = print()
 
@@ -129,30 +131,33 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
 
     override fun get() = this
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        if (removePredecessor(from.get())) {
-            addPredecessor(to.get())
-        } else if (removeSuccessor(from.get())) {
-            addSuccessor(to.get())
-        } else if (handlers.contains(from.get())) {
-            assert(from.get() is CatchBlock)
-            val fromCatch = from.get() as CatchBlock
-            removeHandler(fromCatch)
-            assert(to.get() is CatchBlock)
-            val toCatch = to.get() as CatchBlock
-            toCatch.addThrowers(listOf(this))
+        when {
+            removePredecessor(from.get()) -> addPredecessor(to.get())
+            removeSuccessor(from.get()) -> addSuccessor(to.get())
+            handlers.contains(from.get()) -> {
+                require(from.get() is CatchBlock)
+                val fromCatch = from.get() as CatchBlock
+                removeHandler(fromCatch)
+
+                require(to.get() is CatchBlock)
+                val toCatch = to.get() as CatchBlock
+                toCatch.addThrowers(listOf(this))
+            }
         }
     }
 
     fun replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) {
-        if (removeSuccessor(from.get())) {
-            addSuccessor(to.get())
-        } else if (handlers.contains(from.get())) {
-            assert(from.get() is CatchBlock)
-            val fromCatch = from.get() as CatchBlock
-            removeHandler(fromCatch)
-            assert(to.get() is CatchBlock)
-            val toCatch = to.get() as CatchBlock
-            toCatch.addThrowers(listOf(this))
+        when {
+            removeSuccessor(from.get()) -> addSuccessor(to.get())
+            handlers.contains(from.get()) -> {
+                require(from.get() is CatchBlock)
+                val fromCatch = from.get() as CatchBlock
+                removeHandler(fromCatch)
+
+                require(to.get() is CatchBlock)
+                val toCatch = to.get() as CatchBlock
+                toCatch.addThrowers(listOf(this))
+            }
         }
     }
 }
@@ -171,17 +176,17 @@ class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
 }
 
 class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)) {
-    val throwers = mutableSetOf<BasicBlock>()
+    val throwers = hashSetOf<BasicBlock>()
 
-    fun getEntries(): Set<BasicBlock> {
-        val entries = mutableSetOf<BasicBlock>()
-        val throwers = getAllThrowers()
-        for (it in throwers) {
-            for (pred in it.predecessors)
-                if (!throwers.contains(pred)) entries.add(pred)
+    val entries: Set<BasicBlock>
+        get() {
+            val entries = hashSetOf<BasicBlock>()
+            for (it in throwers) {
+                for (pred in it.predecessors)
+                    if (!throwers.contains(pred)) entries.add(pred)
+            }
+            return entries
         }
-        return entries
-    }
 
     fun addThrowers(throwers: List<BasicBlock>) {
         throwers.forEach {
@@ -191,13 +196,11 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)
-    fun getAllThrowers() = throwers.toSet()
-    fun getAllPredecessors() = getAllThrowers().plus(getEntries())
+    fun getAllPredecessors() = throwers + entries
 
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
-        val throwers = getAllThrowers()
         throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
         throwers.drop(1).forEach { sb.append(", ${it.name}") }
         sb.appendln()

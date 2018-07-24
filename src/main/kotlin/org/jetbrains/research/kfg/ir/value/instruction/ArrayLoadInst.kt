@@ -7,12 +7,14 @@ import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.NullType
 
 class ArrayLoadInst(name: Name, arrayRef: Value, index: Value)
-    : Instruction(name, if (arrayRef.type is NullType) TF.getNullType() else (arrayRef.type as ArrayType).component, arrayOf(arrayRef, index)) {
+    : Instruction(name, when {
+        arrayRef.type === NullType -> TF.getNullType()
+        else -> (arrayRef.type as ArrayType).component
+    }, arrayOf(arrayRef, index)) {
 
-    fun getArrayRef() = operands[0]
-    fun getIndex() = operands[1]
+    val arrayRef get() = ops[0]
+    val index get() = ops[1]
 
-    override fun print() = "$name = ${getArrayRef()}[${getIndex()}]"
-
-    override fun clone(): Instruction = ArrayLoadInst(name.clone(), getArrayRef(), getIndex())
+    override fun print() = "$name = $arrayRef[$index]"
+    override fun clone(): Instruction = ArrayLoadInst(name.clone(), arrayRef, index)
 }

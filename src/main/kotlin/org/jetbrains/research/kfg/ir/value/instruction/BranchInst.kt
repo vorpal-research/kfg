@@ -7,11 +7,10 @@ import org.jetbrains.research.kfg.ir.value.Value
 
 class BranchInst(cond: Value, trueSuccessor: BasicBlock, falseSuccessor: BasicBlock)
     : TerminateInst(UndefinedName, TF.getVoidType(), arrayOf(cond), arrayOf(trueSuccessor, falseSuccessor)) {
-    fun getCond() = operands[0]
-    fun getTrueSuccessor() = successors[0]
-    fun getFalseSuccessor() = successors[1]
+    val cond get() = ops[0]
+    val trueSuccessor get() = succs[0]
+    val falseSuccessor get() = succs[1]
 
-    override fun isTerminate() = true
-    override fun print() = "if (${getCond()}) goto ${getTrueSuccessor().name} else ${getFalseSuccessor().name}"
-    override fun clone(): Instruction = BranchInst(getCond(), getTrueSuccessor(), getFalseSuccessor())
+    override fun print() = "if ($cond) goto ${trueSuccessor.name} else ${falseSuccessor.name}"
+    override fun clone(): Instruction = BranchInst(cond, trueSuccessor, falseSuccessor)
 }

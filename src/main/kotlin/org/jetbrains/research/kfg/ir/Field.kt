@@ -8,7 +8,7 @@ import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.FieldNode
 
-class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
+data class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
     val type: Type
     val defaultValue: Value?
 
@@ -21,13 +21,5 @@ class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.access) {
 
         @Suppress("UNCHECKED_CAST") addVisibleAnnotations(fn.visibleAnnotations as List<AnnotationNode>?)
         @Suppress("UNCHECKED_CAST") addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
-    }
-
-    override fun hashCode() = simpleHash(name, `class`, type)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other?.javaClass != this.javaClass) return false
-        other as Field
-        return this.name == other.name && this.`class` == other.`class` && this.type == other.type
     }
 }

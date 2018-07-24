@@ -8,17 +8,20 @@ class ReturnInst : TerminateInst {
     constructor() : super(UndefinedName, TF.getVoidType(), arrayOf(), arrayOf())
     constructor(retval: Value) : super(UndefinedName, retval.type, arrayOf(retval), arrayOf())
 
-    fun hasReturnValue() = operands.isNotEmpty()
-    fun getReturnType() = operands[0].type
-    fun getReturnValue() = operands[0]
+    val hasReturnValue get() = ops.isNotEmpty()
+    val returnType get() = ops[0].type
+    val returnValue get() = ops[0]
 
-    override fun isTerminate() = true
+    override val isTerminate get() = true
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("return ")
-        if (hasReturnValue()) sb.append(getReturnValue())
+        if (hasReturnValue) sb.append(returnValue)
         return sb.toString()
     }
 
-    override fun clone(): Instruction = if (hasReturnValue()) ReturnInst(getReturnValue()) else ReturnInst()
+    override fun clone(): Instruction = when {
+        hasReturnValue -> ReturnInst(returnValue)
+        else -> ReturnInst()
+    }
 }

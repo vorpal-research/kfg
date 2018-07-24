@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.UnexpectedException
+import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.util.simpleHash
@@ -56,16 +56,16 @@ class ConstantName(val name: String) : Name() {
 
 object UndefinedName : Name() {
     override fun clone() = this
-    override fun toString(): String = throw UnexpectedException("Trying to print undefined name")
+    override fun toString(): String = throw InvalidStateError("Trying to print undefined name")
 }
 
 class SlotTracker(val method: Method) {
-    private val blocks = mutableMapOf<String, MutableList<BlockName>>()
-    private val strings = mutableMapOf<String, MutableList<StringName>>()
-    private val slots = mutableMapOf<Slot, Int>()
+    private val blocks = hashMapOf<String, MutableList<BlockName>>()
+    private val strings = hashMapOf<String, MutableList<StringName>>()
+    private val slots = hashMapOf<Slot, Int>()
 
-    private val nameToValue = mutableMapOf<Name, Value>()
-    private val nameToBlock = mutableMapOf<BlockName, BasicBlock>()
+    private val nameToValue = hashMapOf<Name, Value>()
+    private val nameToBlock = hashMapOf<BlockName, BasicBlock>()
 
     internal fun getBlockNumber(name: BlockName) = blocks[name.name]?.indexOf(name) ?: -1
     internal fun getStringNumber(name: StringName) = strings[name.name]?.indexOf(name) ?: -1
@@ -74,7 +74,7 @@ class SlotTracker(val method: Method) {
     fun addBlock(block: BasicBlock) {
         val name = block.name
         name.st = this
-        blocks.getOrPut(name.name, { mutableListOf() }).add(name)
+        blocks.getOrPut(name.name, ::arrayListOf).add(name)
         nameToBlock[name] = block
     }
 
@@ -84,12 +84,12 @@ class SlotTracker(val method: Method) {
         when (name) {
             is Slot -> slots[name] = slots.size
             is StringName -> {
-                strings.getOrPut(name.name, { mutableListOf() }).add(name)
+                strings.getOrPut(name.name, ::arrayListOf).add(name)
             }
             else -> {
             }
         }
-        if (name !is UndefinedName) nameToValue[name] = value
+        if (name !== UndefinedName) nameToValue[name] = value
     }
 
     fun getBlock(name: String) = nameToBlock
@@ -112,20 +112,15 @@ class SlotTracker(val method: Method) {
         blocks.clear()
         var slotCount = 0
         for (bb in method) {
-            val names = blocks.getOrPut(bb.name.name, { mutableListOf() })
+            val names = blocks.getOrPut(bb.name.name, ::arrayListOf)
             if (!names.contains(bb.name)) names.add(bb.name)
             for (inst in bb) {
-                for (value in inst.operands().plus(inst.get())) {
+                for (value in inst.operands.plus(inst.get())) {
                     when (value.name) {
-                        is Slot -> {
-                            slots.getOrPut(value.name, { slotCount++ })
-                        }
+                        is Slot ->  slots.getOrPut(value.name) { slotCount++ }
                         is StringName -> {
-                            val nameCopies = strings.getOrPut(value.name.name, { mutableListOf() })
+                            val nameCopies = strings.getOrPut(value.name.name, ::arrayListOf)
                             if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
-                        }
-                        else -> {
-
                         }
                     }
                 }

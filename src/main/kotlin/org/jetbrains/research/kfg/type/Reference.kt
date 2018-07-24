@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.InvalidCallException
+import org.jetbrains.research.kfg.InvalidCallError
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.util.simpleHash
 
@@ -42,7 +42,7 @@ object NullType : Reference {
     override val name = "null"
 
     override fun toString() = name
-    override fun getAsmDesc() = throw InvalidCallException("Called getAsmDesc on NullType")
+    override fun getAsmDesc() = throw InvalidCallError("Called getAsmDesc on NullType")
 
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {
