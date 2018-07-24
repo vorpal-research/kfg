@@ -169,7 +169,7 @@ class CfgBuilder(val method: Method)
             val phi = IF.getPhi(type, mapOf())
             addInstruction(bb, phi)
             stack.push(phi)
-            sf.stackPhis.add(phi)
+            sf.stackPhis.add(phi as PhiInst)
         }
     }
 
@@ -207,7 +207,7 @@ class CfgBuilder(val method: Method)
             val phi = IF.getPhi(type, mapOf())
             addInstruction(bb, phi)
             locals[local] = phi
-            sf.localPhis[local] = phi
+            sf.localPhis[local] = phi as PhiInst
         }
     }
 
