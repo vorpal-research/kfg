@@ -387,31 +387,34 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitCmpInst(inst: CmpInst) {
         val isBranch = !(inst.opcode is CmpOpcode.Cmp || inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
-        if (isBranch) {
-            // this kind of cmp insts are handled in visitBranch
-            assert(inst.users.size == 1, { "Unsupported usage of cmp inst" })
-            assert(inst.users.first() is BranchInst, { "Unsupported usage of cmp inst" })
-        } else {
-            val opcode = when (inst.opcode) {
-                is CmpOpcode.Cmp -> LCMP
-                is CmpOpcode.Cmpg -> when (inst.lhv.type) {
-                    is FloatType -> FCMPG
-                    is DoubleType -> DCMPG
-                    else -> throw InvalidOperandError("Non-real operands of CMPG inst")
-                }
-                is CmpOpcode.Cmpl -> when (inst.lhv.type) {
-                    is FloatType -> FCMPL
-                    is DoubleType -> DCMPL
-                    else -> throw InvalidOperandError("Non-real operands of CMPL inst")
-                }
-                else -> throw InvalidStateError("Unknown non-branch cmp inst ${inst.print()}")
+        when {
+            isBranch -> {
+                // this kind of cmp insts are handled in visitBranch
+                require(inst.users.size == 1) { "Unsupported usage of cmp inst" }
+                require(inst.users.first() is BranchInst) { "Unsupported usage of cmp inst" }
             }
-            val insn = InsnNode(opcode)
-            val operands = inst.operands
-            addOperandsToStack(operands)
-            currentInsnList.add(insn)
-            operands.forEach { stackPop() }
-            stackPush(inst)
+            else -> {
+                val opcode = when (inst.opcode) {
+                    is CmpOpcode.Cmp -> LCMP
+                    is CmpOpcode.Cmpg -> when (inst.lhv.type) {
+                        is FloatType -> FCMPG
+                        is DoubleType -> DCMPG
+                        else -> throw InvalidOperandError("Non-real operands of CMPG inst")
+                    }
+                    is CmpOpcode.Cmpl -> when (inst.lhv.type) {
+                        is FloatType -> FCMPL
+                        is DoubleType -> DCMPL
+                        else -> throw InvalidOperandError("Non-real operands of CMPL inst")
+                    }
+                    else -> throw InvalidStateError("Unknown non-branch cmp inst ${inst.print()}")
+                }
+                val insn = InsnNode(opcode)
+                val operands = inst.operands
+                addOperandsToStack(operands)
+                currentInsnList.add(insn)
+                operands.forEach { stackPop() }
+                stackPush(inst)
+            }
         }
     }
 
