@@ -17,7 +17,7 @@ internal fun setCurrentDirectory(path: String) = setCurrentDirectory(File(path))
 
 internal fun setCurrentDirectory(path: File) {
     if (!path.exists()) path.mkdirs()
-    assert(path.isDirectory)
+    require(path.isDirectory)
     System.setProperty("user.dir", path.canonicalPath)
 }
 
