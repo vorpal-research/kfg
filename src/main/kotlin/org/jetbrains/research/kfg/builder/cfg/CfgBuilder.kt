@@ -873,7 +873,7 @@ class CfgBuilder(val method: Method)
     }
 
     private fun buildFrames() {
-        val sf = frames.getOrPut(method.getEntry()) { StackFrame(method.getEntry()) }
+        val sf = frames.getOrPut(method.entry) { StackFrame(method.entry) }
         sf.locals.putAll(locals)
 
         for (bb in method.basicBlocks.drop(1)) {
@@ -1044,7 +1044,7 @@ class CfgBuilder(val method: Method)
 
     fun build(): Method {
         var localIndx = 0
-        if (!method.isStatic()) {
+        if (!method.isStatic) {
             val `this` = VF.getThis(TF.getRefType(method.`class`))
             locals[localIndx++] = `this`
             method.slottracker.addValue(`this`)
@@ -1062,7 +1062,7 @@ class CfgBuilder(val method: Method)
         buildFrames() // build frame maps for each basic block
 
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
-        val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.getEntry())
+        val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.entry)
         cycleEntries.addAll(c)
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 

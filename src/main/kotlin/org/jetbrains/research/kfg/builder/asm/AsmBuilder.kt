@@ -44,7 +44,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     var maxStack = 0
 
     init {
-        if (!method.isStatic()) {
+        if (!method.isStatic) {
             val `this` = VF.getThis(TF.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }

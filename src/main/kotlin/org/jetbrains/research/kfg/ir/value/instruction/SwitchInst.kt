@@ -12,9 +12,14 @@ class SwitchInst(key: Value, default: BasicBlock, branches: Map<Value, BasicBloc
                 arrayOf(key, *branches.keys.toTypedArray()),
                 arrayOf(default, *branches.values.toTypedArray())) {
 
-    val key get() = ops[0]
-    val default get() = succs[0]
-    val branches get() = ops.drop(1).zip(succs.drop(1)).toMap()
+    val key: Value
+        get() = ops[0]
+
+    val default: BasicBlock
+        get() = succs[0]
+
+    val branches: Map<Value, BasicBlock>
+        get() = ops.drop(1).zip(succs.drop(1)).toMap()
 
     override fun print(): String {
         val sb = StringBuilder()

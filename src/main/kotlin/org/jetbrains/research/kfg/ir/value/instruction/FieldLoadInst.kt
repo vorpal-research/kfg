@@ -9,11 +9,14 @@ class FieldLoadInst : Instruction {
     val field: Field
     val isStatic: Boolean
 
-    val hasOwner get() = !isStatic
-    val owner get() = when {
-        hasOwner -> ops[0]
-        else -> throw InvalidAccessError("Trying to get owner of static field")
-    }
+    val hasOwner: Boolean
+        get() = !isStatic
+
+    val owner: Value
+        get() = when {
+            hasOwner -> ops[0]
+            else -> throw InvalidAccessError("Trying to get owner of static field")
+        }
 
     constructor(name: Name, field: Field) : super(name, field.type, arrayOf()) {
         this.field = field

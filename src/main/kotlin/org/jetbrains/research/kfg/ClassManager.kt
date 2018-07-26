@@ -52,7 +52,7 @@ object ClassManager {
         }
         classes.values.forEach {
             it.methods.forEach { _, method ->
-                if (!method.isAbstract()) CfgBuilder(method).build()
+                if (!method.isAbstract) CfgBuilder(method).build()
             }
         }
     }
