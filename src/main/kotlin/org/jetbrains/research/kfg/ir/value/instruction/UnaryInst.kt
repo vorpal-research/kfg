@@ -12,7 +12,8 @@ enum class UnaryOpcode {
 class UnaryInst(name: Name, val opcode: UnaryOpcode, obj: Value)
     : Instruction(name, if (opcode == UnaryOpcode.LENGTH) TF.getIntType() else obj.type, arrayOf(obj)) {
 
-    val operand get() = ops[0]
+    val operand: Value
+        get() = ops[0]
 
     override fun print(): String {
         val sb = StringBuilder()

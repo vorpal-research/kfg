@@ -6,7 +6,9 @@ import org.jetbrains.research.kfg.ir.value.Value
 
 class EnterMonitorInst(owner: Value)
     : Instruction(UndefinedName, TF.getVoidType(), arrayOf(owner)) {
-    val owner get() = ops[0]
+
+    val owner: Value
+        get() = ops[0]
 
     override fun print() = "enter monitor $owner"
     override fun clone(): Instruction = EnterMonitorInst(owner)

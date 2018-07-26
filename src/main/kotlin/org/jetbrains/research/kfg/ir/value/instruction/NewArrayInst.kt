@@ -8,8 +8,11 @@ import org.jetbrains.research.kfg.type.Type
 class NewArrayInst(name: Name, type: Type, dimentions: Array<Value>): Instruction(name, type, dimentions) {
     val component: Type
 
-    val dimensions get() = ops.toList()
-    val numDimensions get() = ops.size
+    val dimensions: List<Value>
+        get() = ops.toList()
+
+    val numDimensions: Int
+        get() = ops.size
 
     init {
         var current = type

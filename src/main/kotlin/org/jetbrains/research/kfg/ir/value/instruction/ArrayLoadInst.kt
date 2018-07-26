@@ -12,8 +12,11 @@ class ArrayLoadInst(name: Name, arrayRef: Value, index: Value)
         else -> (arrayRef.type as ArrayType).component
     }, arrayOf(arrayRef, index)) {
 
-    val arrayRef get() = ops[0]
-    val index get() = ops[1]
+    val arrayRef: Value
+        get() = ops[0]
+
+    val index: Value
+        get() = ops[1]
 
     override fun print() = "$name = $arrayRef[$index]"
     override fun clone(): Instruction = ArrayLoadInst(name.clone(), arrayRef, index)

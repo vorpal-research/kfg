@@ -11,9 +11,14 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     : Instruction(name, type, incomings.values.toTypedArray()), BlockUser {
     private val preds = incomings.keys.toTypedArray()
 
-    val predecessors get() = preds.toList()
-    val incomingValues get() = ops.toList()
-    val incomings get() = predecessors.zip(ops).toMap()
+    val predecessors: List<BasicBlock>
+        get() = preds.toList()
+
+    val incomingValues: List<Value>
+        get() = ops.toList()
+
+    val incomings: Map<BasicBlock, Value>
+        get() = predecessors.zip(ops).toMap()
 
     override fun print(): String {
         val sb = StringBuilder()

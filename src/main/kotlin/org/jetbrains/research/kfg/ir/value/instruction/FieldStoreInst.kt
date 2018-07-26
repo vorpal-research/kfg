@@ -21,13 +21,17 @@ class FieldStoreInst : Instruction {
         isStatic = false
     }
 
-    val hasOwner get() = !isStatic
+    val hasOwner: Boolean
+        get() = !isStatic
+
     val owner: Value
         get() = when {
             hasOwner -> ops[0]
             else -> throw InvalidAccessError("Trying to get owner of static field")
         }
-    val value get() = if (hasOwner) ops[1] else ops[0]
+
+    val value: Value
+        get() = if (hasOwner) ops[1] else ops[0]
 
     override fun print(): String {
         val sb = StringBuilder()

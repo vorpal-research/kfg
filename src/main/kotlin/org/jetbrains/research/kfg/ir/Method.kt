@@ -50,6 +50,11 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
 }
 
 class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
+
+    companion object {
+        private val CONSTRUCTOR_NAMES = arrayOf("<init>", "<clinit>")
+    }
+
     val desc = MethodDesc.fromDesc(mn.desc)
     val parameters = arrayListOf<Parameter>()
     val exceptions = hashSetOf<Class>()
@@ -73,11 +78,18 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))
     }
 
-    fun getEntry() = basicBlocks.first()
+    val entry: BasicBlock
+        get() = basicBlocks.first()
+
+    val prototype: String
+        get() = "$`class`.$name$desc"
+
+    val isConstructor: Boolean
+        get() = name in CONSTRUCTOR_NAMES
 
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            require(bb.parent == null) { "Block ${bb.name} already belongs to other method"}
+            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
             basicBlocks.add(bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
@@ -87,9 +99,9 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            require(bb.parent == null) { "Block ${bb.name} already belongs to other method"}
+            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
             val index = basicBlocks.indexOf(before)
-            require(index >= 0) { "Block ${before.name} does not belong to method $this"}
+            require(index >= 0) { "Block ${before.name} does not belong to method $this" }
 
             basicBlocks.add(index, bb)
             slottracker.addBlock(bb)
@@ -100,7 +112,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun remove(block: BasicBlock) {
         if (basicBlocks.contains(block)) {
-            require(block.parent == this) { "Block ${block.name} don't belong to $this"}
+            require(block.parent == this) { "Block ${block.name} don't belong to $this" }
             basicBlocks.remove(block)
             block.removeUser(this)
             block.parent = null
@@ -141,11 +153,9 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun getBlockByLocation(location: Location) = basicBlocks.find { it.location == location }
 
-    fun getPrototype() = "$`class`.$name$desc"
-
     fun print(): String {
         val sb = StringBuilder()
-        sb.appendln(getPrototype())
+        sb.appendln(prototype)
         basicBlocks.take(1).forEach { sb.appendln(it) }
         basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
         basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
@@ -154,7 +164,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     override fun getAsmDesc() = desc.getAsmDesc()
 
-    override fun toString() = getPrototype()
+    override fun toString() = prototype
     override fun iterator() = basicBlocks.iterator()
 
     override fun hashCode() = simpleHash(name, `class`, desc)
@@ -184,8 +194,8 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
             it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
             nodes[it.name.toString()] = GraphView(it.name.toString(), label.toString())
         }
-        if (!isAbstract()) {
-            val entryNode = nodes.getValue(getEntry().name.toString())
+        if (!isAbstract) {
+            val entryNode = nodes.getValue(entry.name.toString())
             nodes.getValue(name).successors.add(entryNode)
         }
         basicBlocks.forEach {
@@ -205,6 +215,5 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         return nodes.values.toList()
     }
 
-    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false)
-            = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false) = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
 }

@@ -8,9 +8,14 @@ import org.jetbrains.research.kfg.ir.value.Value
 class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock, branches: Array<BasicBlock>)
     : TerminateInst(UndefinedName, TF.getVoidType(), arrayOf(index, min, max), arrayOf(default, *branches)) {
 
-    val index get() = ops[0]
-    val min get() = ops[1]
-    val max get() = ops[2]
+    val index: Value
+        get() = ops[0]
+
+    val min: Value
+        get() = ops[1]
+
+    val max: Value
+        get() = ops[2]
 
     fun getDefault() = succs[0]
     fun getBranches() = succs.drop(1)

@@ -23,6 +23,7 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
 
     val isEmpty: Boolean
             get() = instructions.isEmpty()
+
     val isNotEmpty: Boolean
             get() = !isEmpty
 
