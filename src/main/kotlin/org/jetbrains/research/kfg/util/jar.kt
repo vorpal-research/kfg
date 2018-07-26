@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.ir.Class
@@ -9,6 +10,7 @@ import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
+import java.net.URLClassLoader
 import java.util.jar.*
 
 internal fun getCurrentDirectory() = File(".").canonicalPath
@@ -23,121 +25,51 @@ internal fun setCurrentDirectory(path: File) {
 
 internal fun JarEntry.isClass() = this.name.endsWith(".class")
 
+
+class ClassReadError(msg: String) : KfgException(msg)
+
+
 data class Flags(val value: Int) {
     companion object {
-        fun getAll() = Flags(0)
-        fun getNoDebug() = Flags(ClassReader.SKIP_DEBUG)
-        fun getNoFrames() = Flags(ClassReader.SKIP_FRAMES)
-        fun getCodeOnly() = getNoDebug() + getNoFrames()
+        val readAll = Flags(0)
+        val readSkipDebug = Flags(ClassReader.SKIP_DEBUG)
+        val readSkipFrames = Flags(ClassReader.SKIP_FRAMES)
+        val readCodeOnly = readSkipDebug + readSkipFrames
+
+        val writeComputeNone = Flags(0)
+        val writeComputeFrames = Flags(ClassWriter.COMPUTE_FRAMES)
+        val writeComputeMaxs = Flags(ClassWriter.COMPUTE_MAXS)
+        val writeComputeAll = writeComputeFrames + writeComputeMaxs
     }
 
     fun merge(other: Flags) = Flags(this.value or other.value)
     operator fun plus(other: Flags) = this.merge(other)
 }
 
-fun readClassNode(input: InputStream, flags: Flags = Flags.getAll()): ClassNode {
-    val classReader = ClassReader(input)
-    val classNode = ClassNode()
-    classReader.accept(classNode, flags.value)
-    return classNode
-}
+class KfgClassWriter(val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
 
-fun writeClassNode(cn: ClassNode, filename: String, computeFrames: Boolean = true): File {
-    val cw = ClassWriter(if (computeFrames) ClassWriter.COMPUTE_FRAMES else 0)
-    val cca = CheckClassAdapter(cw)
-    cn.accept(cca)
-
-    val file = File(filename)
-    file.parentFile?.mkdirs()
-    val fos = FileOutputStream(file)
-    fos.write(cw.toByteArray())
-    fos.close()
-    return file
-}
-
-fun parseJarClasses(jar: JarFile, `package`: Package, flags: Flags): Map<String, ClassNode> {
-    val classes = mutableMapOf<String, ClassNode>()
-    val enumeration = jar.entries()
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-
-        if (entry.isClass() && `package`.isParent(entry.name)) {
-            val classNode = readClassNode(jar.getInputStream(entry), flags)
-            classes[classNode.name] = classNode
-        }
-
+    private fun readClass(type: String) = try {
+        java.lang.Class.forName(type.replace('/', '.'), false, loader)
+    } catch (e: Exception) {
+        throw ClassReadError(e.toString())
     }
-    return classes
-}
 
-fun writeClass(`class`: Class, filename: String = "${`class`.getFullname()}.class")
-        = writeClassNode(ClassBuilder(`class`).build(), filename)
+    override fun getCommonSuperClass(type1: String, type2: String): String {
+        var class1 = readClass(type1)
+        val class2 = readClass(type2)
 
-fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
-    val currentDir = getCurrentDirectory()
-    val enumeration = jar.entries()
-
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-        if (entry.name == "META-INF/MANIFEST.MF") continue
-
-        if (entry.isClass()) {
-            if (`package`.isParent(entry.name)) {
-                val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-                val localPath = "${`class`.getFullname()}.class"
-                val path = "$currentDir/$localPath"
-                writeClass(`class`, path)
-            } else if (writeAllClasses) {
-                val path = "$currentDir/${entry.name}"
-                val classNode = readClassNode(jar.getInputStream(entry))
-                writeClassNode(classNode, path, false)
+        return when {
+            class1.isAssignableFrom(class2) -> type1
+            class2.isAssignableFrom(class1) -> type2
+            class1.isInterface || class2.isInterface -> "java/lang/Object"
+            else -> {
+                do {
+                    class1 = class1.superclass
+                } while (!class1.isAssignableFrom(class2))
+                class1.name.replace('.', '/')
             }
         }
     }
-}
-
-fun writeClassesToTarget(jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
-    val workingDir = getCurrentDirectory()
-    setCurrentDirectory(target)
-    writeClasses(jar, `package`, writeAllClasses)
-    setCurrentDirectory(workingDir)
-}
-
-fun writeJar(jar: JarFile, target: File, `package`: Package): JarFile {
-    val workingDir = getCurrentDirectory()
-    setCurrentDirectory(target)
-    val currentDir = getCurrentDirectory()
-    val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
-    val builder = JarBuilder("$currentDir/$jarName.jar")
-    val enumeration = jar.entries()
-
-    for (it in jar.manifest.mainAttributes) {
-        builder.addMainAttribute(it.key, it.value)
-    }
-
-    for (it in jar.manifest.entries) {
-        builder.addManifestEntry(it.key, it.value)
-    }
-    writeClasses(jar, `package`)
-
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-        if (entry.name == "META-INF/MANIFEST.MF") continue
-
-        if (entry.isClass() && `package`.isParent(entry.name)) {
-            val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-            val localPath = "${`class`.getFullname()}.class"
-            val path = "$currentDir/$localPath"
-
-            val newEntry = JarEntry(localPath.replace("\\", "/"))
-            builder.add(newEntry, FileInputStream(path))
-        } else {
-            builder.add(entry, jar.getInputStream(entry))
-        }
-    }
-    builder.close()
-    setCurrentDirectory(workingDir)
-    return JarFile(builder.name)
 }
 
 class JarBuilder(val name: String) {
@@ -192,5 +124,114 @@ class JarBuilder(val name: String) {
 
     fun close() {
         jar?.close()
+    }
+}
+
+object JarUtils {
+    private fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): ClassNode {
+        val classReader = ClassReader(input)
+        val classNode = ClassNode()
+        classReader.accept(classNode, flags.value)
+        return classNode
+    }
+
+    private fun writeClassNode(loader: ClassLoader, cn: ClassNode, filename: String, flags: Flags = Flags.writeComputeAll): File {
+        val cw = KfgClassWriter(loader, flags)
+        val cca = CheckClassAdapter(cw)
+        cn.accept(cca)
+
+        val file = File(filename)
+        file.parentFile?.mkdirs()
+        val fos = FileOutputStream(file)
+        fos.write(cw.toByteArray())
+        fos.close()
+        return file
+    }
+
+    fun parseJarClasses(jar: JarFile, `package`: Package, flags: Flags): Map<String, ClassNode> {
+        val classes = mutableMapOf<String, ClassNode>()
+        val enumeration = jar.entries()
+        while (enumeration.hasMoreElements()) {
+            val entry = enumeration.nextElement() as JarEntry
+
+            if (entry.isClass() && `package`.isParent(entry.name)) {
+                val classNode = readClassNode(jar.getInputStream(entry), flags)
+                classes[classNode.name] = classNode
+            }
+
+        }
+        return classes
+    }
+
+    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.getFullname()}.class", flags: Flags) =
+            writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
+
+    fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
+        val loader = URLClassLoader(arrayOf(File(jar.name).toURI().toURL()))
+
+        val currentDir = getCurrentDirectory()
+        val enumeration = jar.entries()
+
+        while (enumeration.hasMoreElements()) {
+            val entry = enumeration.nextElement() as JarEntry
+            if (entry.name == "META-INF/MANIFEST.MF") continue
+
+            if (entry.isClass()) {
+                if (`package`.isParent(entry.name)) {
+                    val `class` = CM.getByName(entry.name.removeSuffix(".class"))
+                    val localPath = "${`class`.getFullname()}.class"
+                    val path = "$currentDir/$localPath"
+                    writeClass(loader, `class`, path, Flags.writeComputeFrames)
+                } else if (writeAllClasses) {
+                    val path = "$currentDir/${entry.name}"
+                    val classNode = readClassNode(jar.getInputStream(entry))
+                    writeClassNode(loader, classNode, path, Flags.writeComputeNone)
+                }
+            }
+        }
+    }
+
+    fun writeClassesToTarget(jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
+        val workingDir = getCurrentDirectory()
+        setCurrentDirectory(target)
+        writeClasses(jar, `package`, writeAllClasses)
+        setCurrentDirectory(workingDir)
+    }
+
+    fun updateJar(jar: JarFile, target: File, `package`: Package): JarFile {
+        val workingDir = getCurrentDirectory()
+        setCurrentDirectory(target)
+        val currentDir = getCurrentDirectory()
+        val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
+        val builder = JarBuilder("$currentDir/$jarName.jar")
+        val enumeration = jar.entries()
+
+        for (it in jar.manifest.mainAttributes) {
+            builder.addMainAttribute(it.key, it.value)
+        }
+
+        for (it in jar.manifest.entries) {
+            builder.addManifestEntry(it.key, it.value)
+        }
+        writeClasses(jar, `package`)
+
+        while (enumeration.hasMoreElements()) {
+            val entry = enumeration.nextElement() as JarEntry
+            if (entry.name == "META-INF/MANIFEST.MF") continue
+
+            if (entry.isClass() && `package`.isParent(entry.name)) {
+                val `class` = CM.getByName(entry.name.removeSuffix(".class"))
+                val localPath = "${`class`.getFullname()}.class"
+                val path = "$currentDir/$localPath"
+
+                val newEntry = JarEntry(localPath.replace("\\", "/"))
+                builder.add(newEntry, FileInputStream(path))
+            } else {
+                builder.add(entry, jar.getInputStream(entry))
+            }
+        }
+        builder.close()
+        setCurrentDirectory(workingDir)
+        return JarFile(builder.name)
     }
 }
