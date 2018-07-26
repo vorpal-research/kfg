@@ -13,17 +13,20 @@ import java.io.*
 import java.net.URLClassLoader
 import java.util.jar.*
 
-internal fun getCurrentDirectory() = File(".").canonicalPath
+private fun getCurrentDirectory() = File(".").canonicalPath
 
-internal fun setCurrentDirectory(path: String) = setCurrentDirectory(File(path))
+private fun setCurrentDirectory(path: String) = setCurrentDirectory(File(path))
 
-internal fun setCurrentDirectory(path: File) {
+private fun setCurrentDirectory(path: File) {
     if (!path.exists()) path.mkdirs()
     require(path.isDirectory)
     System.setProperty("user.dir", path.canonicalPath)
 }
 
-internal fun JarEntry.isClass() = this.name.endsWith(".class")
+
+fun JarEntry.isClass() = this.name.endsWith(".class")
+
+fun JarFile.getClassLoader() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
 
 
 class ClassReadError(msg: String) : KfgException(msg)
@@ -163,11 +166,11 @@ object JarUtils {
         return classes
     }
 
-    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.getFullname()}.class", flags: Flags) =
+    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.getFullname()}.class", flags: Flags = Flags.writeComputeFrames) =
             writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
 
     fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
-        val loader = URLClassLoader(arrayOf(File(jar.name).toURI().toURL()))
+        val loader = jar.getClassLoader()
 
         val currentDir = getCurrentDirectory()
         val enumeration = jar.entries()
