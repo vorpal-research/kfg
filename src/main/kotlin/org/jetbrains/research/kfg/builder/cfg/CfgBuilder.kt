@@ -165,7 +165,7 @@ class CfgBuilder(val method: Method)
         val bb = sf.bb
         val stacks = predFrames.map { it.stack }
         for (indx in 0 until stackSize) {
-            val type = stacks.map { it[indx] }.first().type
+            val type = stacks.filter { it.size > indx }.map { it[indx] }.first().type
             val phi = IF.getPhi(type, mapOf())
             addInstruction(bb, phi)
             stack.push(phi)
