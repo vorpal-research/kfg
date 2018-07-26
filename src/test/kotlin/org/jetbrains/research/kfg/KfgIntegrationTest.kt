@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.util.writeJar
+import org.jetbrains.research.kfg.util.JarUtils
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.util.jar.JarFile
@@ -52,7 +52,7 @@ class KfgIntegrationTest {
 
         val jarFile = JarFile(jar)
         CM.parseJar(jarFile, `package`)
-        writeJar(jarFile, target, `package`)
+        JarUtils.updateJar(jarFile, target, `package`)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())
