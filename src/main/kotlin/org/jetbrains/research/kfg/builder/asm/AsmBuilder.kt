@@ -225,6 +225,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitCastInst(inst: CastInst) {
         val originalType = inst.operand.type
         val targetType = inst.type
+
         val insn = if (originalType.isPrimary() and targetType.isPrimary()) {
             val opcode = when (originalType) {
                 is LongType -> when (targetType) {
@@ -240,6 +241,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
                     is ByteType -> I2B
                     is CharType -> I2C
                     is ShortType -> I2S
+                    is BoolType -> NOP
                     else -> throw InvalidOperandError("Invalid cast from ${originalType.name} to ${targetType.name}")
                 }
                 is FloatType -> when (targetType) {
@@ -260,6 +262,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         } else {
             TypeInsnNode(CHECKCAST, targetType.toInternalDesc())
         }
+
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
