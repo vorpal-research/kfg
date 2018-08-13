@@ -33,7 +33,7 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
 
             val jump = IF.getJump(returnBlock)
             jump.location = `return`.location
-            bb.addInstruction(jump)
+            bb += jump
         }
 
         val insts = arrayListOf<Instruction>()
@@ -41,7 +41,7 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
             method.desc.retval.isVoid() -> IF.getReturn()
             else -> {
                 val type = mergeTypes(incomings.values.map { it.type }.toSet())
-                        ?: throw InvalidStateError("Can't merge incomings of return type")
+                        ?: method.desc.retval
 
                 val retval = IF.getPhi("retval", type, incomings)
                 insts.add(retval)
@@ -59,7 +59,7 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
             }
         }
         insts.add(`return`)
-        returnBlock.addInstructions(*insts.toTypedArray())
+        returnBlock.addAll(*insts.toTypedArray())
         method.add(returnBlock)
     }
 }

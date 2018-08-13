@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.value.Name
 import org.jetbrains.research.kfg.type.Type
 
 class InstanceOfInst(name: Name, val targetType: Type, obj: Value)
-    : Instruction(name, TF.getIntType(), arrayOf(obj)) {
+    : Instruction(name, TF.getBoolType(), arrayOf(obj)) {
 
     val operand: Value
         get() = ops[0]
