@@ -25,10 +25,7 @@ object BoolType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
 
 object ByteType : Integral {
@@ -40,10 +37,7 @@ object ByteType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
 
 object ShortType : Integral {
@@ -55,10 +49,7 @@ object ShortType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
 
 object IntType : Integral {
@@ -70,10 +61,7 @@ object IntType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
 
 object LongType : Integral {
@@ -86,10 +74,7 @@ object LongType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
 
 object CharType : Integral {
@@ -101,8 +86,5 @@ object CharType : Integral {
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 }
