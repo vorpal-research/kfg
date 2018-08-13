@@ -5,7 +5,6 @@ import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
-import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
@@ -166,7 +165,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
                 fromValues.size == 1 -> fromValues.first()
                 else -> {
                     val phi = IF.getPhi(it.type, fromIncomings)
-                    to.addInstruction(phi)
+                    to += phi
                     phi
                 }
             }
@@ -176,7 +175,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
             val targetPhi = IF.getPhi(it.type, targetIncomings)
             target.insertBefore(it, targetPhi)
             it.replaceAllUsesWith(targetPhi)
-            target.remove(it)
+            target -= it
         }
     }
 
@@ -191,7 +190,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
         header.addPredecessor(preheader)
 
         remapPhis(header, loopPredecessors, preheader)
-        preheader.addInstruction(IF.getJump(header))
+        preheader += IF.getJump(header)
         method.addBefore(header, preheader)
     }
 
@@ -206,7 +205,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
         header.addPredecessor(latch)
 
         remapPhis(header, latches, latch)
-        latch.addInstruction(IF.getJump(header))
+        latch += IF.getJump(header)
         method.add(latch)
         loop.addBlock(latch)
     }

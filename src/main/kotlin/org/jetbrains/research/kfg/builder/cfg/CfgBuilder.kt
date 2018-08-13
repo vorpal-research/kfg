@@ -135,7 +135,7 @@ class CfgBuilder(val method: Method)
 
     private fun addInstruction(bb: BasicBlock, inst: Instruction) {
         inst.location = currentLocation
-        bb.addInstruction(inst)
+        bb += inst
     }
 
     private fun reserveState(bb: BasicBlock) {
@@ -911,7 +911,7 @@ class CfgBuilder(val method: Method)
                 }
                 else -> {
                     phi.replaceAllUsesWith(incomingValues.first())
-                    bb.remove(phi)
+                    bb -= phi
                 }
             }
             phi.operands.forEach { it.removeUser(phi) }
@@ -952,7 +952,7 @@ class CfgBuilder(val method: Method)
                 else -> {
                     phi.replaceAllUsesWith(incomingValues.first())
                     phi.operands.forEach { it.removeUser(phi) }
-                    bb.remove(phi)
+                    bb -= phi
                 }
             }
         }
@@ -1100,6 +1100,7 @@ class CfgBuilder(val method: Method)
 
         buildPhiInstructions()
         RetvalBuilder(method).visit()
+        BoolValueAdapter(method).visit()
 
         method.slottracker.rerun()
         return method

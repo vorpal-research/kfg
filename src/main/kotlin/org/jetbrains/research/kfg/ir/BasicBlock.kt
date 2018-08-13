@@ -22,10 +22,10 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
         get() = last() as TerminateInst
 
     val isEmpty: Boolean
-            get() = instructions.isEmpty()
+        get() = instructions.isEmpty()
 
     val isNotEmpty: Boolean
-            get() = !isEmpty
+        get() = !isEmpty
 
     val location: Location
         get() = instructions.first().location
@@ -40,12 +40,14 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
     }
 
     fun addSuccessors(vararg bbs: BasicBlock) = bbs.forEach { addSuccessor(it) }
+    fun addSuccessors(bbs: List<BasicBlock>) = bbs.forEach { addSuccessor(it) }
     fun addPredecessor(bb: BasicBlock) {
         predecessors.add(bb)
         bb.addUser(this)
     }
 
     fun addPredecessors(vararg bbs: BasicBlock) = bbs.forEach { addPredecessor(it) }
+    fun addPredecessors(bbs: List<BasicBlock>) = bbs.forEach { addPredecessor(it) }
     fun addHandler(handle: CatchBlock) {
         handlers.add(handle)
         handle.addUser(this)
@@ -78,14 +80,25 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
         else -> false
     }
 
-    fun addInstruction(inst: Instruction) {
+    fun add(inst: Instruction) {
         instructions.add(inst)
         inst.parent = this
         addValueToParent(inst)
     }
 
-    fun addInstructions(vararg insts: Instruction) {
-        insts.forEach { addInstruction(it) }
+    operator fun plus(inst: Instruction): BasicBlock {
+        add(inst)
+        return this
+    }
+
+    operator fun plusAssign(inst: Instruction): Unit = add(inst)
+
+    fun addAll(vararg insts: Instruction) {
+        insts.forEach { add(it) }
+    }
+
+    fun addAll(insts: List<Instruction>) {
+        insts.forEach { add(it) }
     }
 
     fun insertBefore(before: Instruction, vararg insts: Instruction) {
@@ -112,6 +125,13 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
             inst.parent = null
         }
     }
+
+    operator fun minus(inst: Instruction): BasicBlock {
+        remove(inst)
+        return this
+    }
+
+    operator fun minusAssign(inst: Instruction) = remove(inst)
 
     fun replace(from: Instruction, to: Instruction) {
         (0..instructions.lastIndex).filter { instructions[it] == from }.forEach {
