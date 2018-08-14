@@ -1,6 +1,9 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kfg.ir.*
+import org.jetbrains.research.kfg.ir.BasicBlock
+import org.jetbrains.research.kfg.ir.BodyBlock
+import org.jetbrains.research.kfg.ir.CatchBlock
+import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Constant
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
@@ -51,7 +54,7 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
 
     override fun visitTerminateInst(inst: TerminateInst) {
         val bb = inst.parent!!
-        require(bb.successors.size == inst.successors.size) { "Terminate insts successors are different from block successors" }
+        require(bb.successors.size == inst.successors.toSet().size) { "Terminate insts successors are different from block successors" }
         inst.successors.forEach {
             require(method.basicBlocks.contains(it)) { "Terminate inst to unknown block" }
             require(bb.successors.contains(it)) { "Terminate insts successors are different from block successors" }
