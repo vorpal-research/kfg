@@ -4,7 +4,9 @@ import org.jetbrains.research.kfg.IF
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.ir.value.instruction.*
+import org.jetbrains.research.kfg.ir.value.instruction.ArrayStoreInst
+import org.jetbrains.research.kfg.ir.value.instruction.FieldStoreInst
+import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.BoolType
 import org.jetbrains.research.kfg.type.Integral
@@ -23,7 +25,6 @@ class BoolValueAdapter(method: Method) : MethodVisitor(method) {
             inst.replaceUsesOf(from = inst.value, to = cast)
         }
     }
-
 
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")

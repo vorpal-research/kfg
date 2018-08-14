@@ -1100,7 +1100,7 @@ class CfgBuilder(val method: Method)
 
         buildPhiInstructions()
         RetvalBuilder(method).visit()
-        BoolValueAdapter(method).visit()
+//        BoolValueAdapter(method).visit()
 
         method.slottracker.rerun()
         return method
