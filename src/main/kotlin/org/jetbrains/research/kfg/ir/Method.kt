@@ -114,6 +114,11 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         if (basicBlocks.contains(block)) {
             require(block.parent == this) { "Block ${block.name} don't belong to $this" }
             basicBlocks.remove(block)
+
+            if (block in catchEntries) {
+                catchEntries.remove(block)
+            }
+
             block.removeUser(this)
             block.parent = null
         }
@@ -138,6 +143,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
             val top = queue.first
             val isCatch = top.predecessors.fold(true) { acc, bb -> acc and catchMap.getOrPut(bb) { false } }
             if (isCatch) {
+                result.add(top)
                 queue.addAll(top.successors)
                 catchMap[top] = true
             }
@@ -206,9 +212,9 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         }
         if (viewCatchBlocks) {
             catchEntries.forEach {
-                val current = nodes.getValue(it.name.toString())
+                val current = nodes.getOrPut(it.name.toString()) { GraphView(it.name.toString(), "${it.name}:\\l") }
                 for (thrower in it.throwers) {
-                    current.successors.add(nodes.getValue(thrower.name.toString()))
+                    nodes.getValue(thrower.name.toString()).successors.add(current)
                 }
             }
         }
