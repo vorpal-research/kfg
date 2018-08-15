@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
+import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.ir.value.UsableValue
@@ -15,6 +16,7 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.*
 import java.util.*
+import kotlin.NoSuchElementException
 
 class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
@@ -1102,7 +1104,21 @@ class CfgBuilder(val method: Method)
         RetvalBuilder(method).visit()
 //        BoolValueAdapter(method).visit()
 
+        // this is fucked up, bot sometimes there are really empty blocks in bytecode
+        nodeToBlock.values.forEach {
+            if (it.isEmpty && it.predecessors.isEmpty() && it.successors.isEmpty()) {
+                method.remove(it)
+            }
+        }
+
         method.slottracker.rerun()
+
+        try {
+            IRVerifier(method).visit()
+        } catch (e: NoSuchElementException) {
+            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
+        }
+
         return method
     }
 }
