@@ -165,6 +165,7 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
                 toCatch.addThrowers(listOf(this))
             }
         }
+        terminator.replaceUsesOf(from, to)
     }
 
     fun replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) {

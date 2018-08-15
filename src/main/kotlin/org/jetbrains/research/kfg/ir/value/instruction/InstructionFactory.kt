@@ -104,4 +104,6 @@ object InstructionFactory {
 
     fun getReturn(): Instruction = ReturnInst()
     fun getReturn(retval: Value): Instruction = ReturnInst(retval)
+
+    fun getUnreachable(): Instruction = UnreachableInst()
 }

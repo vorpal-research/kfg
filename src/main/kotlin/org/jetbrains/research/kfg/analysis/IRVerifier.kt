@@ -74,7 +74,7 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
             }
             method.entry -> require(bb.predecessors.isEmpty()) { "Entry block should not have predecessors" }
             else -> bb.predecessors.forEach {
-                require(method.basicBlocks.contains(it)) { "Block predecessor does not belong to method" }
+                require(method.basicBlocks.contains(it)) { "Block ${bb.name} predecessor does not belong to method" }
             }
         }
         bb.successors.forEach {
