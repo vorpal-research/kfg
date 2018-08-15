@@ -69,8 +69,8 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
         require(bb.parent == method) { "Block parent points to other method" }
         when (bb) {
             is CatchBlock -> {
-                require(bb in method.catchEntries) { "Catch block does not belong to method catch entries" }
-                require(bb.predecessors.isEmpty()) { "Catch block should not have predecessors" }
+                require(bb in method.catchEntries) { "Catch block ${bb.name} does not belong to method catch entries" }
+                require(bb.predecessors.isEmpty()) { "Catch block ${bb.name} should not have predecessors" }
             }
             method.entry -> require(bb.predecessors.isEmpty()) { "Entry block should not have predecessors" }
             else -> bb.predecessors.forEach {
