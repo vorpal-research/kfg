@@ -51,6 +51,7 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
             is SwitchInst -> visitSwitchInst(inst)
             is TableSwitchInst -> visitTableSwitchInst(inst)
             is ThrowInst -> visitThrowInst(inst)
+            is UnreachableInst -> visitUnreachableInst(inst)
             else -> throw InvalidInstructionError(inst)
         }
     }
@@ -77,4 +78,5 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
     open fun visitSwitchInst(inst: SwitchInst) {}
     open fun visitTableSwitchInst(inst: TableSwitchInst) {}
     open fun visitThrowInst(inst: ThrowInst) {}
+    open fun visitUnreachableInst(inst: UnreachableInst) {}
 }
