@@ -193,7 +193,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
 
     fun graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
         val nodes = hashMapOf<String, GraphView>()
-        nodes[name] = GraphView(name, name)
+        nodes[name] = GraphView(name, this.toString())
         basicBlocks.map {
             val label = StringBuilder()
             label.append("${it.name}:\\l")
