@@ -339,7 +339,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
         val opcode = if (inst.isStatic) GETSTATIC else GETFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
+        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.getAsmDesc())
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -349,7 +349,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val opcode = if (inst.isStatic) PUTSTATIC else PUTFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.getFullname(), inst.field.name, inst.type.getAsmDesc())
+        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.getAsmDesc())
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -380,7 +380,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitCallInst(inst: CallInst) {
         val opcode = inst.opcode.toAsmOpcode()
-        val insn = MethodInsnNode(opcode, inst.`class`.getFullname(), inst.method.name, inst.method.getAsmDesc(), opcode == INVOKEINTERFACE)
+        val insn = MethodInsnNode(opcode, inst.`class`.fullname, inst.method.name, inst.method.asmDesc, opcode == INVOKEINTERFACE)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)

@@ -166,7 +166,7 @@ object JarUtils {
         return classes
     }
 
-    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.getFullname()}.class", flags: Flags = Flags.writeComputeFrames) =
+    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.fullname}.class", flags: Flags = Flags.writeComputeFrames) =
             writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
 
     fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
@@ -182,7 +182,7 @@ object JarUtils {
             if (entry.isClass()) {
                 if (`package`.isParent(entry.name)) {
                     val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-                    val localPath = "${`class`.getFullname()}.class"
+                    val localPath = "${`class`.fullname}.class"
                     val path = "$currentDir/$localPath"
                     writeClass(loader, `class`, path, Flags.writeComputeFrames)
                 } else if (writeAllClasses) {
@@ -224,7 +224,7 @@ object JarUtils {
 
             if (entry.isClass() && `package`.isParent(entry.name)) {
                 val `class` = CM.getByName(entry.name.removeSuffix(".class"))
-                val localPath = "${`class`.getFullname()}.class"
+                val localPath = "${`class`.fullname}.class"
                 val path = "$currentDir/$localPath"
 
                 val newEntry = JarEntry(localPath.replace("\\", "/"))

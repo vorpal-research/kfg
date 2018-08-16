@@ -10,10 +10,10 @@ interface Reference : Type {
 }
 
 open class ClassType(val `class`: Class) : Reference {
-    override val name = `class`.getFullname()
+    override val name = `class`.fullname
 
     override fun toString() = name
-    override fun getAsmDesc() = "L${`class`.getFullname()};"
+    override fun getAsmDesc() = "L${`class`.fullname};"
 
     override fun hashCode() = simpleHash(`class`)
     override fun equals(other: Any?): Boolean {

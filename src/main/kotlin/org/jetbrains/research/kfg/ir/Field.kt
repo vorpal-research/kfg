@@ -12,7 +12,8 @@ data class Field(val fn: FieldNode, val `class`: Class) : Node(fn.name, fn.acces
     val type: Type
     val defaultValue: Value?
 
-    override fun getAsmDesc() = type.getAsmDesc()
+    override val asmDesc
+        get() = type.getAsmDesc()
 
     init {
         this.type = parseDesc(fn.desc)

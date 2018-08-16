@@ -9,6 +9,8 @@ abstract class Node(val name: String, val modifiers: Int) {
     val visibleAnnotations = mutableListOf<Annotation>()
     val invisibleAnnotations = mutableListOf<Annotation>()
 
+    abstract val asmDesc: String
+
     fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>?) {
         if (visibleAnnotations != null) {
             this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(it.desc)) })
@@ -20,8 +22,6 @@ abstract class Node(val name: String, val modifiers: Int) {
             this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(it.desc)) })
         }
     }
-
-    abstract fun getAsmDesc(): String
 
     val isPublic: Boolean
         get() = (modifiers and Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC

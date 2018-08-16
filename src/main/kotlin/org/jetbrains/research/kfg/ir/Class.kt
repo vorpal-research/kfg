@@ -26,6 +26,27 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     val fields = mutableMapOf<FieldKey, Field>()
     val methods = mutableMapOf<MethodKey, Method>()
 
+    val fullname
+        get() = "$`package`/$name"
+
+    val superClass
+        get() = if (cn.superName != null) CM.getByName(cn.superName) else null
+
+    val interfaces
+        get() = if (cn.interfaces != null) cn.interfaces.map { CM.getByName(it as String) } else listOf()
+
+    val outerClass
+        get() = if (cn.outerClass != null) CM.getByName(cn.outerClass) else null
+
+    val outerMethod
+        get() = if (cn.outerMethod != null) outerClass?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
+
+    val innerClasses
+        get() = if (cn.innerClasses != null) cn.innerClasses.map { CM.getByName(it as String) } else listOf()
+
+    override val asmDesc
+        get() = "L${fullname};"
+
     fun init() {
         addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.visibleAnnotations as List<AnnotationNode>?))
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.invisibleAnnotations as List<AnnotationNode>?))
@@ -40,15 +61,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         }
     }
 
-    fun getFullname() = "$`package`/$name"
-    override fun getAsmDesc() = "L${getFullname()};"
-
-    fun getSuperClass() = if (cn.superName != null) CM.getByName(cn.superName) else null
-    fun getInterfaces() = if (cn.interfaces != null) cn.interfaces.map { CM.getByName(it as String) } else listOf()
-    fun getAllAncestors() = listOf(getSuperClass()).plus(getInterfaces()).filterNotNull()
-    fun getOuterClass() = if (cn.outerClass != null) CM.getByName(cn.outerClass) else null
-    fun getOuterMethod() = if (cn.outerMethod != null) getOuterClass()?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
-    fun getInnerClasses() = if (cn.innerClasses != null) cn.innerClasses.map { CM.getByName(it as String) } else listOf()
+    fun getAllAncestors() = listOf(superClass).plus(interfaces).filterNotNull()
 
     abstract fun isAncestor(other: Class): Boolean
 
@@ -60,7 +73,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(desc))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
-    override fun toString() = getFullname()
+    override fun toString() = fullname
     override fun hashCode() = simpleHash(name, `package`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -71,10 +84,10 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 }
 
 class ConcreteClass(cn: ClassNode) : Class(cn) {
-    override fun getFieldConcrete(name: String, type: Type): Field? = fields.getOrElse(FieldKey(name, type), { getSuperClass()?.getFieldConcrete(name, type) })
+    override fun getFieldConcrete(name: String, type: Type): Field? = fields.getOrElse(FieldKey(name, type), { superClass?.getFieldConcrete(name, type) })
 
     override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = methods.getOrElse(MethodKey(name, desc), {
-        val uppers = listOf(getSuperClass()).plus(getInterfaces()).filterNotNull()
+        val uppers = listOf(superClass).plus(interfaces).filterNotNull()
         val res: Method? = uppers
                 .mapNotNull { if (it is ConcreteClass) it else null }
                 .map { it.getMethodConcrete(name, desc) }
@@ -86,17 +99,17 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
     })
 
     override fun getField(name: String, type: Type) = fields.getOrElse(FieldKey(name, type), {
-        getSuperClass()?.getFieldConcrete(name, type) ?: throw UnknownInstance("No field \"$name\" in class $this")
+        superClass?.getFieldConcrete(name, type) ?: throw UnknownInstance("No field \"$name\" in class $this")
     })
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
         return methods.getOrElse(methodDesc, {
-            val `super` = getSuperClass()
+            val `super` = superClass
             getMethodConcrete(name, desc)
                     ?: if (`super` != null && `super` is OuterClass)
                         `super`.getMethod(name, desc)
-                    else getInterfaces().firstOrNull { it is OuterClass }?.getMethod(name, desc)
+                    else interfaces.firstOrNull { it is OuterClass }?.getMethod(name, desc)
                             ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
         })
     }
@@ -125,7 +138,7 @@ class OuterClass(cn: ClassNode) : Class(cn) {
         return methods.getOrPut(methodDesc, {
             val mn = MethodNode()
             mn.name = name
-            mn.desc = desc.getAsmDesc()
+            mn.desc = desc.asmDesc
             Method(mn, this)
         })
     }

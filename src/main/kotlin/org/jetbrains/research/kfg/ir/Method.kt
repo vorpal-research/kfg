@@ -22,14 +22,15 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
         }
     }
 
-    fun getAsmDesc(): String {
-        val sb = StringBuilder()
-        sb.append("(")
-        args.forEach { type -> sb.append(type.getAsmDesc()) }
-        sb.append(")")
-        sb.append(retval.getAsmDesc())
-        return sb.toString()
-    }
+    val asmDesc: String
+        get() {
+            val sb = StringBuilder()
+            sb.append("(")
+            args.forEach { type -> sb.append(type.getAsmDesc()) }
+            sb.append(")")
+            sb.append(retval.getAsmDesc())
+            return sb.toString()
+        }
 
     override fun hashCode() = simpleHash(*args, retval)
     override fun equals(other: Any?): Boolean {
@@ -87,6 +88,34 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     val isConstructor: Boolean
         get() = name in CONSTRUCTOR_NAMES
 
+    val bodyBlocks: List<BasicBlock>
+        get() {
+            val catches = catchBlocks
+            return basicBlocks.filter { it !in catches }.toList()
+        }
+
+    val catchBlocks: List<BasicBlock>
+        get() {
+            val catchMap = hashMapOf<BasicBlock, Boolean>()
+            val result = arrayListOf<BasicBlock>()
+            val queue = ArrayDeque<BasicBlock>()
+            queue.addAll(catchEntries)
+            while (queue.isNotEmpty()) {
+                val top = queue.first
+                val isCatch = top.predecessors.fold(true) { acc, bb -> acc and catchMap.getOrPut(bb) { false } }
+                if (isCatch) {
+                    result.add(top)
+                    queue.addAll(top.successors)
+                    catchMap[top] = true
+                }
+                queue.pollFirst()
+            }
+            return result
+        }
+
+    override val asmDesc
+        get() = desc.asmDesc
+
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
             require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
@@ -129,29 +158,6 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         catchEntries.add(bb)
     }
 
-    fun getBodyBlocks(): List<BasicBlock> {
-        val catches = getCatchBlocks()
-        return basicBlocks.filter { it !in catches }.toList()
-    }
-
-    fun getCatchBlocks(): List<BasicBlock> {
-        val catchMap = hashMapOf<BasicBlock, Boolean>()
-        val result = arrayListOf<BasicBlock>()
-        val queue = ArrayDeque<BasicBlock>()
-        queue.addAll(catchEntries)
-        while (queue.isNotEmpty()) {
-            val top = queue.first
-            val isCatch = top.predecessors.fold(true) { acc, bb -> acc and catchMap.getOrPut(bb) { false } }
-            if (isCatch) {
-                result.add(top)
-                queue.addAll(top.successors)
-                catchMap[top] = true
-            }
-            queue.pollFirst()
-        }
-        return result
-    }
-
     fun getNext(from: BasicBlock): BasicBlock {
         val start = basicBlocks.indexOf(from)
         return basicBlocks[start + 1]
@@ -167,8 +173,6 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
         return sb.toString()
     }
-
-    override fun getAsmDesc() = desc.getAsmDesc()
 
     override fun toString() = prototype
     override fun iterator() = basicBlocks.iterator()
