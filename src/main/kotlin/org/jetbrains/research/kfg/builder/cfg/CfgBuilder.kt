@@ -16,7 +16,6 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.*
 import java.util.*
-import kotlin.NoSuchElementException
 
 class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
@@ -1104,7 +1103,7 @@ class CfgBuilder(val method: Method)
         RetvalBuilder(method).visit()
 //        BoolValueAdapter(method).visit()
 
-        // this is fucked up, bot sometimes there are really empty blocks in bytecode
+        // this is fucked up, but sometimes there are really empty blocks in bytecode
         nodeToBlock.values.forEach {
             if (it.isEmpty && it.predecessors.isEmpty() && it.successors.isEmpty()) {
                 method.remove(it)
