@@ -114,8 +114,8 @@ class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : Valu
 }
 
 class CfgBuilder(val method: Method)
-    : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.getAsmDesc(),
-        method.mn.signature, method.exceptions.map { it.getFullname() }.toTypedArray()) {
+    : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.asmDesc,
+        method.mn.signature, method.exceptions.map { it.fullname }.toTypedArray()) {
 
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()

@@ -9,7 +9,7 @@ import java.util.regex.Pattern
 
 fun Type.toInternalDesc(): String = when {
     this.isPrimary() -> this.getAsmDesc()
-    this is ClassType -> this.`class`.getFullname()
+    this is ClassType -> this.`class`.fullname
     this is ArrayType -> "[${(component as? ClassType)?.getAsmDesc() ?: component.toInternalDesc()}"
     else -> throw InvalidStateError("Unknown type ${this.name}")
 }
