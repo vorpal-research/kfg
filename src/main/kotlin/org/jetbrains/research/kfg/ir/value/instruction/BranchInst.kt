@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 
 class BranchInst(cond: Value, trueSuccessor: BasicBlock, falseSuccessor: BasicBlock)
-    : TerminateInst(UndefinedName, TF.getVoidType(), arrayOf(cond), arrayOf(trueSuccessor, falseSuccessor)) {
+    : TerminateInst(UndefinedName, TF.voidType, arrayOf(cond), arrayOf(trueSuccessor, falseSuccessor)) {
 
     val cond: Value
         get() = ops[0]

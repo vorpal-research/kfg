@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 
 class EnterMonitorInst(owner: Value)
-    : Instruction(UndefinedName, TF.getVoidType(), arrayOf(owner)) {
+    : Instruction(UndefinedName, TF.voidType, arrayOf(owner)) {
 
     val owner: Value
         get() = ops[0]

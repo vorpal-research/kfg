@@ -38,7 +38,7 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
 
         val insts = arrayListOf<Instruction>()
         val `return` = when {
-            method.desc.retval.isVoid() -> IF.getReturn()
+            method.desc.retval.isVoid -> IF.getReturn()
             else -> {
                 val type = mergeTypes(incomings.values.map { it.type }.toSet())
                         ?: method.desc.retval

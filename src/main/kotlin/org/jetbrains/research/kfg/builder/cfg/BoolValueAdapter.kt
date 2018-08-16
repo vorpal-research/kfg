@@ -20,7 +20,7 @@ class BoolValueAdapter(method: Method) : MethodVisitor(method) {
                 ?: throw InvalidStateError("Non-array type of array store reference")
 
         if (arrayType.component === BoolType && inst.value.type is Integral) {
-            val cast = IF.getCast(TF.getBoolType(), inst.value)
+            val cast = IF.getCast(TF.boolType, inst.value)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.value, to = cast)
         }
@@ -30,7 +30,7 @@ class BoolValueAdapter(method: Method) : MethodVisitor(method) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
 
         if (inst.type === BoolType && inst.value.type is Integral) {
-            val cast = IF.getCast(TF.getBoolType(), inst.value)
+            val cast = IF.getCast(TF.boolType, inst.value)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.value, to = cast)
         }
@@ -40,7 +40,7 @@ class BoolValueAdapter(method: Method) : MethodVisitor(method) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
 
         if (method.desc.retval === BoolType && inst.returnValue.type !== BoolType) {
-            val cast = IF.getCast(TF.getBoolType(), inst.returnValue)
+            val cast = IF.getCast(TF.boolType, inst.returnValue)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.returnValue, to = cast)
         }

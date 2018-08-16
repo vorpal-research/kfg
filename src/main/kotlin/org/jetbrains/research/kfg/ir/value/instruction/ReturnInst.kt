@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
 class ReturnInst : TerminateInst {
-    constructor() : super(UndefinedName, TF.getVoidType(), arrayOf(), arrayOf())
+    constructor() : super(UndefinedName, TF.voidType, arrayOf(), arrayOf())
     constructor(retval: Value) : super(UndefinedName, retval.type, arrayOf(retval), arrayOf())
 
     val hasReturnValue: Boolean

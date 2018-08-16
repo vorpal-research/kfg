@@ -9,7 +9,7 @@ import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<BasicBlock> {
     var parent: Loop? = null
     val subloops = hashSetOf<Loop>()
 
@@ -31,9 +31,10 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
     val latch: BasicBlock
         get() = latches.first()
 
-    fun hasSinglePreheader() = preheaders.size == 1
-    fun hasSingleLatch() = body.filter { it.successors.contains(header) }.toSet().size == 1
-    fun contains(bb: BasicBlock) = body.contains(bb)
+    val hasSinglePreheader get() = preheaders.size == 1
+    val hasSingleLatch get() = body.filter { it.successors.contains(header) }.toSet().size == 1
+
+    fun contains(bb: BasicBlock) = bb in body
     fun containsAll(blocks: Collection<BasicBlock>) = body.containsAll(blocks)
 
     fun addBlock(bb: BasicBlock) {
@@ -46,6 +47,8 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) {
         body.remove(bb)
         parent?.removeBlock(bb)
     }
+
+    override fun iterator() = body.iterator()
 }
 
 object LoopManager {
@@ -97,7 +100,7 @@ class LoopAnalysis(method: Method) : MethodVisitor(method) {
         for (loop in allLoops) {
             for (parent in allLoops) {
                 val set = parents.getOrPut(loop, ::hashSetOf)
-                if (loop != parent && parent.contains(loop.header))
+                if (loop != parent && loop.header in parent)
                     set.add(parent)
             }
         }
@@ -181,7 +184,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
 
     private fun buildPreheader(loop: Loop) {
         val header = loop.header
-        val loopPredecessors = header.predecessors.filter { !loop.contains(it) }.toSet()
+        val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
         if (loopPredecessors.size == 1) return
 
         val preheader = BodyBlock("loop.preheader")

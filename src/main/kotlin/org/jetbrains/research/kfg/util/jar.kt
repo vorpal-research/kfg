@@ -24,9 +24,9 @@ private fun setCurrentDirectory(path: File) {
 }
 
 
-fun JarEntry.isClass() = this.name.endsWith(".class")
+val JarEntry.isClass get() = this.name.endsWith(".class")
 
-fun JarFile.getClassLoader() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
+val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
 
 
 class ClassReadError(msg: String) : KfgException(msg)
@@ -157,7 +157,7 @@ object JarUtils {
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
 
-            if (entry.isClass() && `package`.isParent(entry.name)) {
+            if (entry.isClass && `package`.isParent(entry.name)) {
                 val classNode = readClassNode(jar.getInputStream(entry), flags)
                 classes[classNode.name] = classNode
             }
@@ -170,7 +170,7 @@ object JarUtils {
             writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
 
     fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
-        val loader = jar.getClassLoader()
+        val loader = jar.classLoader
 
         val currentDir = getCurrentDirectory()
         val enumeration = jar.entries()
@@ -179,7 +179,7 @@ object JarUtils {
             val entry = enumeration.nextElement() as JarEntry
             if (entry.name == "META-INF/MANIFEST.MF") continue
 
-            if (entry.isClass()) {
+            if (entry.isClass) {
                 if (`package`.isParent(entry.name)) {
                     val `class` = CM.getByName(entry.name.removeSuffix(".class"))
                     val localPath = "${`class`.fullname}.class"
@@ -222,7 +222,7 @@ object JarUtils {
             val entry = enumeration.nextElement() as JarEntry
             if (entry.name == "META-INF/MANIFEST.MF") continue
 
-            if (entry.isClass() && `package`.isParent(entry.name)) {
+            if (entry.isClass && `package`.isParent(entry.name)) {
                 val `class` = CM.getByName(entry.name.removeSuffix(".class"))
                 val localPath = "${`class`.fullname}.class"
                 val path = "$currentDir/$localPath"
