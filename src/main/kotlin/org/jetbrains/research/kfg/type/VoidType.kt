@@ -4,9 +4,9 @@ import org.jetbrains.research.kfg.util.simpleHash
 
 object VoidType : Type {
     override val name = "void"
-    override fun isPrimary() = false
-    override fun isVoid() = true
-    override fun getAsmDesc() = "V"
+    override val isPrimary get() = false
+    override val isVoid get() = true
+    override val asmDesc get() = "V"
 
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {

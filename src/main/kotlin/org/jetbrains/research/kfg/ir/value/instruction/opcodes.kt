@@ -85,10 +85,10 @@ fun toCmpOpcode(opcode: Int) = when (opcode) {
 }
 
 fun getCmpResultType(opcode: CmpOpcode) = when (opcode) {
-    is CmpOpcode.Cmp -> TF.getIntType()
-    is CmpOpcode.Cmpl -> TF.getIntType()
-    is CmpOpcode.Cmpg -> TF.getIntType()
-    else -> TF.getBoolType()
+    is CmpOpcode.Cmp -> TF.intType
+    is CmpOpcode.Cmpl -> TF.intType
+    is CmpOpcode.Cmpg -> TF.intType
+    else -> TF.boolType
 }
 
 sealed class CmpOpcode {

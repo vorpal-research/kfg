@@ -29,6 +29,9 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     val fullname
         get() = "$`package`/$name"
 
+    val canonicalDesc
+        get() = fullname.replace('/', '.')
+
     val superClass
         get() = if (cn.superName != null) CM.getByName(cn.superName) else null
 
@@ -129,7 +132,7 @@ class OuterClass(cn: ClassNode) : Class(cn) {
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
     override fun getField(name: String, type: Type): Field = fields.getOrPut(FieldKey(name, type), {
-        val fn = FieldNode(0, name, type.getAsmDesc(), null, null)
+        val fn = FieldNode(0, name, type.asmDesc, null, null)
         Field(fn, this)
     })
 

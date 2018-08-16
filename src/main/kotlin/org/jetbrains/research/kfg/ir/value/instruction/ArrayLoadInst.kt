@@ -8,7 +8,7 @@ import org.jetbrains.research.kfg.type.NullType
 
 class ArrayLoadInst(name: Name, arrayRef: Value, index: Value)
     : Instruction(name, when {
-        arrayRef.type === NullType -> TF.getNullType()
+        arrayRef.type === NullType -> TF.nullType
         else -> (arrayRef.type as ArrayType).component
     }, arrayOf(arrayRef, index)) {
 

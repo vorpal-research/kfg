@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
 
 class ArrayStoreInst(arrayRef: Value, index: Value, value: Value)
-    : Instruction(UndefinedName, TF.getVoidType(), arrayOf(arrayRef, index, value)) {
+    : Instruction(UndefinedName, TF.voidType, arrayOf(arrayRef, index, value)) {
 
     val arrayRef: Value
         get() = ops[0]

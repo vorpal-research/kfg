@@ -3,12 +3,25 @@ package org.jetbrains.research.kfg.type
 interface Type {
     val name: String
 
-    fun isPrimary(): Boolean
-    fun isDWord() = false
-    fun isVoid() = false
-    fun isIntegral() = false
-    fun isReal() = false
-    fun isReference() = false
-    fun getAsmDesc(): String
-    fun getCanonicalDesc() = getAsmDesc().replace('/', '.')
+    val asmDesc: String
+
+    val isPrimary: Boolean
+
+    val isDWord
+        get() = false
+
+    val isVoid
+        get() = false
+
+    val isIntegral
+        get() = false
+
+    val isReal
+        get() = false
+
+    val isReference
+        get() = false
+
+    val canonicalDesc
+        get() = asmDesc.replace('/', '.')
 }

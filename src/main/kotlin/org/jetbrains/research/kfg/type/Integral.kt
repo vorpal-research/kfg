@@ -6,14 +6,17 @@ interface Integral : Type {
     val width: Int
     val signed: Boolean
 
-    override fun isPrimary() = true
-    override fun isIntegral() = true
+    override val isPrimary
+        get() = true
 
-    fun isByte() = false
-    fun isShort() = false
-    fun isInt() = false
-    fun isLong() = false
-    fun isChar() = false
+    override val isIntegral
+        get() = true
+
+    val isByte get() = false
+    val isShort get() = false
+    val isInt get() = false
+    val isLong get() = false
+    val isChar get() = false
 }
 
 object BoolType : Integral {
@@ -21,7 +24,8 @@ object BoolType : Integral {
     override val width = 32
     override val signed = false
 
-    override fun getAsmDesc() = "Z"
+    override val asmDesc
+        get() = "Z"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -32,8 +36,10 @@ object ByteType : Integral {
     override val name = "byte"
     override val width = 8
     override val signed = true
-    override fun isByte() = true
-    override fun getAsmDesc() = "B"
+    override val isByte get() = true
+
+    override val asmDesc
+        get() = "B"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -44,8 +50,8 @@ object ShortType : Integral {
     override val name = "short"
     override val width = 16
     override val signed = true
-    override fun isShort() = true
-    override fun getAsmDesc() = "S"
+    override val isShort get() = true
+    override val asmDesc get() = "S"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -56,8 +62,8 @@ object IntType : Integral {
     override val name = "int"
     override val width = 32
     override val signed = true
-    override fun isInt() = true
-    override fun getAsmDesc() = "I"
+    override val isInt get() = true
+    override val asmDesc get() = "I"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -68,9 +74,9 @@ object LongType : Integral {
     override val name = "long"
     override val width = 64
     override val signed = true
-    override fun isLong() = true
-    override fun isDWord() = true
-    override fun getAsmDesc() = "J"
+    override val isLong get() = true
+    override val isDWord get() = true
+    override val asmDesc get() = "J"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -81,8 +87,8 @@ object CharType : Integral {
     override val name = "char"
     override val width = 16
     override val signed = false
-    override fun isChar() = true
-    override fun getAsmDesc() = "C"
+    override val isChar get() = true
+    override val asmDesc get() = "C"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)

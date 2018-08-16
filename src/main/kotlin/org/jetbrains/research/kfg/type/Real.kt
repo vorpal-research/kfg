@@ -3,15 +3,15 @@ package org.jetbrains.research.kfg.type
 import org.jetbrains.research.kfg.util.simpleHash
 
 interface Real : Type {
-    override fun isPrimary() = true
-    override fun isReal() = true
+    override val isPrimary get() = true
+    override val isReal get() = true
 }
 
 object FloatType : Real {
     override val name = "float"
 
     override fun toString() = name
-    override fun getAsmDesc() = "F"
+    override val asmDesc get() = "F"
 
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {
@@ -23,8 +23,8 @@ object FloatType : Real {
 object DoubleType : Real {
     override val name = "double"
     override fun toString() = name
-    override fun isDWord() = true
-    override fun getAsmDesc() = "D"
+    override val isDWord get() = true
+    override val asmDesc get() = "D"
 
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {

@@ -26,9 +26,9 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
         get() {
             val sb = StringBuilder()
             sb.append("(")
-            args.forEach { type -> sb.append(type.getAsmDesc()) }
+            args.forEach { type -> sb.append(type.asmDesc) }
             sb.append(")")
-            sb.append(retval.getAsmDesc())
+            sb.append(retval.asmDesc)
             return sb.toString()
         }
 

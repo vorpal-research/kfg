@@ -5,15 +5,15 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.util.simpleHash
 
 interface Reference : Type {
-    override fun isPrimary() = false
-    override fun isReference() = true
+    override val isPrimary get() = false
+    override val isReference get() = true
 }
 
 open class ClassType(val `class`: Class) : Reference {
     override val name = `class`.fullname
 
     override fun toString() = name
-    override fun getAsmDesc() = "L${`class`.fullname};"
+    override val asmDesc get() = "L${`class`.fullname};"
 
     override fun hashCode() = simpleHash(`class`)
     override fun equals(other: Any?): Boolean {
@@ -27,7 +27,7 @@ open class ClassType(val `class`: Class) : Reference {
 open class ArrayType(val component: Type) : Reference {
     override val name = "$component[]"
     override fun toString() = name
-    override fun getAsmDesc() = "[${component.getAsmDesc()}"
+    override val asmDesc get() = "[${component.asmDesc}"
 
     override fun hashCode() = simpleHash(component)
     override fun equals(other: Any?): Boolean {
@@ -42,7 +42,7 @@ object NullType : Reference {
     override val name = "null"
 
     override fun toString() = name
-    override fun getAsmDesc() = throw InvalidCallError("Called getAsmDesc on NullType")
+    override val asmDesc get() = throw InvalidCallError("Called getAsmDesc on NullType")
 
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean = this === other

@@ -8,7 +8,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 class SwitchInst(key: Value, default: BasicBlock, branches: Map<Value, BasicBlock>) :
         TerminateInst(
                 UndefinedName,
-                TF.getVoidType(),
+                TF.voidType,
                 arrayOf(key, *branches.keys.toTypedArray()),
                 arrayOf(default, *branches.values.toTypedArray())) {
 

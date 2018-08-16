@@ -8,15 +8,15 @@ import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
 fun Type.toInternalDesc(): String = when {
-    this.isPrimary() -> this.getAsmDesc()
+    this.isPrimary -> this.asmDesc
     this is ClassType -> this.`class`.fullname
-    this is ArrayType -> "[${(component as? ClassType)?.getAsmDesc() ?: component.toInternalDesc()}"
+    this is ArrayType -> "[${(component as? ClassType)?.asmDesc ?: component.toInternalDesc()}"
     else -> throw InvalidStateError("Unknown type ${this.name}")
 }
 
 fun mergeTypes(types: Set<Type>): Type? = when {
-    TF.getNullType() in types -> {
-        val filtered = types.filterNot { it == TF.getNullType() }.toSet()
+    TF.nullType in types -> {
+        val filtered = types.filterNot { it == TF.nullType }.toSet()
         when {
             filtered.isEmpty() -> null
             else -> mergeTypes(filtered)
@@ -26,7 +26,7 @@ fun mergeTypes(types: Set<Type>): Type? = when {
     types.all { it is Integral } -> types.map { it as Integral }.maxBy { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
-        var result = TF.getObject()
+        var result = TF.objectType
         for (i in 0..classes.lastIndex) {
             val isAncestor = classes.fold(true, { acc, `class` ->
                 acc && classes[i].`class`.isAncestor(`class`.`class`)
@@ -42,15 +42,15 @@ fun mergeTypes(types: Set<Type>): Type? = when {
 }
 
 fun parseDesc(desc: String): Type = when (desc[0]) {
-    'V' -> TF.getVoidType()
-    'Z' -> TF.getBoolType()
-    'B' -> TF.getByteType()
-    'C' -> TF.getCharType()
-    'S' -> TF.getShortType()
-    'I' -> TF.getIntType()
-    'J' -> TF.getLongType()
-    'F' -> TF.getFloatType()
-    'D' -> TF.getDoubleType()
+    'V' -> TF.voidType
+    'Z' -> TF.boolType
+    'B' -> TF.byteType
+    'C' -> TF.charType
+    'S' -> TF.shortType
+    'I' -> TF.intType
+    'J' -> TF.longType
+    'F' -> TF.floatType
+    'D' -> TF.doubleType
     'L' -> {
         if (desc.last() != ';') throw InvalidTypeDescError(desc)
         TF.getRefType(desc.substring(1).substringBeforeLast(';'))
@@ -60,14 +60,14 @@ fun parseDesc(desc: String): Type = when (desc[0]) {
 }
 
 fun parsePrimaryType(opcode: Int): Type = when (opcode) {
-    Opcodes.T_CHAR -> TF.getCharType()
-    Opcodes.T_BOOLEAN -> TF.getBoolType()
-    Opcodes.T_BYTE -> TF.getByteType()
-    Opcodes.T_DOUBLE -> TF.getDoubleType()
-    Opcodes.T_FLOAT -> TF.getFloatType()
-    Opcodes.T_INT -> TF.getIntType()
-    Opcodes.T_LONG -> TF.getLongType()
-    Opcodes.T_SHORT -> TF.getShortType()
+    Opcodes.T_CHAR -> TF.charType
+    Opcodes.T_BOOLEAN -> TF.boolType
+    Opcodes.T_BYTE -> TF.byteType
+    Opcodes.T_DOUBLE -> TF.doubleType
+    Opcodes.T_FLOAT -> TF.floatType
+    Opcodes.T_INT -> TF.intType
+    Opcodes.T_LONG -> TF.longType
+    Opcodes.T_SHORT -> TF.shortType
     else -> throw InvalidOpcodeError("PrimaryType opcode $opcode")
 }
 
@@ -95,15 +95,15 @@ fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
 }
 
 fun parseStringToType(name: String) = when (name) {
-    "null" -> TF.getNullType()
-    "void" -> TF.getVoidType()
-    "bool" -> TF.getBoolType()
-    "short" -> TF.getShortType()
-    "long" -> TF.getLongType()
-    "char" -> TF.getCharType()
-    "int" -> TF.getIntType()
-    "float" -> TF.getFloatType()
-    "double" -> TF.getDoubleType()
+    "null" -> TF.nullType
+    "void" -> TF.voidType
+    "bool" -> TF.boolType
+    "short" -> TF.shortType
+    "long" -> TF.longType
+    "char" -> TF.charType
+    "int" -> TF.intType
+    "float" -> TF.floatType
+    "double" -> TF.doubleType
     else -> {
         var arrCount = 0
         val end = name.dropLastWhile {

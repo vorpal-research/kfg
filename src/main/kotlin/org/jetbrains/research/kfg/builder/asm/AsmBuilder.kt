@@ -76,7 +76,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     private fun getLocalFor(value: Value) = locals.getOrPut(value) {
         val old = maxLocals
         maxLocals += when {
-            value.type.isDWord() -> 2
+            value.type.isDWord -> 2
             else -> 1
         }
         old
@@ -112,7 +112,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         }
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(`const`.value)
-        is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.getAsmDesc()))
+        is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.asmDesc))
         is MethodConstant -> throw IllegalArgumentException("Cannot convert constant $`const`")
     }
 
@@ -226,7 +226,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         val originalType = inst.operand.type
         val targetType = inst.type
 
-        val insn = if (originalType.isPrimary() and targetType.isPrimary()) {
+        val insn = if (originalType.isPrimary and targetType.isPrimary) {
             val opcode = when (originalType) {
                 is LongType -> when (targetType) {
                     is IntType -> L2I
@@ -289,8 +289,8 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
     override fun visitNewArrayInst(inst: NewArrayInst) {
         val component = inst.component
         val insn = when {
-            inst.numDimensions > 1 -> MultiANewArrayInsnNode(inst.type.getAsmDesc(), inst.numDimensions)
-            component.isPrimary() -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
+            inst.numDimensions > 1 -> MultiANewArrayInsnNode(inst.type.asmDesc, inst.numDimensions)
+            component.isPrimary -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
             else -> TypeInsnNode(ANEWARRAY, component.toInternalDesc())
         }
         val operands = inst.operands
@@ -339,7 +339,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
         val opcode = if (inst.isStatic) GETSTATIC else GETFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.getAsmDesc())
+        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.asmDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -349,7 +349,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
 
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val opcode = if (inst.isStatic) PUTSTATIC else PUTFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.getAsmDesc())
+        val insn = FieldInsnNode(opcode, inst.field.`class`.fullname, inst.field.name, inst.type.asmDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -385,7 +385,7 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         addOperandsToStack(operands)
         currentInsnList.add(insn)
         operands.forEach { stackPop() }
-        if (!inst.type.isVoid()) stackPush(inst)
+        if (!inst.type.isVoid) stackPush(inst)
     }
 
     override fun visitCmpInst(inst: CmpInst) {

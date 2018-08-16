@@ -312,7 +312,7 @@ class CfgBuilder(val method: Method)
             POP -> stack.pop()
             POP2 -> {
                 val top = stack.pop()
-                if (!top.type.isDWord()) stack.pop()
+                if (!top.type.isDWord) stack.pop()
             }
             else -> throw InvalidOpcodeError("Pop opcode $opcode")
         }
@@ -332,7 +332,7 @@ class CfgBuilder(val method: Method)
             DUP_X2 -> {
                 val val1 = stack.pop()
                 val val2 = stack.pop()
-                if (val2.type.isDWord()) {
+                if (val2.type.isDWord) {
                     stack.push(val1)
                     stack.push(val2)
                     stack.push(val1)
@@ -346,7 +346,7 @@ class CfgBuilder(val method: Method)
             }
             DUP2 -> {
                 val top = stack.pop()
-                if (top.type.isDWord()) {
+                if (top.type.isDWord) {
                     stack.push(top)
                     stack.push(top)
                 } else {
@@ -359,7 +359,7 @@ class CfgBuilder(val method: Method)
             }
             DUP2_X1 -> {
                 val val1 = stack.pop()
-                if (val1.type.isDWord()) {
+                if (val1.type.isDWord) {
                     val val2 = stack.pop()
                     stack.push(val1)
                     stack.push(val2)
@@ -376,9 +376,9 @@ class CfgBuilder(val method: Method)
             }
             DUP2_X2 -> {
                 val val1 = stack.pop()
-                if (val1.type.isDWord()) {
+                if (val1.type.isDWord) {
                     val val2 = stack.pop()
-                    if (val2.type.isDWord()) {
+                    if (val2.type.isDWord) {
                         stack.push(val1)
                         stack.push(val2)
                         stack.push(val1)
@@ -392,7 +392,7 @@ class CfgBuilder(val method: Method)
                 } else {
                     val val2 = stack.pop()
                     val val3 = stack.pop()
-                    if (val3.type.isDWord()) {
+                    if (val3.type.isDWord) {
                         stack.push(val2)
                         stack.push(val1)
                         stack.push(val3)
@@ -448,13 +448,13 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val op = stack.pop()
         val type = when (insn.opcode) {
-            in arrayOf(I2L, F2L, D2L) -> TF.getLongType()
-            in arrayOf(I2F, L2F, D2F) -> TF.getFloatType()
-            in arrayOf(I2D, L2D, F2D) -> TF.getDoubleType()
-            in arrayOf(L2I, F2I, D2I) -> TF.getIntType()
-            I2B -> TF.getByteType()
-            I2C -> TF.getCharType()
-            I2S -> TF.getShortType()
+            in arrayOf(I2L, F2L, D2L) -> TF.longType
+            in arrayOf(I2F, L2F, D2F) -> TF.floatType
+            in arrayOf(I2D, L2D, F2D) -> TF.doubleType
+            in arrayOf(L2I, F2I, D2I) -> TF.intType
+            I2B -> TF.byteType
+            I2C -> TF.charType
+            I2S -> TF.shortType
             else -> throw InvalidOpcodeError("Cast opcode ${insn.opcode}")
         }
         val inst = IF.getCast(type, op)
@@ -633,7 +633,7 @@ class CfgBuilder(val method: Method)
         val args = arrayListOf<Value>()
         method.desc.args.forEach { args.add(0, stack.pop()) }
 
-        val isNamed = !method.desc.retval.isVoid()
+        val isNamed = !method.desc.retval.isVoid
         val opcode = toCallOpcode(insn.opcode)
         val call = when (insn.opcode) {
             INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
@@ -674,7 +674,7 @@ class CfgBuilder(val method: Method)
                     else -> throw InvalidOpcodeError("Jump opcode ${insn.opcode}")
                 }
                 addInstruction(bb, cond)
-                val castedCond = if (cond.type is BoolType) cond else IF.getCast(TF.getBoolType(), cond)
+                val castedCond = if (cond.type is BoolType) cond else IF.getCast(TF.boolType, cond)
                 addInstruction(bb, IF.getBranch(castedCond, trueSuccessor, falseSuccessor))
             }
         }
@@ -1049,7 +1049,7 @@ class CfgBuilder(val method: Method)
         for ((indx, type) in method.desc.args.withIndex()) {
             val arg = VF.getArgument(indx, method, type)
             locals[localIndx] = arg
-            if (type.isDWord()) localIndx += 2
+            if (type.isDWord) localIndx += 2
             else ++localIndx
             method.slottracker.addValue(arg)
         }
