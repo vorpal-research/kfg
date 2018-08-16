@@ -293,10 +293,6 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val index = stack.pop()
         val arrayRef = stack.pop()
-        if (arrayRef.type === NullType) {
-            println(method.print())
-            println(method.mn.print())
-        }
         val inst = IF.getArrayLoad(arrayRef, index)
         addInstruction(bb, inst)
         stack.push(inst)
