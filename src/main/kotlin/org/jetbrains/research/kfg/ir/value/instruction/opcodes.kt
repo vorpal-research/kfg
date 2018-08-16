@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.ir.value.instruction
 import org.jetbrains.research.kfg.TF
 import org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.util.simpleHash
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
     in Opcodes.IADD..Opcodes.DADD -> BinaryOpcode.Add()
@@ -23,6 +24,13 @@ sealed class BinaryOpcode {
     abstract val name: String
 
     override fun toString() = name
+    override fun hashCode() = simpleHash(name)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != this.javaClass) return false
+        other as BinaryOpcode
+        return this.name == other.name
+    }
 
     class Add(override val name: String = "+") : BinaryOpcode()
     class Sub(override val name: String = "-") : BinaryOpcode()
