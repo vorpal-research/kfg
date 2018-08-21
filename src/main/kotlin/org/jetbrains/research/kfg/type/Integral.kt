@@ -3,6 +3,9 @@ package org.jetbrains.research.kfg.type
 import org.jetbrains.research.kfg.util.simpleHash
 
 interface Integral : Type {
+    override val bitsize: Int
+        get() = Type.WORD
+
     val width: Int
     val signed: Boolean
 
@@ -71,6 +74,9 @@ object IntType : Integral {
 }
 
 object LongType : Integral {
+    override val bitsize: Int
+        get() = Type.DWORD
+
     override val name = "long"
     override val width = 64
     override val signed = true

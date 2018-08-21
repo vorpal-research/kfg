@@ -5,6 +5,9 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.util.simpleHash
 
 interface Reference : Type {
+    override val bitsize: Int
+        get() = Type.WORD
+
     override val isPrimary get() = false
     override val isReference get() = true
 }

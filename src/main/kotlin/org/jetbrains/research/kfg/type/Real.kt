@@ -8,6 +8,9 @@ interface Real : Type {
 }
 
 object FloatType : Real {
+    override val bitsize: Int
+        get() = Type.WORD
+
     override val name = "float"
 
     override fun toString() = name
@@ -21,6 +24,9 @@ object FloatType : Real {
 }
 
 object DoubleType : Real {
+    override val bitsize: Int
+        get() = Type.DWORD
+
     override val name = "double"
     override fun toString() = name
     override val isDWord get() = true
