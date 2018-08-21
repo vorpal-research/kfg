@@ -1,6 +1,11 @@
 package org.jetbrains.research.kfg.type
 
 interface Type {
+    companion object {
+        const val WORD = 32
+        const val DWORD = 64
+    }
+
     val name: String
 
     val asmDesc: String
@@ -24,4 +29,6 @@ interface Type {
 
     val canonicalDesc
         get() = asmDesc.replace('/', '.')
+
+    val bitsize: Int
 }

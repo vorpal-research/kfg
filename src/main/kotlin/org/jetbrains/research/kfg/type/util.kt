@@ -118,3 +118,8 @@ fun parseStringToType(name: String) = when (name) {
         subtype
     }
 }
+
+fun Type.getExpandedBitsize() = when (this) {
+    is ClassType -> `class`.fields.values.fold(0) { acc, field -> acc + field.type.bitsize }
+    else -> bitsize
+}

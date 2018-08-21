@@ -3,6 +3,9 @@ package org.jetbrains.research.kfg.type
 import org.jetbrains.research.kfg.util.simpleHash
 
 object VoidType : Type {
+    override val bitsize: Int
+        get() = throw IllegalAccessError()
+
     override val name = "void"
     override val isPrimary get() = false
     override val isVoid get() = true
