@@ -22,7 +22,7 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
         if (value.name !== UndefinedName && value !is Constant) {
             require(valueNameRegex.matches(value.name.toString())) { "Incorrect value name format $value" }
             val storedVal = valueNames[value.name.toString()]
-            require(storedVal == null || storedVal == value) { "Same names for two different values" }
+            require(storedVal == null || storedVal == value) { "Same names for two different values in $method" }
             valueNames[value.name.toString()] = value
         }
     }
@@ -38,7 +38,7 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
     override fun visitPhiInst(inst: PhiInst) {
         val bb = inst.parent!!
         inst.predecessors.forEach {
-            require(method.basicBlocks.contains(it)) { "Phi incoming from unknown block" }
+            require(method.basicBlocks.contains(it)) { "Phi ${inst.print()} incoming from unknown block" }
         }
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
@@ -54,7 +54,7 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
 
     override fun visitTerminateInst(inst: TerminateInst) {
         val bb = inst.parent!!
-        require(bb.successors.size == inst.successors.toSet().size) { "Terminate insts successors are different from block successors" }
+        require(bb.successors.size == inst.successors.toSet().size) { "Terminate inst ${inst.print()} successors are different from block successors" }
         inst.successors.forEach {
             require(method.basicBlocks.contains(it)) { "Terminate inst to unknown block" }
             require(bb.successors.contains(it)) { "Terminate insts successors are different from block successors" }
