@@ -11,8 +11,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
 import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class RetvalBuilder(method: Method) : MethodVisitor(method) {
-    val returnBlock = BodyBlock("bb.return")
+object RetvalBuilder : MethodVisitor {
     val retvals = hashMapOf<BasicBlock, ReturnInst>()
 
     override fun visitReturnInst(inst: ReturnInst) {
@@ -20,9 +19,13 @@ class RetvalBuilder(method: Method) : MethodVisitor(method) {
         retvals[bb] = inst
     }
 
-    override fun visit() {
-        super.visit()
+    override fun visit(method: Method) {
+        retvals.clear()
+        super.visit(method)
         if (retvals.size <= 1) return
+
+
+        val returnBlock = BodyBlock("bb.return")
 
         val incomings = hashMapOf<BasicBlock, Value>()
         for ((bb, `return`) in retvals) {

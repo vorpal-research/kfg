@@ -78,21 +78,24 @@ object LoopManager {
         return when {
             info.valid -> info.loops
             else -> {
-                val la = LoopAnalysis(method)
-                la.visit()
-                loopInfo[method] = LoopInfo(la.loops)
-                la.loops
+                val loops = LoopAnalysis(method)
+                loopInfo[method] = LoopInfo(loops)
+                loops
             }
         }
     }
 }
 
-class LoopAnalysis(method: Method) : MethodVisitor(method) {
-    val loops = arrayListOf<Loop>()
+object LoopAnalysis : MethodVisitor {
+    private val loops = arrayListOf<Loop>()
 
-    override fun visit() {
+    operator fun invoke(method: Method): List<Loop> {
         loops.clear()
+        visit(method)
+        return loops.toList()
+    }
 
+    override fun visit(method: Method) {
         val allLoops = LoopDetector(method.basicBlocks.toSet()).search()
                 .map { Loop(it.key, it.value.toMutableSet()) }
 
@@ -138,12 +141,16 @@ class LoopAnalysis(method: Method) : MethodVisitor(method) {
     }
 }
 
-class LoopSimplifier(method: Method) : LoopVisitor(method) {
+object LoopSimplifier : LoopVisitor {
+    private var current: Method? = null
+
     override fun preservesLoopInfo() = false
 
-    override fun visit() {
-        super.visit()
-        IRVerifier(method).visit()
+    override fun visit(method: Method) {
+        current = method
+        super.visit(method)
+        IRVerifier.visit(method)
+        current = null
     }
 
     override fun visitLoop(loop: Loop) {
@@ -161,24 +168,24 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
     }
 
     private fun remapPhis(target: BasicBlock, from: Set<BasicBlock>, to: BasicBlock) {
-        target.instructions.mapNotNull { it as? PhiInst }.forEach {
-            val fromIncomings = it.incomings.filter { it.key in from }
+        target.instructions.mapNotNull { it as? PhiInst }.forEach { phi ->
+            val fromIncomings = phi.incomings.filter { it.key in from }
             val fromValues = fromIncomings.values.toSet()
             val toValue = when {
                 fromValues.size == 1 -> fromValues.first()
                 else -> {
-                    val phi = IF.getPhi(it.type, fromIncomings)
-                    to += phi
-                    phi
+                    val newphi = IF.getPhi(phi.type, fromIncomings)
+                    to += newphi
+                    newphi
                 }
             }
 
-            val targetIncomings = it.incomings.filter { it.key !in from }.toMutableMap()
+            val targetIncomings = phi.incomings.filter { it.key !in from }.toMutableMap()
             targetIncomings[to] = toValue
-            val targetPhi = IF.getPhi(it.type, targetIncomings)
-            target.insertBefore(it, targetPhi)
-            it.replaceAllUsesWith(targetPhi)
-            target -= it
+            val targetPhi = IF.getPhi(phi.type, targetIncomings)
+            target.insertBefore(phi, targetPhi)
+            phi.replaceAllUsesWith(targetPhi)
+            target -= phi
         }
     }
 
@@ -194,7 +201,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
 
         remapPhis(header, loopPredecessors, preheader)
         preheader += IF.getJump(header)
-        method.addBefore(header, preheader)
+        current!!.addBefore(header, preheader)
     }
 
     private fun buildLatch(loop: Loop) {
@@ -209,7 +216,7 @@ class LoopSimplifier(method: Method) : LoopVisitor(method) {
 
         remapPhis(header, latches, latch)
         latch += IF.getJump(header)
-        method.add(latch)
+        current!!.add(latch)
         loop.addBlock(latch)
     }
 }

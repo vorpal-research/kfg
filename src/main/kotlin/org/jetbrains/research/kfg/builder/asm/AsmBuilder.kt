@@ -32,7 +32,7 @@ fun typeToInt(type: Type) = when (type) {
     else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
 }
 
-class AsmBuilder(method: Method) : MethodVisitor(method) {
+class AsmBuilder(val method: Method) : MethodVisitor {
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.map { it to LabelNode() }.toMap()
@@ -460,8 +460,10 @@ class AsmBuilder(method: Method) : MethodVisitor(method) {
         return catchBlocks
     }
 
+    operator fun invoke(): MethodNode = build()
+
     fun build(): MethodNode {
-        visit()
+        visit(method)
         method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
         val insnList = InsnList()
         for (bb in method.basicBlocks) {

@@ -1031,11 +1031,11 @@ class CfgBuilder(val method: Method)
             }
         }
 
-        removablePhis.forEach {
-            val instUsers = it.users.mapNotNull { it as? Instruction }
+        removablePhis.forEach { phi ->
+            val instUsers = phi.users.mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
-            require(methodInstUsers.isEmpty()) { "Instruction ${it.print()} still have usages" }
-            it.parent?.remove(it)
+            require(methodInstUsers.isEmpty()) { "Instruction ${phi.print()} still have usages" }
+            phi.parent?.remove(phi)
         }
     }
 
@@ -1096,8 +1096,8 @@ class CfgBuilder(val method: Method)
         }
 
         buildPhiInstructions()
-        RetvalBuilder(method).visit()
-//        BoolValueAdapter(method).visit()
+        RetvalBuilder.visit(method)
+//        BoolValueAdapter.visit(method)
 
         // this is fucked up, but sometimes there are really empty blocks in bytecode
         nodeToBlock.values.forEach {
@@ -1109,7 +1109,7 @@ class CfgBuilder(val method: Method)
         method.slottracker.rerun()
 
         try {
-            IRVerifier(method).visit()
+            IRVerifier.visit(method)
         } catch (e: NoSuchElementException) {
             method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         }

@@ -12,31 +12,45 @@ import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class IRVerifier(method: Method) : MethodVisitor(method) {
+object IRVerifier : MethodVisitor {
     private val valueNameRegex = "(\\%([a-zA-Z][\\w\\.]*|\\d+)|arg\\$\\d+|this)".toRegex()
     private val blockNameRegex = "\\%[a-zA-Z][\\w\\.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
 
+    private val Instruction.parents
+        get(): Pair<Method, BasicBlock> {
+            val bb = parent!!
+            val method = bb.parent!!
+            return method to bb
+        }
+
     private fun visitValue(value: Value) {
         if (value.name !== UndefinedName && value !is Constant) {
             require(valueNameRegex.matches(value.name.toString())) { "Incorrect value name format $value" }
             val storedVal = valueNames[value.name.toString()]
-            require(storedVal == null || storedVal == value) { "Same names for two different values in $method" }
+            require(storedVal == null || storedVal == value) { "Same names for two different values" }
             valueNames[value.name.toString()] = value
         }
     }
 
     override fun visitInstruction(inst: Instruction) {
+        val (method, bb) = inst.parents
+
         inst.operands.forEach { visitValue(it) }
         visitValue(inst)
-        require(inst.parent != null) { "Instruction $inst with no parent in method" }
-        require(method.basicBlocks.contains(inst.parent)) { "Instruction parent does not belong to method" }
+
+        inst.run {
+            require(parent != null) { "Instruction $inst with no parent in method" }
+            require(method.basicBlocks.contains(parent)) { "Instruction parent does not belong to method" }
+        }
+
         super.visitInstruction(inst)
     }
 
     override fun visitPhiInst(inst: PhiInst) {
-        val bb = inst.parent!!
+        val (method, bb) = inst.parents
+
         inst.predecessors.forEach {
             require(method.basicBlocks.contains(it)) { "Phi ${inst.print()} incoming from unknown block" }
         }
@@ -53,7 +67,8 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitTerminateInst(inst: TerminateInst) {
-        val bb = inst.parent!!
+        val (method, bb) = inst.parents
+
         require(bb.successors.size == inst.successors.toSet().size) { "Terminate inst ${inst.print()} successors are different from block successors" }
         inst.successors.forEach {
             require(method.basicBlocks.contains(it)) { "Terminate inst to unknown block" }
@@ -63,6 +78,8 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
     }
 
     override fun visitBasicBlock(bb: BasicBlock) {
+        val method = bb.parent!!
+
         require(blockNameRegex.matches(bb.name.toString())) { "Incorrect value name format ${bb.name}" }
         val storedVal = blockNames[bb.name.toString()]
         require(storedVal == null || storedVal == bb) { "Same names for two different blocks" }
@@ -83,5 +100,11 @@ class IRVerifier(method: Method) : MethodVisitor(method) {
         require(bb.last() is TerminateInst) { "Block should end with terminate inst" }
         require(bb.mapNotNull { it as? TerminateInst }.size == 1) { "Block should have exactly one terminator" }
         super.visitBasicBlock(bb)
+    }
+
+    override fun visit(method: Method) {
+        valueNames.clear()
+        blockNames.clear()
+        super.visit(method)
     }
 }

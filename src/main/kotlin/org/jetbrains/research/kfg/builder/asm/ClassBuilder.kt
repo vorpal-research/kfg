@@ -5,14 +5,15 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.objectweb.asm.tree.ClassNode
 
-class ClassBuilder(`class`: Class): ClassVisitor(`class`) {
-
+class ClassBuilder(val `class`: Class) : ClassVisitor {
     override fun visitMethod(method: Method) {
         AsmBuilder(method).build()
     }
 
     fun build(): ClassNode {
-        visit()
+        visit(`class`)
         return `class`.cn
     }
+
+    operator fun invoke(): ClassNode = build()
 }
