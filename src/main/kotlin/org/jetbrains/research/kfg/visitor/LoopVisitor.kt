@@ -4,21 +4,20 @@ import org.jetbrains.research.kfg.analysis.Loop
 import org.jetbrains.research.kfg.analysis.LoopManager
 import org.jetbrains.research.kfg.ir.Method
 
-open class LoopVisitor(val method: Method) : NodeVisitor(method) {
-    val loops: List<Loop> = LoopManager.getMethodLoopInfo(method)
-
-    override fun visit() {
+interface LoopVisitor {
+    fun visit(method: Method) {
+        val loops: List<Loop> = LoopManager.getMethodLoopInfo(method)
         loops.forEach { visitLoop(it) }
-        updateLoopInfo()
+        updateLoopInfo(method)
     }
 
-    open fun visitLoop(loop: Loop) {
+    fun visitLoop(loop: Loop) {
         for (it in loop.subloops) visitLoop(it)
     }
 
-    open fun preservesLoopInfo() = false
+    fun preservesLoopInfo() = false
 
-    fun updateLoopInfo() {
+    fun updateLoopInfo(method: Method) {
         if (!this.preservesLoopInfo()) {
             LoopManager.setInvalid(method)
         }

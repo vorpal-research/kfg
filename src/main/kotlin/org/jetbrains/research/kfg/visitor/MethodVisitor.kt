@@ -6,21 +6,22 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Parameter
 import org.jetbrains.research.kfg.ir.value.instruction.*
 
-open class MethodVisitor(val method: Method) : NodeVisitor(method) {
-    override fun visit() {
-        super.visit()
+interface MethodVisitor : NodeVisitor {
+
+    fun visit(method: Method) {
+        super.visit(method)
         method.run {
             parameters.toTypedArray().forEach { visitParameter(it) }
             basicBlocks.toTypedArray().forEach { visitBasicBlock(it) }
         }
     }
 
-    open fun visitParameter(parameter: Parameter) {}
-    open fun visitBasicBlock(bb: BasicBlock) {
+    fun visitParameter(parameter: Parameter) {}
+    fun visitBasicBlock(bb: BasicBlock) {
         bb.instructions.toTypedArray().forEach { visitInstruction(it) }
     }
 
-    open fun visitInstruction(inst: Instruction) {
+    fun visitInstruction(inst: Instruction) {
         when (inst) {
             is ArrayLoadInst -> visitArrayLoadInst(inst)
             is ArrayStoreInst -> visitArrayStoreInst(inst)
@@ -43,7 +44,7 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
         }
     }
 
-    open fun visitTerminateInst(inst: TerminateInst) {
+    fun visitTerminateInst(inst: TerminateInst) {
         when (inst) {
             is BranchInst -> visitBranchInst(inst)
             is JumpInst -> visitJumpInst(inst)
@@ -56,27 +57,27 @@ open class MethodVisitor(val method: Method) : NodeVisitor(method) {
         }
     }
 
-    open fun visitArrayLoadInst(inst: ArrayLoadInst) {}
-    open fun visitArrayStoreInst(inst: ArrayStoreInst) {}
-    open fun visitBinaryInst(inst: BinaryInst) {}
-    open fun visitBranchInst(inst: BranchInst) {}
-    open fun visitCallInst(inst: CallInst) {}
-    open fun visitCastInst(inst: CastInst) {}
-    open fun visitCatchInst(inst: CatchInst) {}
-    open fun visitCmpInst(inst: CmpInst) {}
-    open fun visitEnterMonitorInst(inst: EnterMonitorInst) {}
-    open fun visitExitMonitorInst(inst: ExitMonitorInst) {}
-    open fun visitFieldLoadInst(inst: FieldLoadInst) {}
-    open fun visitFieldStoreInst(inst: FieldStoreInst) {}
-    open fun visitInstanceOfInst(inst: InstanceOfInst) {}
-    open fun visitNewArrayInst(inst: NewArrayInst) {}
-    open fun visitNewInst(inst: NewInst) {}
-    open fun visitPhiInst(inst: PhiInst) {}
-    open fun visitUnaryInst(inst: UnaryInst) {}
-    open fun visitJumpInst(inst: JumpInst) {}
-    open fun visitReturnInst(inst: ReturnInst) {}
-    open fun visitSwitchInst(inst: SwitchInst) {}
-    open fun visitTableSwitchInst(inst: TableSwitchInst) {}
-    open fun visitThrowInst(inst: ThrowInst) {}
-    open fun visitUnreachableInst(inst: UnreachableInst) {}
+    fun visitArrayLoadInst(inst: ArrayLoadInst) {}
+    fun visitArrayStoreInst(inst: ArrayStoreInst) {}
+    fun visitBinaryInst(inst: BinaryInst) {}
+    fun visitBranchInst(inst: BranchInst) {}
+    fun visitCallInst(inst: CallInst) {}
+    fun visitCastInst(inst: CastInst) {}
+    fun visitCatchInst(inst: CatchInst) {}
+    fun visitCmpInst(inst: CmpInst) {}
+    fun visitEnterMonitorInst(inst: EnterMonitorInst) {}
+    fun visitExitMonitorInst(inst: ExitMonitorInst) {}
+    fun visitFieldLoadInst(inst: FieldLoadInst) {}
+    fun visitFieldStoreInst(inst: FieldStoreInst) {}
+    fun visitInstanceOfInst(inst: InstanceOfInst) {}
+    fun visitNewArrayInst(inst: NewArrayInst) {}
+    fun visitNewInst(inst: NewInst) {}
+    fun visitPhiInst(inst: PhiInst) {}
+    fun visitUnaryInst(inst: UnaryInst) {}
+    fun visitJumpInst(inst: JumpInst) {}
+    fun visitReturnInst(inst: ReturnInst) {}
+    fun visitSwitchInst(inst: SwitchInst) {}
+    fun visitTableSwitchInst(inst: TableSwitchInst) {}
+    fun visitThrowInst(inst: ThrowInst) {}
+    fun visitUnreachableInst(inst: UnreachableInst) {}
 }

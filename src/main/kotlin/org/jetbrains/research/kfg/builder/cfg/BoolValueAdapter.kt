@@ -12,7 +12,7 @@ import org.jetbrains.research.kfg.type.BoolType
 import org.jetbrains.research.kfg.type.Integral
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class BoolValueAdapter(method: Method) : MethodVisitor(method) {
+object BoolValueAdapter : MethodVisitor {
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
 
@@ -38,6 +38,7 @@ class BoolValueAdapter(method: Method) : MethodVisitor(method) {
 
     override fun visitReturnInst(inst: ReturnInst) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
+        val method = bb.parent ?: throw InvalidStateError("No parent of basic block")
 
         if (method.desc.retval === BoolType && inst.returnValue.type !== BoolType) {
             val cast = IF.getCast(TF.boolType, inst.returnValue)
