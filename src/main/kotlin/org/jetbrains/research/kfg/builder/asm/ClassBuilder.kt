@@ -6,6 +6,8 @@ import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.objectweb.asm.tree.ClassNode
 
 class ClassBuilder(val `class`: Class) : ClassVisitor {
+    override fun cleanup() {}
+
     override fun visitMethod(method: Method) {
         AsmBuilder(method).build()
     }

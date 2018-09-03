@@ -30,7 +30,7 @@ abstract class UsableValue : Usable<Value>() {
         get() = abstractUsers.map { it as ValueUser }.toSet()
 
     override fun addUser(user: User) {
-        require(user is ValueUser) { "Trying to add non-value user to value" }
+        require(user is ValueUser) { "Trying to register non-value user to value" }
         super.addUser(user)
     }
 
@@ -44,7 +44,7 @@ abstract class UsableBlock : Usable<BasicBlock>() {
         get() = abstractUsers.map { it as BlockUser }.toSet()
 
     override fun addUser(user: User) {
-        require(user is BlockUser) { "Trying to add non-block user to block" }
+        require(user is BlockUser) { "Trying to register non-block user to block" }
         super.addUser(user)
     }
 

@@ -4,7 +4,10 @@ import org.jetbrains.research.kfg.ir.Annotation
 import org.jetbrains.research.kfg.ir.Node
 
 interface NodeVisitor {
+    fun cleanup()
+
     fun visit(node: Node) {
+        cleanup()
         node.run {
             visibleAnnotations.toTypedArray().forEach { visitVisibleAnnotation(it) }
             invisibleAnnotations.toTypedArray().forEach { visitInvisibleAnnotation(it) }

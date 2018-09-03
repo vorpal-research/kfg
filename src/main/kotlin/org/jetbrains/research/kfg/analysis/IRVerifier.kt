@@ -35,7 +35,7 @@ object IRVerifier : MethodVisitor {
     }
 
     override fun visitInstruction(inst: Instruction) {
-        val (method, bb) = inst.parents
+        val (method, _) = inst.parents
 
         inst.operands.forEach { visitValue(it) }
         visitValue(inst)
@@ -102,9 +102,8 @@ object IRVerifier : MethodVisitor {
         super.visitBasicBlock(bb)
     }
 
-    override fun visit(method: Method) {
+    override fun cleanup() {
         valueNames.clear()
         blockNames.clear()
-        super.visit(method)
     }
 }
