@@ -116,7 +116,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         is MethodConstant -> throw IllegalArgumentException("Cannot convert constant $`const`")
     }
 
-    // add all instructions for loading required arguments to stack
+    // register all instructions for loading required arguments to stack
     private fun addOperandsToStack(operands: List<Value>) {
         stackSave()
         for (operand in operands) {
@@ -462,14 +462,34 @@ class AsmBuilder(val method: Method) : MethodVisitor {
 
     operator fun invoke(): MethodNode = build()
 
+    override fun cleanup() {
+        bbInsns.clear()
+        terminateInsns.clear()
+        stack.clear()
+        locals.clear()
+
+        currentInsnList.clear()
+        maxLocals = 0
+        maxStack = 0
+
+        if (!method.isStatic) {
+            val `this` = VF.getThis(TF.getRefType(method.`class`))
+            locals[`this`] = getLocalFor(`this`)
+        }
+        for ((indx, type) in method.desc.args.withIndex()) {
+            val arg = VF.getArgument(indx, method, type)
+            locals[arg] = getLocalFor(arg)
+        }
+    }
+
     fun build(): MethodNode {
-        visit(method)
+        super.visit(method)
         method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
         val insnList = InsnList()
         for (bb in method.basicBlocks) {
             insnList.add(getLabel(bb))
-            getInsnList(bb).forEach { insnList.add(it) }//insnList.add(getInsnList(bb))
-            getTerminateInsnList(bb).forEach { insnList.add(it) }//insnList.add(getTerminateInsnList(bb))
+            getInsnList(bb).forEach { insnList.add(it) }//insnList.register(getInsnList(bb))
+            getTerminateInsnList(bb).forEach { insnList.add(it) }//insnList.register(getTerminateInsnList(bb))
         }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()

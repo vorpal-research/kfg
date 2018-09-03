@@ -12,7 +12,11 @@ import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 object RetvalBuilder : MethodVisitor {
-    val retvals = hashMapOf<BasicBlock, ReturnInst>()
+    private val retvals = hashMapOf<BasicBlock, ReturnInst>()
+
+    override fun cleanup() {
+        retvals.clear()
+    }
 
     override fun visitReturnInst(inst: ReturnInst) {
         val bb = inst.parent ?: throw InvalidStateError("Method instruction does not have parent")
@@ -20,7 +24,6 @@ object RetvalBuilder : MethodVisitor {
     }
 
     override fun visit(method: Method) {
-        retvals.clear()
         super.visit(method)
         if (retvals.size <= 1) return
 

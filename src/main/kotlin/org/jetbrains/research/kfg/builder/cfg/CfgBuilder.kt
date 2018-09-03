@@ -770,7 +770,7 @@ class CfgBuilder(val method: Method)
                 when {
                     insn.next == null -> Unit
                     insn.previous == null -> {
-                        // add entry block if first insn of method is label
+                        // register entry block if first insn of method is label
                         bb = nodeToBlock.getOrPut(insn) { bb }
 
                         val entry = BodyBlock("entry")

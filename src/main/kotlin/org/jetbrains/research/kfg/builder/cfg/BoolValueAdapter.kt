@@ -13,6 +13,8 @@ import org.jetbrains.research.kfg.type.Integral
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 object BoolValueAdapter : MethodVisitor {
+    override fun cleanup() {}
+
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
 

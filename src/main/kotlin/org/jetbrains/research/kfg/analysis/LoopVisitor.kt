@@ -1,12 +1,8 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kfg.IF
 import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.util.LoopDetector
-import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<BasicBlock> {
@@ -51,6 +47,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
     override fun iterator() = body.iterator()
 }
 
+
 object LoopManager {
     private class LoopInfo {
         var valid = false
@@ -70,11 +67,11 @@ object LoopManager {
     private val loopInfo = mutableMapOf<Method, LoopInfo>()
 
     fun setInvalid(method: Method) {
-        loopInfo.getOrPut(method, ::LoopInfo).valid = false
+        loopInfo.getOrPut(method, LoopManager::LoopInfo).valid = false
     }
 
     fun getMethodLoopInfo(method: Method): List<Loop> {
-        val info = loopInfo.getOrPut(method, ::LoopInfo)
+        val info = loopInfo.getOrPut(method, LoopManager::LoopInfo)
         return when {
             info.valid -> info.loops
             else -> {
@@ -89,13 +86,18 @@ object LoopManager {
 object LoopAnalysis : MethodVisitor {
     private val loops = arrayListOf<Loop>()
 
-    operator fun invoke(method: Method): List<Loop> {
+    override fun cleanup() {
         loops.clear()
+    }
+
+    operator fun invoke(method: Method): List<Loop> {
         visit(method)
         return loops.toList()
     }
 
     override fun visit(method: Method) {
+        cleanup()
+
         val allLoops = LoopDetector(method.basicBlocks.toSet()).search()
                 .map { Loop(it.key, it.value.toMutableSet()) }
 
@@ -141,82 +143,22 @@ object LoopAnalysis : MethodVisitor {
     }
 }
 
-object LoopSimplifier : LoopVisitor {
-    private var current: Method? = null
-
-    override fun preservesLoopInfo() = false
-
+interface LoopVisitor : MethodVisitor {
     override fun visit(method: Method) {
-        current = method
-        super.visit(method)
-        IRVerifier.visit(method)
-        current = null
+        val loops: List<Loop> = LoopManager.getMethodLoopInfo(method)
+        loops.forEach { visit(it) }
+        updateLoopInfo(method)
     }
 
-    override fun visitLoop(loop: Loop) {
-        super.visitLoop(loop)
-        buildPreheader(loop)
-        buildLatch(loop)
+    fun visit(loop: Loop) {
+        for (it in loop.subloops) visit(it)
     }
 
-    private fun remapBlocks(target: BasicBlock, from: BasicBlock, to: BasicBlock) {
-        target.removeSuccessor(from)
-        from.removePredecessor(target)
-        target.addSuccessor(to)
-        to.addPredecessor(target)
-        target.terminator.replaceUsesOf(from, to)
-    }
+    fun preservesLoopInfo() = false
 
-    private fun remapPhis(target: BasicBlock, from: Set<BasicBlock>, to: BasicBlock) {
-        target.instructions.mapNotNull { it as? PhiInst }.forEach { phi ->
-            val fromIncomings = phi.incomings.filter { it.key in from }
-            val fromValues = fromIncomings.values.toSet()
-            val toValue = when {
-                fromValues.size == 1 -> fromValues.first()
-                else -> {
-                    val newphi = IF.getPhi(phi.type, fromIncomings)
-                    to += newphi
-                    newphi
-                }
-            }
-
-            val targetIncomings = phi.incomings.filter { it.key !in from }.toMutableMap()
-            targetIncomings[to] = toValue
-            val targetPhi = IF.getPhi(phi.type, targetIncomings)
-            target.insertBefore(phi, targetPhi)
-            phi.replaceAllUsesWith(targetPhi)
-            target -= phi
+    fun updateLoopInfo(method: Method) {
+        if (!this.preservesLoopInfo()) {
+            LoopManager.setInvalid(method)
         }
-    }
-
-    private fun buildPreheader(loop: Loop) {
-        val header = loop.header
-        val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
-        if (loopPredecessors.size == 1) return
-
-        val preheader = BodyBlock("loop.preheader")
-        loopPredecessors.forEach { remapBlocks(it, header, preheader) }
-        preheader.addSuccessor(header)
-        header.addPredecessor(preheader)
-
-        remapPhis(header, loopPredecessors, preheader)
-        preheader += IF.getJump(header)
-        current!!.addBefore(header, preheader)
-    }
-
-    private fun buildLatch(loop: Loop) {
-        val header = loop.header
-        val latches = loop.body.filter { it.successors.contains(header) }.toSet()
-        if (latches.size == 1) return
-
-        val latch = BodyBlock("loop.latch")
-        latches.forEach { remapBlocks(it, header, latch) }
-        latch.addSuccessor(header)
-        header.addPredecessor(latch)
-
-        remapPhis(header, latches, latch)
-        latch += IF.getJump(header)
-        current!!.add(latch)
-        loop.addBlock(latch)
     }
 }

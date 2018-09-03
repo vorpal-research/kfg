@@ -68,4 +68,6 @@ object ClassManager {
             OuterClass(cn)
         }
     }
+
+    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filter { `package`.isParent(it.`package`) }
 }
