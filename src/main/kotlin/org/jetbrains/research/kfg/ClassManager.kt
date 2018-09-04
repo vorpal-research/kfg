@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.JarUtils
 import org.jetbrains.research.kfg.util.simpleHash
-import org.objectweb.asm.tree.*
+import org.objectweb.asm.tree.ClassNode
 import java.util.jar.JarFile
 
 class Package(name: String) {
@@ -69,5 +69,5 @@ object ClassManager {
         }
     }
 
-    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filter { `package`.isParent(it.`package`) }
+    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filterNot { `package`.isParent(it.`package`) }
 }

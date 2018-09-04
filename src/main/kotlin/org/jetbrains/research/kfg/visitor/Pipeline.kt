@@ -5,8 +5,8 @@ import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
 
-class Pipeline(val target: Package, pipeline: Set<NodeVisitor> = hashSetOf()) {
-    private val pipeline = pipeline.map { wrap(it) }.toHashSet()
+class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf()) {
+    private val pipeline = pipeline.map { wrap(it) }.toMutableList()
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
     operator fun plusAssign(visitor: NodeVisitor) {
@@ -45,7 +45,9 @@ class Pipeline(val target: Package, pipeline: Set<NodeVisitor> = hashSetOf()) {
     fun run() {
         val classes = CM.getByPackage(target)
         for (pass in pipeline) {
-            classes.forEach { pass.visit(it) }
+            for (`class` in classes) {
+                pass.visit(`class`)
+            }
         }
     }
 }
