@@ -9,6 +9,9 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
     var parent: Loop? = null
     val subloops = hashSetOf<Loop>()
 
+    val method: Method?
+        get() = header.parent
+
     val exitingBlocks: Set<BasicBlock>
         get() = body.filterNot { body.containsAll(it.successors) }.toSet()
 

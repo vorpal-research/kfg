@@ -198,11 +198,11 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     fun graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
         val nodes = hashMapOf<String, GraphView>()
         nodes[name] = GraphView(name, this.toString())
-        basicBlocks.map {
+        basicBlocks.map { bb ->
             val label = StringBuilder()
-            label.append("${it.name}:\\l")
-            it.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
-            nodes[it.name.toString()] = GraphView(it.name.toString(), label.toString())
+            label.append("${bb.name}:\\l")
+            bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
+            nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
         }
         if (!isAbstract) {
             val entryNode = nodes.getValue(entry.name.toString())
