@@ -11,7 +11,7 @@ import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 
 fun typeToFullInt(type: Type) = when (type) {
-    is BoolType -> 0
+    is BoolType -> 5
     is ByteType -> 5
     is ShortType -> 7
     is CharType -> 6
@@ -150,7 +150,8 @@ class AsmBuilder(val method: Method) : MethodVisitor {
     }
 
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
-        val opcode = IASTORE + typeToFullInt(inst.value.type)
+        val type = inst.arrayComponent
+        val opcode = IASTORE + typeToFullInt(type)
         val insn = InsnNode(opcode)
         val operands = inst.operands
         addOperandsToStack(operands)
