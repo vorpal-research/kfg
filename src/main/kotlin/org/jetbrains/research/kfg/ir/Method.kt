@@ -102,7 +102,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
             queue.addAll(catchEntries)
             while (queue.isNotEmpty()) {
                 val top = queue.first
-                val isCatch = top.predecessors.fold(true) { acc, bb -> acc and catchMap.getOrPut(bb) { false } }
+                val isCatch = top.predecessors.fold(true) { acc, bb -> acc && catchMap.getOrPut(bb) { false } }
                 if (isCatch) {
                     result.add(top)
                     queue.addAll(top.successors)

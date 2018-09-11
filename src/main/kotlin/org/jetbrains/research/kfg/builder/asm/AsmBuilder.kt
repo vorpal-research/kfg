@@ -227,7 +227,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val originalType = inst.operand.type
         val targetType = inst.type
 
-        val insn = if (originalType.isPrimary and targetType.isPrimary) {
+        val insn = if (originalType.isPrimary && targetType.isPrimary) {
             val opcode = when (originalType) {
                 is LongType -> when (targetType) {
                     is IntType -> L2I
