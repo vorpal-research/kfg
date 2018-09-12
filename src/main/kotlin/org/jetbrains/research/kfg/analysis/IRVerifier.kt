@@ -91,11 +91,14 @@ object IRVerifier : MethodVisitor {
             }
             method.entry -> require(bb.predecessors.isEmpty()) { "Entry block should not have predecessors" }
             else -> bb.predecessors.forEach {
-                require(method.basicBlocks.contains(it)) { "Block ${bb.name} predecessor does not belong to method" }
+                if (it !in method) {
+                    println("error")
+                }
+                require(it in method) { "Block ${bb.name} predecessor ${it.name} does not belong to method" }
             }
         }
         bb.successors.forEach {
-            require(method.basicBlocks.contains(it)) { "Block successor does not belong to method" }
+            require(it in method) { "Block successor does not belong to method" }
         }
         require(bb.last() is TerminateInst) { "Block should end with terminate inst" }
         require(bb.mapNotNull { it as? TerminateInst }.size == 1) { "Block should have exactly one terminator" }
