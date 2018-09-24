@@ -44,18 +44,18 @@ object RetvalBuilder : MethodVisitor {
 
         val insts = arrayListOf<Instruction>()
         val `return` = when {
-            method.desc.retval.isVoid -> IF.getReturn()
+            method.returnType.isVoid -> IF.getReturn()
             else -> {
                 val type = mergeTypes(incomings.values.map { it.type }.toSet())
-                        ?: method.desc.retval
+                        ?: method.returnType
 
                 val retval = IF.getPhi("retval", type, incomings)
                 insts.add(retval)
 
                 val returnValue = when {
-                    type == method.desc.retval -> retval
+                    type == method.returnType -> retval
                     else -> {
-                        val retvalCasted = IF.getCast("retval.casted", method.desc.retval, retval)
+                        val retvalCasted = IF.getCast("retval.casted", method.returnType, retval)
                         insts.add(retvalCasted)
                         retvalCasted
                     }

@@ -1,7 +1,10 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.ir.value.*
+import org.jetbrains.research.kfg.ir.value.BlockName
+import org.jetbrains.research.kfg.ir.value.BlockUser
+import org.jetbrains.research.kfg.ir.value.UsableBlock
+import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
@@ -188,11 +191,8 @@ class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
-        predecessors.take(1).forEach { sb.append("//predecessors ${it.name}") }
-        predecessors.drop(1).forEach { sb.append(", ${it.name}") }
-        sb.appendln()
-        instructions.take(1).forEach { sb.append("\t${it.print()}") }
-        instructions.drop(1).forEach { sb.append("\n\t${it.print()}") }
+        sb.appendln("//predecessors ${predecessors.joinToString { it.name.toString() }}")
+        sb.append(instructions.joinToString(separator = "\n\t", prefix = "\t") { it.print() })
         return sb.toString()
     }
 }
@@ -223,11 +223,8 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("$name: \t")
-        throwers.take(1).forEach { sb.append("//catches from ${it.name}") }
-        throwers.drop(1).forEach { sb.append(", ${it.name}") }
-        sb.appendln()
-        instructions.take(1).forEach { sb.append("\t${it.print()}") }
-        instructions.drop(1).forEach { sb.append("\n\t${it.print()}") }
+        sb.appendln("//catches from ${throwers.joinToString { it.name.toString() }}")
+        sb.append(instructions.joinToString(separator = "\n", prefix = "\t") { it.print() })
         return sb.toString()
     }
 

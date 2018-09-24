@@ -43,8 +43,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append("(")
-        args.dropLast(1).forEach { sb.append("${it.name}, ") }
-        args.takeLast(1).forEach { sb.append(it.name) }
+        sb.append(args.joinToString { it.name })
         sb.append("): ${retval.name}")
         return sb.toString()
     }
@@ -57,6 +56,8 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     }
 
     val desc = MethodDesc.fromDesc(mn.desc)
+    val argTypes get() = desc.args
+    val returnType get() = desc.retval
     val parameters = arrayListOf<Parameter>()
     val exceptions = hashSetOf<Class>()
     val basicBlocks = arrayListOf<BasicBlock>()
@@ -168,9 +169,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     fun print(): String {
         val sb = StringBuilder()
         sb.appendln(prototype)
-        basicBlocks.take(1).forEach { sb.appendln(it) }
-        basicBlocks.drop(1).dropLast(1).forEach { sb.appendln("\n$it") }
-        basicBlocks.drop(1).takeLast(1).forEach { sb.append("\n$it") }
+        sb.append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
         return sb.toString()
     }
 

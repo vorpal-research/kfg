@@ -3,7 +3,6 @@ package org.jetbrains.research.kfg.builder.cfg
 import org.jetbrains.research.kfg.IF
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.ArrayStoreInst
 import org.jetbrains.research.kfg.ir.value.instruction.FieldStoreInst
 import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
@@ -42,7 +41,7 @@ object BoolValueAdapter : MethodVisitor {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
         val method = bb.parent ?: throw InvalidStateError("No parent of basic block")
 
-        if (method.desc.retval === BoolType && inst.returnValue.type !== BoolType) {
+        if (method.returnType === BoolType && inst.returnValue.type !== BoolType) {
             val cast = IF.getCast(TF.boolType, inst.returnValue)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.returnValue, to = cast)
