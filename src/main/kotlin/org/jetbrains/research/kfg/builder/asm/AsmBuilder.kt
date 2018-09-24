@@ -48,7 +48,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
             val `this` = VF.getThis(TF.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
-        for ((indx, type) in method.desc.args.withIndex()) {
+        for ((indx, type) in method.argTypes.withIndex()) {
             val arg = VF.getArgument(indx, method, type)
             locals[arg] = getLocalFor(arg)
         }
@@ -477,7 +477,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
             val `this` = VF.getThis(TF.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
-        for ((indx, type) in method.desc.args.withIndex()) {
+        for ((indx, type) in method.argTypes.withIndex()) {
             val arg = VF.getArgument(indx, method, type)
             locals[arg] = getLocalFor(arg)
         }

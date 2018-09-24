@@ -3,9 +3,9 @@ package org.jetbrains.research.kfg.ir.value.instruction
 import org.jetbrains.research.kfg.InvalidAccessError
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.value.Name
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.Name
 
 class CallInst : Instruction {
     val opcode: CallOpcode
@@ -26,7 +26,7 @@ class CallInst : Instruction {
         }
 
     constructor(opcode: CallOpcode, method: Method, `class`: Class, args: Array<Value>)
-            : super(UndefinedName, method.desc.retval, args) {
+            : super(UndefinedName, method.returnType, args) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`
@@ -34,7 +34,7 @@ class CallInst : Instruction {
     }
 
     constructor(opcode: CallOpcode, method: Method, `class`: Class, obj: Value, args: Array<Value>)
-            : super(UndefinedName, method.desc.retval, arrayOf(obj).plus(args)) {
+            : super(UndefinedName, method.returnType, arrayOf(obj).plus(args)) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`
@@ -42,7 +42,7 @@ class CallInst : Instruction {
     }
 
     constructor(opcode: CallOpcode, name: Name, method: Method, `class`: Class, args: Array<Value>)
-            : super(name, method.desc.retval, args) {
+            : super(name, method.returnType, args) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`
@@ -50,7 +50,7 @@ class CallInst : Instruction {
     }
 
     constructor(opcode: CallOpcode, name: Name, method: Method, `class`: Class, obj: Value, args: Array<Value>)
-            : super(name, method.desc.retval, arrayOf(obj).plus(args)) {
+            : super(name, method.returnType, arrayOf(obj).plus(args)) {
         this.opcode = opcode
         this.method = method
         this.`class` = `class`
@@ -65,8 +65,7 @@ class CallInst : Instruction {
         if (isStatic) sb.append(`class`.name)
         else sb.append(callee.name)
         sb.append(".${method.name}(")
-        args.dropLast(1).forEach { sb.append("$it, ") }
-        args.takeLast(1).forEach { sb.append("$it") }
+        sb.append(args.joinToString())
         sb.append(")")
         return sb.toString()
     }

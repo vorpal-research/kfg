@@ -8,7 +8,10 @@ import org.jetbrains.research.kfg.ir.value.UsableValue
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueUser
 import org.jetbrains.research.kfg.ir.value.instruction.*
-import org.jetbrains.research.kfg.type.*
+import org.jetbrains.research.kfg.type.BoolType
+import org.jetbrains.research.kfg.type.mergeTypes
+import org.jetbrains.research.kfg.type.parseDesc
+import org.jetbrains.research.kfg.type.parsePrimaryType
 import org.jetbrains.research.kfg.util.DominatorTreeBuilder
 import org.jetbrains.research.kfg.util.TopologicalSorter
 import org.jetbrains.research.kfg.util.print
@@ -631,9 +634,9 @@ class CfgBuilder(val method: Method)
         val `class` = CM.getByName(insn.owner)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
-        method.desc.args.forEach { args.add(0, stack.pop()) }
+        method.argTypes.forEach { args.add(0, stack.pop()) }
 
-        val isNamed = !method.desc.retval.isVoid
+        val isNamed = !method.returnType.isVoid
         val opcode = toCallOpcode(insn.opcode)
         val call = when (insn.opcode) {
             INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
@@ -1046,7 +1049,7 @@ class CfgBuilder(val method: Method)
             locals[localIndx++] = `this`
             method.slottracker.addValue(`this`)
         }
-        for ((indx, type) in method.desc.args.withIndex()) {
+        for ((indx, type) in method.argTypes.withIndex()) {
             val arg = VF.getArgument(indx, method, type)
             locals[localIndx] = arg
             if (type.isDWord) localIndx += 2
