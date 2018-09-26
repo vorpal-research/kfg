@@ -17,7 +17,7 @@ class Package(name: String) {
     init {
         this.name = when {
             isConcrete -> name
-            else -> name.dropLast(1)
+            else -> name.removeSuffix("*").removeSuffix("/")
         }
     }
 
@@ -25,6 +25,7 @@ class Package(name: String) {
         isConcrete -> this.name == other.name
         else -> other.name.startsWith(this.name)
     }
+
     fun isChild(other: Package) = other.isParent(this)
 
     fun isParent(name: String) = isParent(Package(name))
@@ -69,5 +70,5 @@ object ClassManager {
         }
     }
 
-    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filterNot { `package`.isParent(it.`package`) }
+    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filter { `package`.isParent(it.`package`) }
 }
