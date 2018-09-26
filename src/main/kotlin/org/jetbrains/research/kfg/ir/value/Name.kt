@@ -122,6 +122,7 @@ class SlotTracker(val method: Method) {
                             val nameCopies = strings.getOrPut(value.name.name, ::arrayListOf)
                             if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
                         }
+                        else -> kotlin.Unit
                     }
                 }
             }
