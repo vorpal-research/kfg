@@ -13,10 +13,10 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
         get() = header.parent
 
     val exitingBlocks: Set<BasicBlock>
-        get() = body.filterNot { body.containsAll(it.successors) }.toSet()
+        get() = body.asSequence().filterNot { body.containsAll(it.successors) }.toSet()
 
     val loopExits: Set<BasicBlock>
-        get() = body.flatMap { it.successors }.filterNot { body.contains(it) }.toSet()
+        get() = body.flatMap { it.successors }.asSequence().filterNot { body.contains(it) }.toSet()
 
     val preheaders: List<BasicBlock>
         get() = header.predecessors.filter { !body.contains(it) }
@@ -25,7 +25,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
         get() = preheaders.first()
 
     val latches: Set<BasicBlock>
-        get() = body.filter { it.successors.contains(header) }.toSet()
+        get() = body.asSequence().filter { it.successors.contains(header) }.toSet()
 
     val latch: BasicBlock
         get() = latches.first()

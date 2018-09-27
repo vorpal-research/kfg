@@ -58,7 +58,7 @@ object LoopSimplifier : LoopVisitor {
 
     private fun buildPreheader(loop: Loop) {
         val header = loop.header
-        val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
+        val loopPredecessors = header.predecessors.asSequence().filter { it !in loop }.toSet()
         if (loopPredecessors.size == 1) return
 
         val preheader = BodyBlock("loop.preheader")
@@ -73,7 +73,7 @@ object LoopSimplifier : LoopVisitor {
 
     private fun buildLatch(loop: Loop) {
         val header = loop.header
-        val latches = loop.body.filter { it.successors.contains(header) }.toSet()
+        val latches = loop.body.asSequence().filter { it.successors.contains(header) }.toSet()
         if (latches.size == 1) return
 
         val latch = BodyBlock("loop.latch")

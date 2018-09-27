@@ -52,8 +52,8 @@ object RetvalBuilder : MethodVisitor {
                 val retval = IF.getPhi("retval", type, incomings)
                 insts.add(retval)
 
-                val returnValue = when {
-                    type == method.returnType -> retval
+                val returnValue = when (type) {
+                    method.returnType -> retval
                     else -> {
                         val retvalCasted = IF.getCast("retval.casted", method.returnType, retval)
                         insts.add(retvalCasted)

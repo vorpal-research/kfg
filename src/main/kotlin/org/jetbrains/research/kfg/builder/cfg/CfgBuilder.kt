@@ -192,7 +192,7 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                    val type = mergeTypes(incomingValues.asSequence().map { it.type }.toSet())
                     if (type != null) {
                         val newPhi = IF.getPhi(type, incomings)
                         addInstruction(bb, newPhi)
@@ -233,7 +233,7 @@ class CfgBuilder(val method: Method)
             val sf = frames.getValue(bb)
             val predFrames = bb.predecessors.map { frames.getValue(it) }
             val stacks = predFrames.map { it.stack }
-            val stackSizes = stacks.map { it.size }.toSet()
+            val stackSizes = stacks.asSequence().map { it.size }.toSet()
 
             when (bb) {
                 in cycleEntries -> {
@@ -256,7 +256,7 @@ class CfgBuilder(val method: Method)
             }
         }
         else -> {
-            val predFrame = bb.predecessors.map { frames.getValue(it) }.firstOrNull()
+            val predFrame = bb.predecessors.asSequence().map { frames.getValue(it) }.firstOrNull()
             predFrame?.stack?.forEach { stack.push(it) }
             predFrame?.locals?.forEach { local, value -> locals[local] = value }
         }
@@ -634,7 +634,7 @@ class CfgBuilder(val method: Method)
         val `class` = CM.getByName(insn.owner)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
-        method.argTypes.forEach { args.add(0, stack.pop()) }
+        method.argTypes.forEach { _ -> args.add(0, stack.pop()) }
 
         val isNamed = !method.returnType.isVoid
         val opcode = toCallOpcode(insn.opcode)
@@ -830,7 +830,7 @@ class CfgBuilder(val method: Method)
 
                         val labels = insn.labels as MutableList<LabelNode>
                         for (lbl in labels) {
-                            val lblBB = nodeToBlock.getOrPut(lbl, { BodyBlock("switch") })
+                            val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("switch") }
                             bb.addSuccessors(lblBB)
                             lblBB.addPredecessor(bb)
                         }
@@ -938,7 +938,7 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val type = mergeTypes(incomingValues.map { it.type }.toSet())
+                    val type = mergeTypes(incomingValues.asSequence().map { it.type }.toSet())
                     when (type) {
                         null -> removablePhis.add(phi)
                         else -> {
@@ -1023,8 +1023,8 @@ class CfgBuilder(val method: Method)
             } else if (instUsers.size == 1 && instUsers.first() == top) {
                 operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top)
-                operands.mapNotNull { it as? PhiInst }
-                        .mapNotNull { if (it == top) null else it }
+                operands.asSequence().mapNotNull { it as? PhiInst }
+                        .mapNotNull { if (it == top) null else it }.toList()
                         .forEach { processPhis.add(it) }
 
             } else if (removablePhis.containsAll(instUsers)) {
