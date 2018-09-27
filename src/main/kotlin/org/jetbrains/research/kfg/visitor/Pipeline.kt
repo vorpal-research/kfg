@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
 
 class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf()) {
-    private val pipeline = pipeline.map { wrap(it) }.toMutableList()
+    private val pipeline = pipeline.asSequence().map { wrap(it) }.toMutableList()
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
     operator fun plusAssign(visitor: NodeVisitor) {

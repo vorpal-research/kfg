@@ -92,7 +92,7 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
     val bodyBlocks: List<BasicBlock>
         get() {
             val catches = catchBlocks
-            return basicBlocks.filter { it !in catches }.toList()
+            return basicBlocks.asSequence().filter { it !in catches }.toList()
         }
 
     val catchBlocks: List<BasicBlock>

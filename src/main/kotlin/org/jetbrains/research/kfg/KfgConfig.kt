@@ -37,7 +37,7 @@ class KfgConfig(args: Array<String>) {
 
     fun getStringValue(param: String) = cmd.getOptionValue(param)!!
 
-    fun getOptionalValue(param: String) = cmd.getOptionValue(param)
+    fun getOptionalValue(param: String): String? = cmd.getOptionValue(param)
     fun getStringValue(param: String, default: String) = getOptionalValue(param) ?: default
 
     private fun printHelp() {

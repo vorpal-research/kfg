@@ -49,7 +49,7 @@ object ClassManager {
         val jarClasses = JarUtils.parseJarClasses(jar, `package`, flags)
         classNodes.putAll(jarClasses)
         jarClasses.forEach { (name, cn) ->
-            classes.getOrPut(name, { ConcreteClass(cn) }).init()
+            classes.getOrPut(name) { ConcreteClass(cn) }.init()
         }
         classes.values.forEach {
             it.methods.forEach { _, method ->

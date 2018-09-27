@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg.type
 
+import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.InvalidTypeDescError
 import org.jetbrains.research.kfg.TF
-import org.jetbrains.research.kfg.InvalidStateError
-import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
@@ -16,21 +16,21 @@ fun Type.toInternalDesc(): String = when {
 
 fun mergeTypes(types: Set<Type>): Type? = when {
     TF.nullType in types -> {
-        val filtered = types.filterNot { it == TF.nullType }.toSet()
+        val filtered = types.asSequence().filterNot { it == TF.nullType }.toSet()
         when {
             filtered.isEmpty() -> null
             else -> mergeTypes(filtered)
         }
     }
     types.size == 1 -> types.first()
-    types.all { it is Integral } -> types.map { it as Integral }.maxBy { it.width }
+    types.all { it is Integral } -> types.asSequence().map { it as Integral }.maxBy { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
         var result = TF.objectType
         for (i in 0..classes.lastIndex) {
-            val isAncestor = classes.fold(true, { acc, `class` ->
+            val isAncestor = classes.fold(true) { acc, `class` ->
                 acc && classes[i].`class`.isAncestor(`class`.`class`)
-            })
+            }
 
             if (isAncestor) {
                 result = classes[i]

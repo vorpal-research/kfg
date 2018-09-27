@@ -145,7 +145,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -156,7 +156,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
     }
 
     override fun visitBinaryInst(inst: BinaryInst) {
@@ -165,7 +165,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -217,7 +217,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         addOperandsToStack(cond.operands)
         val insn = JumpInsnNode(opcode, getLabel(inst.trueSuccessor))
         currentInsnList.add(insn)
-        inst.operands.forEach { stackPop() }
+        repeat(inst.operands.size) { stackPop() }
 
         val jump = JumpInsnNode(GOTO, getLabel(inst.falseSuccessor))
         currentInsnList.add(jump)
@@ -267,7 +267,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -276,7 +276,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
     }
 
     override fun visitExitMonitorInst(inst: ExitMonitorInst) {
@@ -284,7 +284,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
     }
 
     override fun visitNewArrayInst(inst: NewArrayInst) {
@@ -297,7 +297,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -311,7 +311,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -322,7 +322,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         addOperandsToStack(operands)
         val insn = InsnNode(ATHROW)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
     }
 
     override fun visitSwitchInst(inst: SwitchInst) {
@@ -344,7 +344,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -354,7 +354,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
     }
 
     override fun visitInstanceOfInst(inst: InstanceOfInst) {
@@ -362,7 +362,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         stackPush(inst)
     }
 
@@ -385,7 +385,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
-        operands.forEach { stackPop() }
+        repeat(operands.size) { stackPop() }
         if (!inst.type.isVoid) stackPush(inst)
     }
 
@@ -416,7 +416,7 @@ class AsmBuilder(val method: Method) : MethodVisitor {
                 val operands = inst.operands
                 addOperandsToStack(operands)
                 currentInsnList.add(insn)
-                operands.forEach { stackPop() }
+                repeat(operands.size) { stackPop() }
                 stackPush(inst)
             }
         }
