@@ -8,14 +8,11 @@ interface Real : Type {
 }
 
 object FloatType : Real {
-    override val bitsize: Int
-        get() = Type.WORD
-
+    override val bitsize = Type.WORD
     override val name = "float"
+    override val asmDesc = "F"
 
     override fun toString() = name
-    override val asmDesc get() = "F"
-
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -24,14 +21,12 @@ object FloatType : Real {
 }
 
 object DoubleType : Real {
-    override val bitsize: Int
-        get() = Type.DWORD
-
+    override val bitsize = Type.DWORD
     override val name = "double"
-    override fun toString() = name
-    override val isDWord get() = true
-    override val asmDesc get() = "D"
+    override val isDWord = true
+    override val asmDesc = "D"
 
+    override fun toString() = name
     override fun hashCode() = simpleHash(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

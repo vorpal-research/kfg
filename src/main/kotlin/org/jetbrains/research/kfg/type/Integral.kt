@@ -3,17 +3,13 @@ package org.jetbrains.research.kfg.type
 import org.jetbrains.research.kfg.util.simpleHash
 
 interface Integral : Type {
-    override val bitsize: Int
-        get() = Type.WORD
+    override val bitsize get() = Type.WORD
 
     val width: Int
     val signed: Boolean
 
-    override val isPrimary
-        get() = true
-
-    override val isIntegral
-        get() = true
+    override val isPrimary get() = true
+    override val isIntegral get() = true
 
     val isByte get() = false
     val isShort get() = false
@@ -26,9 +22,7 @@ object BoolType : Integral {
     override val name = "bool"
     override val width = 32
     override val signed = false
-
-    override val asmDesc
-        get() = "Z"
+    override val asmDesc = "Z"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -39,10 +33,8 @@ object ByteType : Integral {
     override val name = "byte"
     override val width = 8
     override val signed = true
-    override val isByte get() = true
-
-    override val asmDesc
-        get() = "B"
+    override val isByte = true
+    override val asmDesc = "B"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -53,8 +45,8 @@ object ShortType : Integral {
     override val name = "short"
     override val width = 16
     override val signed = true
-    override val isShort get() = true
-    override val asmDesc get() = "S"
+    override val isShort = true
+    override val asmDesc = "S"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -65,8 +57,8 @@ object IntType : Integral {
     override val name = "int"
     override val width = 32
     override val signed = true
-    override val isInt get() = true
-    override val asmDesc get() = "I"
+    override val isInt = true
+    override val asmDesc = "I"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -74,15 +66,13 @@ object IntType : Integral {
 }
 
 object LongType : Integral {
-    override val bitsize: Int
-        get() = Type.DWORD
-
+    override val bitsize = Type.DWORD
     override val name = "long"
     override val width = 64
     override val signed = true
-    override val isLong get() = true
-    override val isDWord get() = true
-    override val asmDesc get() = "J"
+    override val isLong = true
+    override val isDWord = true
+    override val asmDesc = "J"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)
@@ -93,8 +83,8 @@ object CharType : Integral {
     override val name = "char"
     override val width = 16
     override val signed = false
-    override val isChar get() = true
-    override val asmDesc get() = "C"
+    override val isChar = true
+    override val asmDesc = "C"
 
     override fun toString() = name
     override fun hashCode() = simpleHash(width, signed)

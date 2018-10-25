@@ -16,7 +16,7 @@ interface GraphNode<out T : Any> {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TopologicalSorter<T : GraphNode<T>>(val nodes: Set<T>) {
+class TopologicalSorter<T : GraphNode<T>>(private val nodes: Set<T>) {
     private val order = arrayListOf<T>()
     private val cycled = hashSetOf<T>()
     private val colors = hashMapOf<T, Color>()
@@ -45,7 +45,7 @@ class TopologicalSorter<T : GraphNode<T>>(val nodes: Set<T>) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LoopDetector<T : GraphNode<T>>(val nodes: Set<T>) {
+class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
     fun search(): Map<T, List<T>> {
         val tree = DominatorTreeBuilder(nodes).build()
         val backEdges = arrayListOf<Pair<T, T>>()
@@ -62,7 +62,7 @@ class LoopDetector<T : GraphNode<T>>(val nodes: Set<T>) {
         val result = hashMapOf<T, MutableList<T>>()
         for ((header, end) in backEdges) {
             val body = arrayListOf(header)
-            val stack = Stack<T>()
+            val stack = ArrayDeque<T>()
             stack.push(end)
             while (stack.isNotEmpty()) {
                 val top = stack.pop()
@@ -95,16 +95,16 @@ class GraphView(
     }
 }
 
-fun viewCfg(name: String, nodes: List<GraphView>, dot: String = "/usr/bin/dot", browser: String = "/usr/bin/chromium") {
+fun viewCfg(name: String, nodes: List<GraphView>, dot: String, browser: String) {
     Graph.setDefaultCmd(dot)
     val graph = Graph(name)
     graph.addNodes(*nodes.map {
         Node(it.name).setShape(Shape.box).setLabel(it.label).setFontSize(12.0)
     }.toTypedArray())
 
-    nodes.forEach {
-        for (succ in it.successors) {
-            graph.addEdge(Edge(it.name, succ.name))
+    for (node in nodes) {
+        for (successor in node.successors) {
+            graph.addEdge(Edge(node.name, successor.name))
         }
     }
     val file = graph.dot2file("svg")

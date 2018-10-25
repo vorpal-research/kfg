@@ -34,7 +34,7 @@ class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by m
     fun getIdom(node: T) = this.getValue(node).idom
 }
 
-class DominatorTreeBuilder<T : GraphNode<T>>(val nodes: Set<T>) {
+class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
     val tree = DominatorTree<T>()
 
     private var nodeCounter: Int = 0

@@ -148,7 +148,7 @@ object LoopAnalysis : MethodVisitor {
 
 interface LoopVisitor : MethodVisitor {
     override fun visit(method: Method) {
-        val loops: List<Loop> = LoopManager.getMethodLoopInfo(method)
+        val loops = LoopManager.getMethodLoopInfo(method)
         loops.forEach { visit(it) }
         updateLoopInfo(method)
     }

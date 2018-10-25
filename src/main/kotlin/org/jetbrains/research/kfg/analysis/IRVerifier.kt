@@ -42,7 +42,7 @@ object IRVerifier : MethodVisitor {
 
         inst.run {
             require(parent != null) { "Instruction $inst with no parent in method" }
-            require(method.basicBlocks.contains(parent)) { "Instruction parent does not belong to method" }
+            require(parent in method) { "Instruction parent does not belong to method" }
         }
 
         super.visitInstruction(inst)
@@ -51,8 +51,8 @@ object IRVerifier : MethodVisitor {
     override fun visitPhiInst(inst: PhiInst) {
         val (method, bb) = inst.parents
 
-        inst.predecessors.forEach {
-            require(method.basicBlocks.contains(it)) { "Phi ${inst.print()} incoming from unknown block" }
+        for (predecessor in inst.predecessors) {
+            require(predecessor in method) { "Phi ${inst.print()} incoming from unknown block" }
         }
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
@@ -60,19 +60,25 @@ object IRVerifier : MethodVisitor {
             else -> setOf()
         }
 
-        require(predecessors.size == inst.predecessors.size) { "Phi insts predecessors are different from block predecessors" }
-        inst.predecessors.forEach {
-            require(predecessors.contains(it)) { "Phi insts predecessors are different from block predecessors" }
+        require(predecessors.size == inst.predecessors.size) {
+            "Phi insts predecessors are different from block predecessors"
+        }
+        for (predecessor in inst.predecessors) {
+            require(predecessor in predecessors) {
+                "Phi insts predecessors are different from block predecessors"
+            }
         }
     }
 
     override fun visitTerminateInst(inst: TerminateInst) {
         val (method, bb) = inst.parents
 
-        require(bb.successors.size == inst.successors.toSet().size) { "Terminate inst ${inst.print()} successors are different from block successors" }
-        inst.successors.forEach {
-            require(method.basicBlocks.contains(it)) { "Terminate inst to unknown block" }
-            require(bb.successors.contains(it)) { "Terminate insts successors are different from block successors" }
+        require(bb.successors.size == inst.successors.toSet().size) {
+            "Terminate inst ${inst.print()} successors are different from block successors"
+        }
+        for (successor in inst.successors) {
+            require(successor in method) { "Terminate inst to unknown block" }
+            require(successor in bb.successors) { "Terminate insts successors are different from block successors" }
         }
         super.visitTerminateInst(inst)
     }
@@ -97,8 +103,8 @@ object IRVerifier : MethodVisitor {
                 require(it in method) { "Block ${bb.name} predecessor ${it.name} does not belong to method" }
             }
         }
-        bb.successors.forEach {
-            require(it in method) { "Block successor does not belong to method" }
+        for (successor in bb.successors) {
+            require(successor in method) { "Block successor does not belong to method" }
         }
         require(bb.last() is TerminateInst) { "Block should end with terminate inst" }
         require(bb.mapNotNull { it as? TerminateInst }.size == 1) { "Block should have exactly one terminator" }
