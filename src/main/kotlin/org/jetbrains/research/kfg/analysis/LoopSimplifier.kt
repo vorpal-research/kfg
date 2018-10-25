@@ -41,9 +41,9 @@ object LoopSimplifier : LoopVisitor {
             val toValue = when {
                 fromValues.size == 1 -> fromValues.first()
                 else -> {
-                    val newphi = IF.getPhi(phi.type, fromIncomings)
-                    to += newphi
-                    newphi
+                    val newPhi = IF.getPhi(phi.type, fromIncomings)
+                    to += newPhi
+                    newPhi
                 }
             }
 

@@ -27,7 +27,6 @@ class Package(name: String) {
     }
 
     fun isChild(other: Package) = other.isParent(this)
-
     fun isParent(name: String) = isParent(Package(name))
     fun isChild(name: String) = isChild(Package(name))
 
@@ -42,8 +41,8 @@ class Package(name: String) {
 }
 
 object ClassManager {
-    val classNodes = hashMapOf<String, ClassNode>()
-    val classes = hashMapOf<String, Class>()
+    private val classNodes = hashMapOf<String, ClassNode>()
+    private val classes = hashMapOf<String, Class>()
 
     fun parseJar(jar: JarFile, `package`: Package = Package("*"), flags: Flags = Flags.readSkipFrames) {
         val jarClasses = JarUtils.parseJarClasses(jar, `package`, flags)

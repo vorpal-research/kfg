@@ -25,6 +25,7 @@ private fun setCurrentDirectory(path: File) {
 
 
 val JarEntry.isClass get() = this.name.endsWith(".class")
+val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
 
@@ -49,7 +50,7 @@ data class Flags(val value: Int) {
     operator fun plus(other: Flags) = this.merge(other)
 }
 
-class KfgClassWriter(val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
+class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
 
     private fun readClass(type: String) = try {
         java.lang.Class.forName(type.replace('/', '.'), false, loader)
@@ -87,6 +88,9 @@ class JarBuilder(val name: String) {
         manifest.entries[key] = attrs
     }
 
+    /**
+     * Initializes jar file output stream. Should be called only after manifest file is configured
+     */
     private fun init() {
         jar = JarOutputStream(FileOutputStream(name), manifest)
     }
@@ -109,6 +113,10 @@ class JarBuilder(val name: String) {
             entry.time = source.lastModified()
             add(entry, FileInputStream(source))
         }
+    }
+
+    operator fun plusAssign(source: File) {
+        add(source)
     }
 
     fun add(entry: JarEntry, fis: InputStream) {
@@ -138,7 +146,10 @@ object JarUtils {
         return classNode
     }
 
-    private fun writeClassNode(loader: ClassLoader, cn: ClassNode, filename: String, flags: Flags = Flags.writeComputeAll): File {
+    private fun writeClassNode(loader: ClassLoader,
+                               cn: ClassNode,
+                               filename: String,
+                               flags: Flags = Flags.writeComputeAll): File {
         val cw = KfgClassWriter(loader, flags)
         val cca = CheckClassAdapter(cw)
         cn.accept(cca)
@@ -166,7 +177,10 @@ object JarUtils {
         return classes
     }
 
-    fun writeClass(loader: ClassLoader, `class`: Class, filename: String = "${`class`.fullname}.class", flags: Flags = Flags.writeComputeFrames) =
+    fun writeClass(loader: ClassLoader,
+                   `class`: Class,
+                   filename: String = "${`class`.fullname}.class",
+                   flags: Flags = Flags.writeComputeFrames) =
             writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
 
     fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
@@ -209,18 +223,18 @@ object JarUtils {
         val builder = JarBuilder("$currentDir/$jarName.jar")
         val enumeration = jar.entries()
 
-        for (it in jar.manifest.mainAttributes) {
-            builder.addMainAttribute(it.key, it.value)
+        for ((key, value) in jar.manifest.mainAttributes) {
+            builder.addMainAttribute(key, value)
         }
 
-        for (it in jar.manifest.entries) {
-            builder.addManifestEntry(it.key, it.value)
+        for ((key, value) in jar.manifest.entries) {
+            builder.addManifestEntry(key, value)
         }
         writeClasses(jar, `package`)
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
-            if (entry.name == "META-INF/MANIFEST.MF") continue
+            if (entry.isManifest) continue
 
             if (entry.isClass && `package`.isParent(entry.name)) {
                 val `class` = CM.getByName(entry.name.removeSuffix(".class"))

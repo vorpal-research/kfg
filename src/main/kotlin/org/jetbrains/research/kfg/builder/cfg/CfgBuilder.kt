@@ -116,6 +116,22 @@ class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : Valu
     }
 }
 
+private val AbstractInsnNode.isDebugNode get() = when (this) {
+    is LineNumberNode -> true
+    is FrameNode -> true
+    else -> false
+}
+
+private val AbstractInsnNode.isTerminate get() = when {
+    this.isDebugNode -> false
+    else -> isTerminateInst(this.opcode)
+}
+
+private val AbstractInsnNode.throwsException get() = when {
+    this.isDebugNode -> false
+    else -> isExceptionThrowing(this.opcode)
+}
+
 class CfgBuilder(val method: Method)
     : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.asmDesc,
         method.mn.signature, method.exceptions.map { it.fullname }.toTypedArray()) {
@@ -151,8 +167,8 @@ class CfgBuilder(val method: Method)
     }
 
     private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, size: Int) {
-        for (indx in 0 until size) {
-            val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
+        for (index in 0 until size) {
+            val incomings = predFrames.map { it.bb to it.stack[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
@@ -260,22 +276,6 @@ class CfgBuilder(val method: Method)
             predFrame?.stack?.forEach { stack.push(it) }
             predFrame?.locals?.forEach { local, value -> locals[local] = value }
         }
-    }
-
-    private fun isDebugNode(node: AbstractInsnNode) = when (node) {
-        is LineNumberNode -> true
-        is FrameNode -> true
-        else -> false
-    }
-
-    private fun isTerminateInst(insn: AbstractInsnNode) = when {
-        isDebugNode(insn) -> false
-        else -> isTerminateInst(insn.opcode)
-    }
-
-    private fun throwsException(insn: AbstractInsnNode) = when {
-        isDebugNode(insn) -> false
-        else -> isExceptionThrowing(insn.opcode)
     }
 
     private fun convertConst(insn: InsnNode) {
@@ -788,7 +788,7 @@ class CfgBuilder(val method: Method)
                         bb = nodeToBlock.getOrPut(insn) { BodyBlock("label") }
                         insnList = blockToNode.getOrPut(bb, ::arrayListOf)
 
-                        if (!isTerminateInst(insn.previous)) {
+                        if (!insn.previous.isTerminate) {
                             val prev = nodeToBlock.getValue(insn.previous)
                             bb.addPredecessor(prev)
                             prev.addSuccessor(bb)
@@ -836,9 +836,9 @@ class CfgBuilder(val method: Method)
                         }
                     }
                     else -> {
-                        if (throwsException(insn) && (insn.next != null)) {
+                        if (insn.throwsException && (insn.next != null)) {
                             val next = nodeToBlock.getOrPut(insn.next) { BodyBlock("bb") }
-                            if (!isTerminateInst(insn)) {
+                            if (!insn.isTerminate) {
                                 bb.addSuccessor(next)
                                 next.addPredecessor(bb)
                             }
