@@ -1,8 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import org.jetbrains.research.kfg.IF
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.InvalidStateError
-import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.instruction.ArrayStoreInst
 import org.jetbrains.research.kfg.ir.value.instruction.FieldStoreInst
 import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
@@ -11,7 +10,7 @@ import org.jetbrains.research.kfg.type.BoolType
 import org.jetbrains.research.kfg.type.Integral
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-object BoolValueAdapter : MethodVisitor {
+class BoolValueAdapter(override val cm: ClassManager) : MethodVisitor {
     override fun cleanup() {}
 
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
@@ -21,7 +20,7 @@ object BoolValueAdapter : MethodVisitor {
                 ?: throw InvalidStateError("Non-array type of array store reference")
 
         if (arrayType.component === BoolType && inst.value.type is Integral) {
-            val cast = IF.getCast(TF.boolType, inst.value)
+            val cast = instructions.getCast(types.boolType, inst.value)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.value, to = cast)
         }
@@ -31,7 +30,7 @@ object BoolValueAdapter : MethodVisitor {
         val bb = inst.parent ?: throw InvalidStateError("No parent of method instruction")
 
         if (inst.type === BoolType && inst.value.type is Integral) {
-            val cast = IF.getCast(TF.boolType, inst.value)
+            val cast = instructions.getCast(types.boolType, inst.value)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.value, to = cast)
         }
@@ -42,7 +41,7 @@ object BoolValueAdapter : MethodVisitor {
         val method = bb.parent ?: throw InvalidStateError("No parent of basic block")
 
         if (method.returnType === BoolType && inst.returnValue.type !== BoolType) {
-            val cast = IF.getCast(TF.boolType, inst.returnValue)
+            val cast = instructions.getCast(types.boolType, inst.returnValue)
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(from = inst.returnValue, to = cast)
         }

@@ -1,18 +1,19 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
-abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), cn.access) {
+abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
     class MethodKey(val name: String, val desc: MethodDesc) {
-        constructor(name: String, desc: String) : this(name, MethodDesc.fromDesc(desc))
+        constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
 
         override fun hashCode() = simpleHash(name, desc)
         override fun equals(other: Any?): Boolean {
@@ -36,19 +37,19 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         get() = fullname.replace('/', '.')
 
     val superClass
-        get() = if (cn.superName != null) CM.getByName(cn.superName) else null
+        get() = if (cn.superName != null) cm.getByName(cn.superName) else null
 
     val interfaces
-        get() = if (cn.interfaces != null) cn.interfaces.map { CM.getByName(it as String) } else listOf()
+        get() = if (cn.interfaces != null) cn.interfaces.map { cm.getByName(it as String) } else listOf()
 
     val outerClass
-        get() = if (cn.outerClass != null) CM.getByName(cn.outerClass) else null
+        get() = if (cn.outerClass != null) cm.getByName(cn.outerClass) else null
 
     val outerMethod
         get() = if (cn.outerMethod != null) outerClass?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
 
     val innerClasses
-        get() = if (cn.innerClasses != null) cn.innerClasses.map { CM.getByName(it as String) } else listOf()
+        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.getByName(it as String) } else listOf()
 
     override val asmDesc
         get() = "L$fullname;"
@@ -58,12 +59,12 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.invisibleAnnotations as List<AnnotationNode>?))
         cn.fields.forEach {
             it as FieldNode
-            val field = Field(it, this)
+            val field = Field(cm, it, this)
             fields[FieldKey(field.name, field.type)] = field
         }
         cn.methods.forEach {
             it as MethodNode
-            methods[MethodKey(it.name, it.desc)] = Method(it, this)
+            methods[MethodKey(cm.type,  it.name, it.desc)] = Method(cm, it, this)
         }
     }
 
@@ -76,7 +77,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
 
     abstract fun getField(name: String, type: Type): Field
 
-    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(desc))
+    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(cm.type, desc))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = fullname
@@ -89,7 +90,7 @@ abstract class Class(val cn: ClassNode) : Node(cn.name.substringAfterLast('/'), 
     }
 }
 
-class ConcreteClass(cn: ClassNode) : Class(cn) {
+class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getFieldConcrete(name: String, type: Type): Field? =
             fields.getOrElse(FieldKey(name, type)) { superClass?.getFieldConcrete(name, type) }
 
@@ -133,13 +134,13 @@ class ConcreteClass(cn: ClassNode) : Class(cn) {
     }
 }
 
-class OuterClass(cn: ClassNode) : Class(cn) {
+class OuterClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
     override fun getField(name: String, type: Type): Field = fields.getOrPut(FieldKey(name, type)) {
         val fn = FieldNode(0, name, type.asmDesc, null, null)
-        Field(fn, this)
+        Field(cm, fn, this)
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
@@ -148,7 +149,7 @@ class OuterClass(cn: ClassNode) : Class(cn) {
             val mn = MethodNode()
             mn.name = name
             mn.desc = desc.asmDesc
-            Method(mn, this)
+            Method(cm, mn, this)
         }
     }
 

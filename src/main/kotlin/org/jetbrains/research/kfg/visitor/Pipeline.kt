@@ -1,11 +1,11 @@
 package org.jetbrains.research.kfg.visitor
 
-import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
 
-class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf()) {
+class Pipeline(val cm: ClassManager, val target: Package, pipeline: List<NodeVisitor> = arrayListOf()) {
     private val pipeline = pipeline.asSequence().map { wrap(it) }.toMutableList()
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
@@ -21,6 +21,8 @@ class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf())
     private fun wrap(visitor: NodeVisitor): ClassVisitor = when (visitor) {
         is ClassVisitor -> visitor
         is MethodVisitor -> object : ClassVisitor {
+            override val cm get() = visitor.cm
+
             override fun cleanup() {
                 visitor.cleanup()
             }
@@ -31,6 +33,8 @@ class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf())
             }
         }
         else -> object : ClassVisitor {
+            override val cm get() = visitor.cm
+
             override fun cleanup() {
                 visitor.cleanup()
             }
@@ -43,7 +47,7 @@ class Pipeline(val target: Package, pipeline: List<NodeVisitor> = arrayListOf())
     }
 
     fun run() {
-        val classes = CM.getByPackage(target)
+        val classes = cm.getByPackage(target)
         for (pass in pipeline) {
             for (`class` in classes) {
                 pass.visit(`class`)

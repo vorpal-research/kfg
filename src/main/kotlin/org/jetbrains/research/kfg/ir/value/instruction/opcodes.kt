@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.TF
 import org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.simpleHash
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
@@ -84,11 +84,11 @@ fun toCmpOpcode(opcode: Int) = when (opcode) {
     else -> throw InvalidOpcodeError("Cmp opcode $opcode")
 }
 
-fun getCmpResultType(opcode: CmpOpcode) = when (opcode) {
-    is CmpOpcode.Cmp -> TF.intType
-    is CmpOpcode.Cmpl -> TF.intType
-    is CmpOpcode.Cmpg -> TF.intType
-    else -> TF.boolType
+fun getCmpResultType(tf: TypeFactory, opcode: CmpOpcode) = when (opcode) {
+    is CmpOpcode.Cmp -> tf.intType
+    is CmpOpcode.Cmpl -> tf.intType
+    is CmpOpcode.Cmpg -> tf.intType
+    else -> tf.boolType
 }
 
 sealed class CmpOpcode {

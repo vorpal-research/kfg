@@ -94,7 +94,7 @@
                         <goals>
                             <goal>test</goal>
                         </goals>
-                        <phase>pre-integration-test</phase>
+                        <phase>verify</phase>
                         <configuration>
                             <excludes>
                                 <exclude>none</exclude>

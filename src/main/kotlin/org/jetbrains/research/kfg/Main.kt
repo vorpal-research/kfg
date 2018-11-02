@@ -12,6 +12,6 @@ fun main(args: Array<String>) {
     val `package` = Package(cfg.getStringValue("package", "*"))
     val target = File(cfg.getStringValue("target", "instrumented/"))
 
-    CM.parseJar(jar, `package`, Flags.readAll)
-    JarUtils.updateJar(jar, target, `package`)
+    val cm = ClassManager(jar, `package`, Flags.readAll)
+    JarUtils.updateJar(cm, jar, target, `package`)
 }

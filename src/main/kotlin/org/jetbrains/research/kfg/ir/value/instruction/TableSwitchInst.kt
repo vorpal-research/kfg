@@ -2,11 +2,11 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.value.UndefinedName
-import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.type.Type
 
-class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock, branches: Array<BasicBlock>)
-    : TerminateInst(UndefinedName, TF.voidType, arrayOf(index, min, max), arrayOf(default, *branches)) {
+class TableSwitchInst(type: Type, index: Value, min: Value, max: Value, default: BasicBlock, branches: Array<BasicBlock>)
+    : TerminateInst(UndefinedName, type, arrayOf(index, min, max), arrayOf(default, *branches)) {
 
     val index: Value
         get() = ops[0]
@@ -28,5 +28,5 @@ class TableSwitchInst(index: Value, min: Value, max: Value, default: BasicBlock,
         return sb.toString()
     }
 
-    override fun clone(): Instruction = TableSwitchInst(index, min, max, getDefault(), getBranches().toTypedArray())
+    override fun clone(): Instruction = TableSwitchInst(type, index, min, max, getDefault(), getBranches().toTypedArray())
 }

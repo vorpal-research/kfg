@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.util
 
-import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
@@ -177,13 +177,13 @@ object JarUtils {
         return classes
     }
 
-    fun writeClass(loader: ClassLoader,
+    fun writeClass(cm: ClassManager, loader: ClassLoader,
                    `class`: Class,
                    filename: String = "${`class`.fullname}.class",
                    flags: Flags = Flags.writeComputeFrames) =
-            writeClassNode(loader, ClassBuilder(`class`).build(), filename, flags)
+            writeClassNode(loader, ClassBuilder(cm, `class`).build(), filename, flags)
 
-    fun writeClasses(jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
+    fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
         val loader = jar.classLoader
 
         val currentDir = getCurrentDirectory()
@@ -195,10 +195,10 @@ object JarUtils {
 
             if (entry.isClass) {
                 if (`package`.isParent(entry.name)) {
-                    val `class` = CM.getByName(entry.name.removeSuffix(".class"))
+                    val `class` = cm.getByName(entry.name.removeSuffix(".class"))
                     val localPath = "${`class`.fullname}.class"
                     val path = "$currentDir/$localPath"
-                    writeClass(loader, `class`, path, Flags.writeComputeFrames)
+                    writeClass(cm, loader, `class`, path, Flags.writeComputeFrames)
                 } else if (writeAllClasses) {
                     val path = "$currentDir/${entry.name}"
                     val classNode = readClassNode(jar.getInputStream(entry))
@@ -208,14 +208,14 @@ object JarUtils {
         }
     }
 
-    fun writeClassesToTarget(jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
+    fun writeClassesToTarget(cm: ClassManager, jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
         val workingDir = getCurrentDirectory()
         setCurrentDirectory(target)
-        writeClasses(jar, `package`, writeAllClasses)
+        writeClasses(cm, jar, `package`, writeAllClasses)
         setCurrentDirectory(workingDir)
     }
 
-    fun updateJar(jar: JarFile, target: File, `package`: Package): JarFile {
+    fun updateJar(cm: ClassManager, jar: JarFile, target: File, `package`: Package): JarFile {
         val workingDir = getCurrentDirectory()
         setCurrentDirectory(target)
         val currentDir = getCurrentDirectory()
@@ -230,14 +230,14 @@ object JarUtils {
         for ((key, value) in jar.manifest.entries) {
             builder.addManifestEntry(key, value)
         }
-        writeClasses(jar, `package`)
+        writeClasses(cm, jar, `package`)
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
             if (entry.isManifest) continue
 
             if (entry.isClass && `package`.isParent(entry.name)) {
-                val `class` = CM.getByName(entry.name.removeSuffix(".class"))
+                val `class` = cm.getByName(entry.name.removeSuffix(".class"))
                 val localPath = "${`class`.fullname}.class"
                 val path = "$currentDir/$localPath"
 

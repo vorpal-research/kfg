@@ -132,9 +132,12 @@ private val AbstractInsnNode.throwsException get() = when {
     else -> isExceptionThrowing(this.opcode)
 }
 
-class CfgBuilder(val method: Method)
+class CfgBuilder(val cm: ClassManager, val method: Method)
     : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.asmDesc,
         method.mn.signature, method.exceptions.map { it.fullname }.toTypedArray()) {
+    private val instFactory get() = cm.instruction
+    val values get() = cm.value
+    val types get() = cm.type
 
     inner class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
@@ -172,7 +175,7 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val newPhi = IF.getPhi(incomingValues.first().type, incomings)
+                    val newPhi = instFactory.getPhi(incomingValues.first().type, incomings)
                     addInstruction(bb, newPhi)
                     stack.push(newPhi)
                 }
@@ -186,7 +189,7 @@ class CfgBuilder(val method: Method)
         val stacks = predFrames.map { it.stack }
         for (indx in 0 until stackSize) {
             val type = stacks.filter { it.size > indx }.map { it[indx] }.first().type
-            val phi = IF.getPhi(type, mapOf())
+            val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
             stack.push(phi)
             sf.stackPhis.add(phi as PhiInst)
@@ -208,9 +211,9 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val type = mergeTypes(incomingValues.asSequence().map { it.type }.toSet())
+                    val type = mergeTypes(types, incomingValues.asSequence().map { it.type }.toSet())
                     if (type != null) {
-                        val newPhi = IF.getPhi(type, incomings)
+                        val newPhi = instFactory.getPhi(type, incomings)
                         addInstruction(bb, newPhi)
                         locals[local] = newPhi
                     }
@@ -224,7 +227,7 @@ class CfgBuilder(val method: Method)
         val bb = sf.bb
         for (local in definedLocals) {
             val type = predFrames.mapNotNull { it.locals[local] }.first().type
-            val phi = IF.getPhi(type, mapOf())
+            val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
             locals[local] = phi
             sf.localPhis[local] = phi as PhiInst
@@ -233,7 +236,7 @@ class CfgBuilder(val method: Method)
 
     private fun recoverState(bb: BasicBlock) = when (bb) {
         is CatchBlock -> {
-            val inst = IF.getCatch(bb.exception)
+            val inst = instFactory.getCatch(bb.exception)
             addInstruction(bb, inst)
             stack.push(inst)
 
@@ -281,12 +284,12 @@ class CfgBuilder(val method: Method)
     private fun convertConst(insn: InsnNode) {
         val opcode = insn.opcode
         val cnst = when (opcode) {
-            ACONST_NULL -> VF.getNullConstant()
-            ICONST_M1 -> VF.getIntConstant(-1)
-            in ICONST_0..ICONST_5 -> VF.getIntConstant(opcode - ICONST_0)
-            in LCONST_0..LCONST_1 -> VF.getLongConstant((opcode - LCONST_0).toLong())
-            in FCONST_0..FCONST_2 -> VF.getFloatConstant((opcode - FCONST_0).toFloat())
-            in DCONST_0..DCONST_1 -> VF.getDoubleConstant((opcode - DCONST_0).toDouble())
+            ACONST_NULL -> values.getNullConstant()
+            ICONST_M1 -> values.getIntConstant(-1)
+            in ICONST_0..ICONST_5 -> values.getIntConstant(opcode - ICONST_0)
+            in LCONST_0..LCONST_1 -> values.getLongConstant((opcode - LCONST_0).toLong())
+            in FCONST_0..FCONST_2 -> values.getFloatConstant((opcode - FCONST_0).toFloat())
+            in DCONST_0..DCONST_1 -> values.getDoubleConstant((opcode - DCONST_0).toDouble())
             else -> throw InvalidOpcodeError("Unknown const $opcode")
         }
         stack.push(cnst)
@@ -296,7 +299,7 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val index = stack.pop()
         val arrayRef = stack.pop()
-        val inst = IF.getArrayLoad(arrayRef, index)
+        val inst = instFactory.getArrayLoad(arrayRef, index)
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -306,7 +309,7 @@ class CfgBuilder(val method: Method)
         val value = stack.pop()
         val index = stack.pop()
         val array = stack.pop()
-        addInstruction(bb, IF.getArrayStore(array, index, value))
+        addInstruction(bb, instFactory.getArrayStore(array, index, value))
     }
 
     private fun convertPop(insn: InsnNode) {
@@ -429,7 +432,7 @@ class CfgBuilder(val method: Method)
         val rhv = stack.pop()
         val lhv = stack.pop()
         val binOp = toBinaryOpcode(insn.opcode)
-        val inst = IF.getBinary(binOp, lhv, rhv)
+        val inst = instFactory.getBinary(binOp, lhv, rhv)
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -442,7 +445,7 @@ class CfgBuilder(val method: Method)
             ARRAYLENGTH -> UnaryOpcode.LENGTH
             else -> throw InvalidOpcodeError("Unary opcode ${insn.opcode}")
         }
-        val inst = IF.getUnary(op, operand)
+        val inst = instFactory.getUnary(op, operand)
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -451,16 +454,16 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val op = stack.pop()
         val type = when (insn.opcode) {
-            in arrayOf(I2L, F2L, D2L) -> TF.longType
-            in arrayOf(I2F, L2F, D2F) -> TF.floatType
-            in arrayOf(I2D, L2D, F2D) -> TF.doubleType
-            in arrayOf(L2I, F2I, D2I) -> TF.intType
-            I2B -> TF.byteType
-            I2C -> TF.charType
-            I2S -> TF.shortType
+            in arrayOf(I2L, F2L, D2L) -> types.longType
+            in arrayOf(I2F, L2F, D2F) -> types.floatType
+            in arrayOf(I2D, L2D, F2D) -> types.doubleType
+            in arrayOf(L2I, F2I, D2I) -> types.intType
+            I2B -> types.byteType
+            I2C -> types.charType
+            I2S -> types.shortType
             else -> throw InvalidOpcodeError("Cast opcode ${insn.opcode}")
         }
-        val inst = IF.getCast(type, op)
+        val inst = instFactory.getCast(type, op)
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -470,8 +473,8 @@ class CfgBuilder(val method: Method)
         val lhv = stack.pop()
         val rhv = stack.pop()
         val op = toCmpOpcode(insn.opcode)
-        val resType = getCmpResultType(op)
-        val inst = IF.getCmp(resType, op, lhv, rhv)
+        val resType = getCmpResultType(types, op)
+        val inst = instFactory.getCmp(resType, op, lhv, rhv)
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -479,10 +482,10 @@ class CfgBuilder(val method: Method)
     private fun convertReturn(insn: InsnNode) {
         val bb = nodeToBlock.getValue(insn)
         when (RETURN) {
-            insn.opcode -> addInstruction(bb, IF.getReturn())
+            insn.opcode -> addInstruction(bb, instFactory.getReturn())
             else -> {
                 val retval = stack.pop()
-                addInstruction(bb, IF.getReturn(retval))
+                addInstruction(bb, instFactory.getReturn(retval))
             }
         }
     }
@@ -491,8 +494,8 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val owner = stack.pop()
         when (insn.opcode) {
-            MONITORENTER -> addInstruction(bb, IF.getEnterMonitor(owner))
-            MONITOREXIT -> addInstruction(bb, IF.getExitMonitor(owner))
+            MONITORENTER -> addInstruction(bb, instFactory.getEnterMonitor(owner))
+            MONITOREXIT -> addInstruction(bb, instFactory.getExitMonitor(owner))
             else -> throw InvalidOpcodeError("Monitor opcode ${insn.opcode}")
         }
     }
@@ -500,7 +503,7 @@ class CfgBuilder(val method: Method)
     private fun convertThrow(insn: InsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val throwable = stack.pop()
-        addInstruction(bb, IF.getThrow(throwable))
+        addInstruction(bb, instFactory.getThrow(throwable))
     }
 
     private fun convertLocalLoad(insn: VarInsnNode) {
@@ -538,12 +541,12 @@ class CfgBuilder(val method: Method)
         val opcode = insn.opcode
         val operand = insn.operand
         when (opcode) {
-            BIPUSH -> stack.push(VF.getIntConstant(operand))
-            SIPUSH -> stack.push(VF.getIntConstant(operand))
+            BIPUSH -> stack.push(values.getIntConstant(operand))
+            SIPUSH -> stack.push(values.getIntConstant(operand))
             NEWARRAY -> {
-                val type = parsePrimaryType(operand)
+                val type = parsePrimaryType(types, operand)
                 val count = stack.pop()
-                val inst = IF.getNewArray(type, count)
+                val inst = instFactory.getNewArray(type, count)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
@@ -564,31 +567,31 @@ class CfgBuilder(val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
         val type = try {
-            parseDesc(insn.desc)
+            parseDesc(types, insn.desc)
         } catch (e: InvalidTypeDescError) {
-            TF.getRefType(insn.desc)
+            types.getRefType(insn.desc)
         }
         when (opcode) {
             NEW -> {
-                val inst = IF.getNew(type)
+                val inst = instFactory.getNew(type)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
             ANEWARRAY -> {
                 val count = stack.pop()
-                val inst = IF.getNewArray(type, count)
+                val inst = instFactory.getNewArray(type, count)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
             CHECKCAST -> {
                 val castable = stack.pop()
-                val inst = IF.getCast(type, castable)
+                val inst = instFactory.getCast(type, castable)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
             INSTANCEOF -> {
                 val obj = stack.pop()
-                val inst = IF.getInstanceOf(type, obj)
+                val inst = instFactory.getInstanceOf(type, obj)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
@@ -599,24 +602,24 @@ class CfgBuilder(val method: Method)
     private fun convertFieldInsn(insn: FieldInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
-        val fieldType = parseDesc(insn.desc)
-        val `class` = CM.getByName(insn.owner)
+        val fieldType = parseDesc(types, insn.desc)
+        val `class` = cm.getByName(insn.owner)
         when (opcode) {
             GETSTATIC -> {
                 val field = `class`.getField(insn.name, fieldType)
-                val inst = IF.getFieldLoad(field)
+                val inst = instFactory.getFieldLoad(field)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
             PUTSTATIC -> {
                 val field = `class`.getField(insn.name, fieldType)
                 val value = stack.pop()
-                addInstruction(bb, IF.getFieldStore(field, value))
+                addInstruction(bb, instFactory.getFieldStore(field, value))
             }
             GETFIELD -> {
                 val field = `class`.getField(insn.name, fieldType)
                 val owner = stack.pop()
-                val inst = IF.getFieldLoad(owner, field)
+                val inst = instFactory.getFieldLoad(owner, field)
                 addInstruction(bb, inst)
                 stack.push(inst)
             }
@@ -624,14 +627,14 @@ class CfgBuilder(val method: Method)
                 val value = stack.pop()
                 val owner = stack.pop()
                 val field = `class`.getField(insn.name, fieldType)
-                addInstruction(bb, IF.getFieldStore(owner, field, value))
+                addInstruction(bb, instFactory.getFieldStore(owner, field, value))
             }
         }
     }
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val `class` = CM.getByName(insn.owner)
+        val `class` = cm.getByName(insn.owner)
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
         method.argTypes.forEach { _ -> args.add(0, stack.pop()) }
@@ -639,10 +642,10 @@ class CfgBuilder(val method: Method)
         val isNamed = !method.returnType.isVoid
         val opcode = toCallOpcode(insn.opcode)
         val call = when (insn.opcode) {
-            INVOKESTATIC -> IF.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
+            INVOKESTATIC -> instFactory.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
             in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
                 val obj = stack.pop()
-                IF.getCall(opcode, method, `class`, obj, args.toTypedArray(), isNamed)
+                instFactory.getCall(opcode, method, `class`, obj, args.toTypedArray(), isNamed)
             }
             else -> throw InvalidOpcodeError("Method insn opcode ${insn.opcode}")
         }
@@ -661,7 +664,7 @@ class CfgBuilder(val method: Method)
         when (GOTO) {
             insn.opcode -> {
                 val trueSuccessor = nodeToBlock.getValue(insn.label)
-                addInstruction(bb, IF.getJump(trueSuccessor))
+                addInstruction(bb, instFactory.getJump(trueSuccessor))
             }
             else -> {
                 val falseSuccessor = nodeToBlock.getValue(insn.next)
@@ -669,16 +672,16 @@ class CfgBuilder(val method: Method)
                 val name = Slot()
                 val rhv = stack.pop()
                 val opc = toCmpOpcode(insn.opcode)
-                val resType = getCmpResultType(opc)
+                val resType = getCmpResultType(types, opc)
                 val cond = when (insn.opcode) {
-                    in IFEQ..IFLE -> IF.getCmp(name, resType, opc, rhv, VF.getZeroConstant(rhv.type))
-                    in IF_ICMPEQ..IF_ACMPNE -> IF.getCmp(name, resType, opc, stack.pop(), rhv)
-                    in IFNULL..IFNONNULL -> IF.getCmp(name, resType, opc, rhv, VF.getNullConstant())
+                    in IFEQ..IFLE -> instFactory.getCmp(name, resType, opc, rhv, values.getZeroConstant(rhv.type))
+                    in IF_ICMPEQ..IF_ACMPNE -> instFactory.getCmp(name, resType, opc, stack.pop(), rhv)
+                    in IFNULL..IFNONNULL -> instFactory.getCmp(name, resType, opc, rhv, values.getNullConstant())
                     else -> throw InvalidOpcodeError("Jump opcode ${insn.opcode}")
                 }
                 addInstruction(bb, cond)
-                val castedCond = if (cond.type is BoolType) cond else IF.getCast(TF.boolType, cond)
-                addInstruction(bb, IF.getBranch(castedCond, trueSuccessor, falseSuccessor))
+                val castedCond = if (cond.type is BoolType) cond else instFactory.getCast(types.boolType, cond)
+                addInstruction(bb, instFactory.getBranch(castedCond, trueSuccessor, falseSuccessor))
             }
         }
     }
@@ -689,16 +692,16 @@ class CfgBuilder(val method: Method)
     private fun convertLdcInsn(insn: LdcInsnNode) {
         val cst = insn.cst
         when (cst) {
-            is Int -> stack.push(VF.getIntConstant(cst))
-            is Float -> stack.push(VF.getFloatConstant(cst))
-            is Double -> stack.push(VF.getDoubleConstant(cst))
-            is Long -> stack.push(VF.getLongConstant(cst))
-            is String -> stack.push(VF.getStringConstant(cst))
-            is org.objectweb.asm.Type -> stack.push(VF.getClassConstant(cst.descriptor))
+            is Int -> stack.push(values.getIntConstant(cst))
+            is Float -> stack.push(values.getFloatConstant(cst))
+            is Double -> stack.push(values.getDoubleConstant(cst))
+            is Long -> stack.push(values.getLongConstant(cst))
+            is String -> stack.push(values.getStringConstant(cst))
+            is org.objectweb.asm.Type -> stack.push(values.getClassConstant(cst.descriptor))
             is org.objectweb.asm.Handle -> {
-                val `class` = CM.getByName(cst.owner)
+                val `class` = cm.getByName(cst.owner)
                 val method = `class`.getMethod(cst.name, cst.desc)
-                stack.push(VF.getMethodConstant(method))
+                stack.push(values.getMethodConstant(method))
             }
             else -> throw InvalidOperandError("Unknown object $cst")
         }
@@ -707,7 +710,7 @@ class CfgBuilder(val method: Method)
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandError("${insn.`var`} local is invalid")
-        val rhv = IF.getBinary(BinaryOpcode.Add(), VF.getIntConstant(insn.incr), lhv)
+        val rhv = instFactory.getBinary(BinaryOpcode.Add(), values.getIntConstant(insn.incr), lhv)
         locals[insn.`var`] = rhv
         addInstruction(bb, rhv)
     }
@@ -715,11 +718,11 @@ class CfgBuilder(val method: Method)
     private fun convertTableSwitchInsn(insn: TableSwitchInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val index = stack.pop()
-        val min = VF.getIntConstant(insn.min)
-        val max = VF.getIntConstant(insn.max)
+        val min = values.getIntConstant(insn.min)
+        val max = values.getIntConstant(insn.max)
         val default = nodeToBlock.getValue(insn.dflt)
         val branches = insn.labels.map { nodeToBlock.getValue(it as AbstractInsnNode) }.toTypedArray()
-        addInstruction(bb, IF.getTableSwitch(index, min, max, default, branches))
+        addInstruction(bb, instFactory.getTableSwitch(index, min, max, default, branches))
     }
 
     private fun convertLookupSwitchInsn(insn: LookupSwitchInsnNode) {
@@ -728,9 +731,9 @@ class CfgBuilder(val method: Method)
         val branches = hashMapOf<Value, BasicBlock>()
         val key = stack.pop()
         for (i in 0..insn.keys.lastIndex) {
-            branches[VF.getIntConstant(insn.keys[i] as Int)] = nodeToBlock.getValue(insn.labels[i] as LabelNode)
+            branches[values.getIntConstant(insn.keys[i] as Int)] = nodeToBlock.getValue(insn.labels[i] as LabelNode)
         }
-        addInstruction(bb, IF.getSwitch(key, default, branches))
+        addInstruction(bb, instFactory.getSwitch(key, default, branches))
     }
 
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
@@ -738,8 +741,8 @@ class CfgBuilder(val method: Method)
         super.visitMultiANewArrayInsn(insn.desc, insn.dims)
         val dimensions = arrayListOf<Value>()
         for (it in 0 until insn.dims) dimensions.add(stack.pop())
-        val type = parseDesc(insn.desc)
-        val inst = IF.getNewArray(type, dimensions.toTypedArray())
+        val type = parseDesc(types, insn.desc)
+        val inst = instFactory.getNewArray(type, dimensions.toTypedArray())
         addInstruction(bb, inst)
         stack.push(inst)
     }
@@ -759,8 +762,8 @@ class CfgBuilder(val method: Method)
         val tryCatchBlocks = method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>
         for (insn in tryCatchBlocks) {
             val type = when {
-                insn.type != null -> TF.getRefType(insn.type)
-                else -> CatchBlock.defaultException
+                insn.type != null -> types.getRefType(insn.type)
+                else -> types.getRefType(CatchBlock.defaultException)
             }
             nodeToBlock[insn.handler] = CatchBlock("catch", type)
         }
@@ -777,7 +780,7 @@ class CfgBuilder(val method: Method)
                         bb = nodeToBlock.getOrPut(insn) { bb }
 
                         val entry = BodyBlock("entry")
-                        addInstruction(entry, IF.getJump(bb))
+                        addInstruction(entry, instFactory.getJump(bb))
                         entry.addSuccessor(bb)
                         blockToNode[entry] = arrayListOf()
                         bb.addPredecessor(entry)
@@ -905,7 +908,7 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val newPhi = IF.getPhi(phi.name, phi.type, incomings)
+                    val newPhi = instFactory.getPhi(phi.name, phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
                     bb.replace(phi, newPhi)
                 }
@@ -938,11 +941,11 @@ class CfgBuilder(val method: Method)
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val type = mergeTypes(incomingValues.asSequence().map { it.type }.toSet())
+                    val type = mergeTypes(types, incomingValues.asSequence().map { it.type }.toSet())
                     when (type) {
                         null -> removablePhis.add(phi)
                         else -> {
-                            val newPhi = IF.getPhi(phi.name, type, incomings)
+                            val newPhi = instFactory.getPhi(phi.name, type, incomings)
                             phi.replaceAllUsesWith(newPhi)
                             phi.operands.forEach { it.removeUser(phi) }
                             bb.replace(phi, newPhi)
@@ -1045,12 +1048,12 @@ class CfgBuilder(val method: Method)
     fun build(): Method {
         var localIndx = 0
         if (!method.isStatic) {
-            val `this` = VF.getThis(TF.getRefType(method.`class`))
+            val `this` = values.getThis(types.getRefType(method.`class`))
             locals[localIndx++] = `this`
             method.slottracker.addValue(`this`)
         }
         for ((indx, type) in method.argTypes.withIndex()) {
-            val arg = VF.getArgument(indx, method, type)
+            val arg = values.getArgument(indx, method, type)
             locals[localIndx] = arg
             if (type.isDWord) localIndx += 2
             else ++localIndx
@@ -1092,14 +1095,14 @@ class CfgBuilder(val method: Method)
             val last = bb.instructions.lastOrNull()
             if (last == null || !last.isTerminate) {
                 require(bb.successors.size == 1)
-                addInstruction(bb, IF.getJump(bb.successors.first()))
+                addInstruction(bb, instFactory.getJump(bb.successors.first()))
             }
 
             reserveState(bb)
         }
 
         buildPhiInstructions()
-        RetvalBuilder.visit(method)
+        RetvalBuilder(cm).visit(method)
 //        BoolValueAdapter.visit(method)
 
         // this is fucked up, but sometimes there are really empty blocks in bytecode
@@ -1112,7 +1115,7 @@ class CfgBuilder(val method: Method)
         method.slottracker.rerun()
 
         try {
-            IRVerifier.visit(method)
+            IRVerifier(cm).visit(method)
         } catch (e: NoSuchElementException) {
             method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         }

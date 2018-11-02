@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import org.jetbrains.research.kfg.IF
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
@@ -11,7 +11,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
 import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-object RetvalBuilder : MethodVisitor {
+class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
     private val retvals = hashMapOf<BasicBlock, ReturnInst>()
 
     override fun cleanup() {
@@ -37,31 +37,31 @@ object RetvalBuilder : MethodVisitor {
             returnBlock.addPredecessor(bb)
             if (`return`.hasReturnValue) incomings[bb] = `return`.returnValue
 
-            val jump = IF.getJump(returnBlock)
+            val jump = instructions.getJump(returnBlock)
             jump.location = `return`.location
             bb += jump
         }
 
         val insts = arrayListOf<Instruction>()
         val `return` = when {
-            method.returnType.isVoid -> IF.getReturn()
+            method.returnType.isVoid -> instructions.getReturn()
             else -> {
-                val type = mergeTypes(incomings.values.map { it.type }.toSet())
+                val type = mergeTypes(types, incomings.values.map { it.type }.toSet())
                         ?: method.returnType
 
-                val retval = IF.getPhi("retval", type, incomings)
+                val retval = instructions.getPhi("retval", type, incomings)
                 insts.add(retval)
 
                 val returnValue = when (type) {
                     method.returnType -> retval
                     else -> {
-                        val retvalCasted = IF.getCast("retval.casted", method.returnType, retval)
+                        val retvalCasted = instructions.getCast("retval.casted", method.returnType, retval)
                         insts.add(retvalCasted)
                         retvalCasted
                     }
                 }
 
-                IF.getReturn(returnValue)
+                instructions.getReturn(returnValue)
             }
         }
         insts.add(`return`)

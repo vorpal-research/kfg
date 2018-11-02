@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
 
-class NewArrayInst(name: Name, type: Type, dimentions: Array<Value>): Instruction(name, type, dimentions) {
+class NewArrayInst(name: Name, type: Type, dimensions: Array<Value>): Instruction(name, type, dimensions) {
     val component: Type
 
     val dimensions: List<Value>

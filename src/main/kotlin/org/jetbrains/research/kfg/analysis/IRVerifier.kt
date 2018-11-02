@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.analysis
 
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
@@ -12,9 +13,9 @@ import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-object IRVerifier : MethodVisitor {
-    private val valueNameRegex = "(\\%([a-zA-Z][\\w\\.]*|\\d+)|arg\\$\\d+|this)".toRegex()
-    private val blockNameRegex = "\\%[a-zA-Z][\\w\\.\$]+".toRegex()
+class IRVerifier(override val cm: ClassManager) : MethodVisitor {
+    private val valueNameRegex = "(%([a-zA-Z][\\w.]*|\\d+)|arg\\$\\d+|this)".toRegex()
+    private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
 

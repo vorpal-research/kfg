@@ -1,12 +1,11 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.value.UndefinedName
-import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
 class ReturnInst : TerminateInst {
-    constructor() : super(UndefinedName, TF.voidType, arrayOf(), arrayOf())
+    constructor(type: Type) : super(UndefinedName, type, arrayOf(), arrayOf())
     constructor(retval: Value) : super(UndefinedName, retval.type, arrayOf(retval), arrayOf())
 
     val hasReturnValue: Boolean
@@ -28,6 +27,6 @@ class ReturnInst : TerminateInst {
 
     override fun clone(): Instruction = when {
         hasReturnValue -> ReturnInst(returnValue)
-        else -> ReturnInst()
+        else -> ReturnInst(type)
     }
 }

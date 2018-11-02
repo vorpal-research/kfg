@@ -33,7 +33,7 @@ fun typeToInt(type: Type) = when (type) {
     else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
 }
 
-class AsmBuilder(val method: Method) : MethodVisitor {
+class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.map { it to LabelNode() }.toMap()
@@ -46,11 +46,11 @@ class AsmBuilder(val method: Method) : MethodVisitor {
 
     init {
         if (!method.isStatic) {
-            val `this` = VF.getThis(TF.getRefType(method.`class`))
+            val `this` = values.getThis(types.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
         for ((index, type) in method.argTypes.withIndex()) {
-            val arg = VF.getArgument(index, method, type)
+            val arg = values.getArgument(index, method, type)
             locals[arg] = getLocalFor(arg)
         }
     }
@@ -475,11 +475,11 @@ class AsmBuilder(val method: Method) : MethodVisitor {
         maxStack = 0
 
         if (!method.isStatic) {
-            val `this` = VF.getThis(TF.getRefType(method.`class`))
+            val `this` = values.getThis(types.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
         for ((indx, type) in method.argTypes.withIndex()) {
-            val arg = VF.getArgument(indx, method, type)
+            val arg = values.getArgument(indx, method, type)
             locals[arg] = getLocalFor(arg)
         }
     }

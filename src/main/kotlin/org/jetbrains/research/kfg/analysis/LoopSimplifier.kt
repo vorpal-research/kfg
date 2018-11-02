@@ -1,12 +1,12 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kfg.IF
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 
-object LoopSimplifier : LoopVisitor {
+class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private var current: Method? = null
 
     override fun preservesLoopInfo() = false
@@ -16,7 +16,7 @@ object LoopSimplifier : LoopVisitor {
     override fun visit(method: Method) {
         current = method
         super.visit(method)
-        IRVerifier.visit(method)
+        IRVerifier(cm).visit(method)
         current = null
     }
 
@@ -41,7 +41,7 @@ object LoopSimplifier : LoopVisitor {
             val toValue = when {
                 fromValues.size == 1 -> fromValues.first()
                 else -> {
-                    val newPhi = IF.getPhi(phi.type, fromIncomings)
+                    val newPhi = instructions.getPhi(phi.type, fromIncomings)
                     to += newPhi
                     newPhi
                 }
@@ -49,7 +49,7 @@ object LoopSimplifier : LoopVisitor {
 
             val targetIncomings = phi.incomings.filter { it.key !in from }.toMutableMap()
             targetIncomings[to] = toValue
-            val targetPhi = IF.getPhi(phi.type, targetIncomings)
+            val targetPhi = instructions.getPhi(phi.type, targetIncomings)
             target.insertBefore(phi, targetPhi)
             phi.replaceAllUsesWith(targetPhi)
             target -= phi
@@ -67,7 +67,7 @@ object LoopSimplifier : LoopVisitor {
         header.addPredecessor(preheader)
 
         remapPhis(header, loopPredecessors, preheader)
-        preheader += IF.getJump(header)
+        preheader += instructions.getJump(header)
         current!!.addBefore(header, preheader)
     }
 
@@ -82,7 +82,7 @@ object LoopSimplifier : LoopVisitor {
         header.addPredecessor(latch)
 
         remapPhis(header, latches, latch)
-        latch += IF.getJump(header)
+        latch += instructions.getJump(header)
         current!!.add(latch)
         loop.addBlock(latch)
     }
