@@ -30,7 +30,7 @@ class Package(name: String) {
     fun isParent(name: String) = isParent(Package(name))
     fun isChild(name: String) = isChild(Package(name))
 
-    override fun toString() = "$name${if (isConcrete) "" else "*"}"
+    override fun toString() = "$name${if (isConcrete) "" else "/*"}"
     override fun hashCode() = simpleHash(name, isConcrete)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
