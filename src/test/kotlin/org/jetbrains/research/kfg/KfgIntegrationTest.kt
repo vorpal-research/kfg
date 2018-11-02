@@ -51,8 +51,8 @@ class KfgIntegrationTest {
         val target = File("instrumented/")
 
         val jarFile = JarFile(jar)
-        CM.parseJar(jarFile, `package`)
-        JarUtils.updateJar(jarFile, target, `package`)
+        val cm = ClassManager(jarFile, `package`)
+        JarUtils.updateJar(cm, jarFile, target, `package`)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

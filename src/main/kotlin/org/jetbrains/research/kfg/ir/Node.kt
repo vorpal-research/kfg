@@ -1,10 +1,11 @@
 package org.jetbrains.research.kfg.ir
 
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.type.parseDesc
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.AnnotationNode
 
-abstract class Node(val name: String, val modifiers: Int) {
+abstract class Node(val cm: ClassManager, val name: String, val modifiers: Int) {
     var builded = false
     val visibleAnnotations = mutableListOf<Annotation>()
     val invisibleAnnotations = mutableListOf<Annotation>()
@@ -13,13 +14,13 @@ abstract class Node(val name: String, val modifiers: Int) {
 
     fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>?) {
         if (visibleAnnotations != null) {
-            this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(it.desc)) })
+            this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
         }
     }
 
     fun addInvisibleAnnotations(invisibleAnnotations: List<AnnotationNode>?) {
         if (invisibleAnnotations != null) {
-            this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(it.desc)) })
+            this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
         }
     }
 

@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.analysis
 
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.util.LoopDetector
@@ -78,7 +79,7 @@ object LoopManager {
         return when {
             info.valid -> info.loops
             else -> {
-                val loops = LoopAnalysis(method)
+                val loops = LoopAnalysis(method.cm).invoke(method)
                 loopInfo[method] = LoopInfo(loops)
                 loops
             }
@@ -86,7 +87,7 @@ object LoopManager {
     }
 }
 
-object LoopAnalysis : MethodVisitor {
+class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
     private val loops = arrayListOf<Loop>()
 
     override fun cleanup() {

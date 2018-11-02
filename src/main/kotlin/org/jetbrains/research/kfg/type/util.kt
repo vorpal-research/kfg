@@ -3,7 +3,6 @@ package org.jetbrains.research.kfg.type
 import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.InvalidTypeDescError
-import org.jetbrains.research.kfg.TF
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
@@ -14,19 +13,19 @@ fun Type.toInternalDesc(): String = when {
     else -> throw InvalidStateError("Unknown type ${this.name}")
 }
 
-fun mergeTypes(types: Set<Type>): Type? = when {
-    TF.nullType in types -> {
-        val filtered = types.asSequence().filterNot { it == TF.nullType }.toSet()
+fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
+    tf.nullType in types -> {
+        val filtered = types.asSequence().filterNot { it == tf.nullType }.toSet()
         when {
             filtered.isEmpty() -> null
-            else -> mergeTypes(filtered)
+            else -> mergeTypes(tf, filtered)
         }
     }
     types.size == 1 -> types.first()
     types.all { it is Integral } -> types.asSequence().map { it as Integral }.maxBy { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
-        var result = TF.objectType
+        var result = tf.objectType
         for (i in 0..classes.lastIndex) {
             val isAncestor = classes.fold(true) { acc, `class` ->
                 acc && classes[i].`class`.isAncestor(`class`.`class`)
@@ -41,33 +40,33 @@ fun mergeTypes(types: Set<Type>): Type? = when {
     else -> null
 }
 
-fun parseDesc(desc: String): Type = when (desc[0]) {
-    'V' -> TF.voidType
-    'Z' -> TF.boolType
-    'B' -> TF.byteType
-    'C' -> TF.charType
-    'S' -> TF.shortType
-    'I' -> TF.intType
-    'J' -> TF.longType
-    'F' -> TF.floatType
-    'D' -> TF.doubleType
+fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
+    'V' -> tf.voidType
+    'Z' -> tf.boolType
+    'B' -> tf.byteType
+    'C' -> tf.charType
+    'S' -> tf.shortType
+    'I' -> tf.intType
+    'J' -> tf.longType
+    'F' -> tf.floatType
+    'D' -> tf.doubleType
     'L' -> {
         if (desc.last() != ';') throw InvalidTypeDescError(desc)
-        TF.getRefType(desc.substring(1).substringBeforeLast(';'))
+        tf.getRefType(desc.substring(1).substringBeforeLast(';'))
     }
-    '[' -> TF.getArrayType(parseDesc(desc.substring(1)))
+    '[' -> tf.getArrayType(parseDesc(tf, desc.substring(1)))
     else -> throw InvalidTypeDescError(desc)
 }
 
-fun parsePrimaryType(opcode: Int): Type = when (opcode) {
-    Opcodes.T_CHAR -> TF.charType
-    Opcodes.T_BOOLEAN -> TF.boolType
-    Opcodes.T_BYTE -> TF.byteType
-    Opcodes.T_DOUBLE -> TF.doubleType
-    Opcodes.T_FLOAT -> TF.floatType
-    Opcodes.T_INT -> TF.intType
-    Opcodes.T_LONG -> TF.longType
-    Opcodes.T_SHORT -> TF.shortType
+fun parsePrimaryType(tf: TypeFactory, opcode: Int): Type = when (opcode) {
+    Opcodes.T_CHAR -> tf.charType
+    Opcodes.T_BOOLEAN -> tf.boolType
+    Opcodes.T_BYTE -> tf.byteType
+    Opcodes.T_DOUBLE -> tf.doubleType
+    Opcodes.T_FLOAT -> tf.floatType
+    Opcodes.T_INT -> tf.intType
+    Opcodes.T_LONG -> tf.longType
+    Opcodes.T_SHORT -> tf.shortType
     else -> throw InvalidOpcodeError("PrimaryType opcode $opcode")
 }
 
@@ -83,37 +82,37 @@ fun primaryTypeToInt(type: Type): Int = when (type) {
     else -> throw InvalidOpcodeError("${type.name} is not primary type")
 }
 
-fun parseMethodDesc(desc: String): Pair<Array<Type>, Type> {
+fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
     val args = mutableListOf<Type>()
-    val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9\\/_]+;))")
+    val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9/_]+;))")
     val matcher = pattern.matcher(desc)
     while (matcher.find()) {
-        args.add(parseDesc(matcher.group(0)))
+        args.add(parseDesc(tf, matcher.group(0)))
     }
     val rettype = args.last()
     return Pair(args.dropLast(1).toTypedArray(), rettype)
 }
 
-fun parseStringToType(name: String) = when (name) {
-    "null" -> TF.nullType
-    "void" -> TF.voidType
-    "bool" -> TF.boolType
-    "short" -> TF.shortType
-    "long" -> TF.longType
-    "char" -> TF.charType
-    "int" -> TF.intType
-    "float" -> TF.floatType
-    "double" -> TF.doubleType
+fun parseStringToType(tf: TypeFactory, name: String) = when (name) {
+    "null" -> tf.nullType
+    "void" -> tf.voidType
+    "bool" -> tf.boolType
+    "short" -> tf.shortType
+    "long" -> tf.longType
+    "char" -> tf.charType
+    "int" -> tf.intType
+    "float" -> tf.floatType
+    "double" -> tf.doubleType
     else -> {
         var arrCount = 0
         val end = name.dropLastWhile {
             if (it == '[') ++arrCount
             it == '[' || it == ']'
         }
-        var subtype = TF.getRefType(end)
+        var subtype = tf.getRefType(end)
         while (arrCount > 0) {
             --arrCount
-            subtype = TF.getArrayType(subtype)
+            subtype = tf.getArrayType(subtype)
         }
         subtype
     }

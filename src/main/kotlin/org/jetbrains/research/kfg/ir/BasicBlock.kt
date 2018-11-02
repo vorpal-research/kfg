@@ -1,6 +1,5 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -229,7 +228,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     companion object {
-        val defaultException = TF.getRefType("java/lang/Throwable")
+        val defaultException = "java/lang/Throwable"
     }
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {

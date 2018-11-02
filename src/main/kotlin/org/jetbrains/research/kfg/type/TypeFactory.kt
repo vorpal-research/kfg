@@ -1,10 +1,9 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.CM
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ClassManager
 
-object TypeFactory {
+class TypeFactory(val cm: ClassManager) {
     val voidType: Type
         get() = VoidType
 
@@ -42,6 +41,6 @@ object TypeFactory {
         get() = getRefType("java/lang/Object")
 
     fun getRefType(cname: Class): Type = ClassType(cname)
-    fun getRefType(cname: String): Type = getRefType(CM.getByName(cname))
+    fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
 }

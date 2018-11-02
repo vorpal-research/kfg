@@ -4,6 +4,9 @@ import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
+import org.jetbrains.research.kfg.ir.value.ValueFactory
+import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
+import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.JarUtils
 import org.jetbrains.research.kfg.util.simpleHash
@@ -40,34 +43,39 @@ class Package(name: String) {
     }
 }
 
-object ClassManager {
+class ClassManager(jar: JarFile, val `package`: Package = Package("*"), flags: Flags = Flags.readSkipFrames) {
+    val value = ValueFactory(this)
+    val instruction = InstructionFactory(this)
+    val type = TypeFactory(this)
+    val concreteClasses: List<ConcreteClass>
+
     private val classNodes = hashMapOf<String, ClassNode>()
     private val classes = hashMapOf<String, Class>()
 
-    fun parseJar(jar: JarFile, `package`: Package = Package("*"), flags: Flags = Flags.readSkipFrames) {
+    init {
         val jarClasses = JarUtils.parseJarClasses(jar, `package`, flags)
         classNodes.putAll(jarClasses)
         jarClasses.forEach { (name, cn) ->
-            classes.getOrPut(name) { ConcreteClass(cn) }.init()
+            classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
         }
         classes.values.forEach {
             it.methods.forEach { _, method ->
-                if (!method.isAbstract) CfgBuilder(method).build()
+                if (!method.isAbstract) CfgBuilder(this, method).build()
             }
         }
+        concreteClasses = classes.values.mapNotNull { it as? ConcreteClass }
     }
 
-    fun get(cn: ClassNode) = classes.getOrPut(cn.name) { ConcreteClass(cn) }
-    fun getConcreteClasses() = classes.values.mapNotNull { it as? ConcreteClass }
+    fun get(cn: ClassNode) = classes.getOrPut(cn.name) { ConcreteClass(this, cn) }
 
     fun getByName(name: String): Class {
         var cn = classNodes[name]
         return if (cn != null) get(cn) else {
             cn = ClassNode()
             cn.name = name
-            OuterClass(cn)
+            OuterClass(this, cn)
         }
     }
 
-    fun getByPackage(`package`: Package): List<Class> = getConcreteClasses().filter { `package`.isParent(it.`package`) }
+    fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.`package`) }
 }

@@ -1,10 +1,11 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.CM
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.GraphView
 import org.jetbrains.research.kfg.util.simpleHash
@@ -16,8 +17,8 @@ import java.util.*
 data class MethodDesc(val args: Array<Type>, val retval: Type) {
 
     companion object {
-        fun fromDesc(desc: String): MethodDesc {
-            val (args, retval) = parseMethodDesc(desc)
+        fun fromDesc(tf: TypeFactory, desc: String): MethodDesc {
+            val (args, retval) = parseMethodDesc(tf, desc)
             return MethodDesc(args, retval)
         }
     }
@@ -49,13 +50,13 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     }
 }
 
-class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
+class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm, mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
 
     companion object {
         private val CONSTRUCTOR_NAMES = arrayOf("<init>", "<clinit>")
     }
 
-    val desc = MethodDesc.fromDesc(mn.desc)
+    val desc = MethodDesc.fromDesc(cm.type, mn.desc)
     val argTypes get() = desc.args
     val returnType get() = desc.retval
     val parameters = arrayListOf<Parameter>()
@@ -68,12 +69,12 @@ class Method(val mn: MethodNode, val `class`: Class) : Node(mn.name, mn.access),
         if (mn.parameters != null) {
             mn.parameters.withIndex().forEach { (indx, param) ->
                 param as ParameterNode
-                parameters.add(Parameter(indx, param.name, desc.args[indx], param.access))
+                parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))
             }
         }
 
         if (mn.exceptions != null) {
-            mn.exceptions.forEach { exceptions.add(CM.getByName(it as String)) }
+            mn.exceptions.forEach { exceptions.add(cm.getByName(it as String)) }
         }
 
         addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.visibleAnnotations as List<AnnotationNode>?))

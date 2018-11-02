@@ -1,50 +1,179 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.TF
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 
 sealed class Constant(name: String, type: Type) : Value(ConstantName(name), type)
 
-data class BoolConstant(val value: Boolean) : Constant(value.toString(), TF.boolType) {
+class BoolConstant(val value: Boolean, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BoolConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class ByteConstant(val value: Byte) : Constant(value.toString(), TF.byteType) {
+class ByteConstant(val value: Byte, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ByteConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class ShortConstant(val value: Short) : Constant(value.toString(), TF.shortType) {
+class ShortConstant(val value: Short, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ShortConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class IntConstant(val value: Int) : Constant(value.toString(), TF.intType) {
+class IntConstant(val value: Int, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as IntConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class LongConstant(val value: Long) : Constant(value.toString(), TF.longType) {
+class LongConstant(val value: Long, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as LongConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class CharConstant(val value: Char) : Constant(value.toString(), TF.charType) {
+class CharConstant(val value: Char, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CharConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class FloatConstant(val value: Float) : Constant(value.toString(), TF.floatType) {
+class FloatConstant(val value: Float, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FloatConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class DoubleConstant(val value: Double) : Constant(value.toString(), TF.doubleType) {
+class DoubleConstant(val value: Double, type: Type) : Constant(value.toString(), type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as DoubleConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class StringConstant(val value: String) : Constant("\"$value\"", TF.stringType) {
+class StringConstant(val value: String, type: Type) : Constant("\"$value\"", type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as StringConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = value.hashCode()
 }
 
-data class MethodConstant(val method: Method) : Constant(method.name, TF.getRefType("java/lang/invoke/MethodHandle")) {
+class MethodConstant(val method: Method, type: Type) : Constant(method.name, type) {
     override fun toString()= super.toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as MethodConstant
+
+        if (method != other.method) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int = method.hashCode()
 }
 
 class ClassConstant(`class`: Type) : Constant("${`class`.name}.class", `class`)
-object NullConstant : Constant("null", TF.nullType)
+class NullConstant(type: Type) : Constant("null", type)

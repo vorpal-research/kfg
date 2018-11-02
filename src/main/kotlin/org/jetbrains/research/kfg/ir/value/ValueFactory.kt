@@ -1,24 +1,27 @@
 package org.jetbrains.research.kfg.ir.value
 
+import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 
-object ValueFactory {
+class ValueFactory(val cm: ClassManager) {
+    val types get() = cm.type
+
     fun getThis(type: Type): Value = ThisRef(type)
     fun getArgument(index: Int, method: Method, type: Type): Value = Argument(index, method, type)
     // constants
-    fun getNullConstant(): Value = NullConstant
-    fun getBoolConstant(value: Boolean): Value = BoolConstant(value)
-    fun getByteConstant(value: Byte): Value = ByteConstant(value)
-    fun getCharConstant(value: Char): Value = CharConstant(value)
-    fun getIntConstant(value: Int): Value = IntConstant(value)
-    fun getLongConstant(value: Long): Value = LongConstant(value)
-    fun getFloatConstant(value: Float): Value = FloatConstant(value)
-    fun getDoubleConstant(value: Double): Value = DoubleConstant(value)
-    fun getStringConstant(value: String): Value = StringConstant(value)
-    fun getClassConstant(desc: String): Value = ClassConstant(parseDesc(desc))
-    fun getMethodConstant(method: Method): Value = MethodConstant(method)
+    fun getNullConstant(): Value = NullConstant(types.nullType)
+    fun getBoolConstant(value: Boolean): Value = BoolConstant(value, types.boolType)
+    fun getByteConstant(value: Byte): Value = ByteConstant(value, types.byteType)
+    fun getCharConstant(value: Char): Value = CharConstant(value, types.charType)
+    fun getIntConstant(value: Int): Value = IntConstant(value, types.intType)
+    fun getLongConstant(value: Long): Value = LongConstant(value, types.longType)
+    fun getFloatConstant(value: Float): Value = FloatConstant(value, types.floatType)
+    fun getDoubleConstant(value: Double): Value = DoubleConstant(value, types.doubleType)
+    fun getStringConstant(value: String): Value = StringConstant(value, types.stringType)
+    fun getClassConstant(desc: String): Value = ClassConstant(parseDesc(types, desc))
+    fun getMethodConstant(method: Method): Value = MethodConstant(method, types.getRefType("java/lang/invoke/MethodHandle"))
 
     fun getZeroConstant(type: Type): Value = when(type) {
         is BoolType -> getBoolConstant(false)
