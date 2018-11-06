@@ -332,8 +332,8 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         addOperandsToStack(listOf(inst.key))
         val default = getLabel(inst.default)
         val branches = inst.branches
-        val keys = branches.keys.map { (it as IntConstant).value }.toIntArray()
-        val labels = branches.values.map { getLabel(it) }.toTypedArray()
+        val keys = branches.keys.map { (it as IntConstant).value }.sorted().toIntArray()
+        val labels = keys.map { getLabel(branches[values.getIntConstant(it)]!!) }.toTypedArray()
         val insn = LookupSwitchInsnNode(default, keys, labels)
         currentInsnList.add(insn)
         stackPop()
