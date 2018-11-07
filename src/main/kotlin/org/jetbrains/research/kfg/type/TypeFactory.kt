@@ -4,6 +4,11 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ClassManager
 
 class TypeFactory(val cm: ClassManager) {
+    companion object {
+        const val stringClass = "java/lang/String"
+        const val objectClass = "java/lang/Object"
+    }
+
     val voidType: Type
         get() = VoidType
 
@@ -35,10 +40,10 @@ class TypeFactory(val cm: ClassManager) {
         get() = NullType
 
     val stringType
-        get() = getRefType("java/lang/String")
+        get() = getRefType(stringClass)
 
     val objectType
-        get() = getRefType("java/lang/Object")
+        get() = getRefType(objectClass)
 
     fun getRefType(cname: Class): Type = ClassType(cname)
     fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
