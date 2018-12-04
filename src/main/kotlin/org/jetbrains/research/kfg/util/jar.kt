@@ -162,13 +162,13 @@ object JarUtils {
         return file
     }
 
-    fun parseJarClasses(jar: JarFile, `package`: Package, flags: Flags): Map<String, ClassNode> {
+    fun parseJarClasses(jar: JarFile, pack: Package, flags: Flags): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         val enumeration = jar.entries()
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
 
-            if (entry.isClass && `package`.isParent(entry.name)) {
+            if (entry.isClass && pack.isParent(entry.name)) {
                 val classNode = readClassNode(jar.getInputStream(entry), flags)
                 classes[classNode.name] = classNode
             }
