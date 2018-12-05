@@ -166,6 +166,7 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     }
 
     fun getBlockByLocation(location: Location) = basicBlocks.find { it.location == location }
+    fun getBlockByName(name: String) = basicBlocks.find { it.name.toString() == name }
 
     fun print(): String {
         val sb = StringBuilder()
