@@ -17,7 +17,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     tf.nullType in types -> {
         val filtered = types.asSequence().filterNot { it == tf.nullType }.toSet()
         when {
-            filtered.isEmpty() -> null
+            filtered.isEmpty() -> tf.nullType
             else -> mergeTypes(tf, filtered)
         }
     }
