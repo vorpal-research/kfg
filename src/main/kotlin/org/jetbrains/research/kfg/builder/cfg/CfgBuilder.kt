@@ -1111,6 +1111,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
 
         buildPhiInstructions()
         RetvalBuilder(cm).visit(method)
+        CfgOptimizer(cm).visit(method)
 //        BoolValueAdapter.visit(method)
 
         // this is fucked up, but sometimes there are really empty blocks in bytecode

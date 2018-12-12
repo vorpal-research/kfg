@@ -32,6 +32,9 @@ abstract class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNod
     val location: Location
         get() = instructions.first().location
 
+    val size: Int
+        get() = instructions.size
+
     private fun addValueToParent(value: Value) {
         parent?.slottracker?.addValue(value)
     }

@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.util
 import info.leadinglight.jdot.Edge
 import info.leadinglight.jdot.Graph
 import info.leadinglight.jdot.Node
+import info.leadinglight.jdot.enums.Color
 import info.leadinglight.jdot.enums.Shape
 import info.leadinglight.jdot.impl.Util
 import java.io.File
@@ -101,6 +102,8 @@ fun viewCfg(name: String, nodes: List<GraphView>, dot: String, browser: String) 
     graph.addNodes(*nodes.map {
         Node(it.name).setShape(Shape.box).setLabel(it.label).setFontSize(12.0)
     }.toTypedArray())
+
+    graph.setBgColor(Color.X11.transparent)
 
     for (node in nodes) {
         for (successor in node.successors) {

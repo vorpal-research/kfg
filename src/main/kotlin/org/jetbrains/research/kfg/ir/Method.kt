@@ -201,7 +201,7 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
         nodes[name] = GraphView(name, this.toString())
         basicBlocks.map { bb ->
             val label = StringBuilder()
-            label.append("${bb.name}:\\l")
+            label.append("${bb.name}: ${bb.predecessors.joinToString(", ") { it.name.toString() }}\\l")
             bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
             nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
         }
@@ -226,5 +226,6 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
         return nodes.values.toList()
     }
 
-    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false) = org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false) =
+            org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
 }
