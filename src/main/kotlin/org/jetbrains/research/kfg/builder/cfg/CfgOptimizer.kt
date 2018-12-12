@@ -17,6 +17,8 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
             if (block.size > 1) continue
             if (block.successors.size != 1) continue
             if (block.predecessors.size != 1) continue
+            if (block.predecessors.first().successors.size != 1) continue
+            if (block.successors.first().predecessors.size != 1) continue
 
             val successor = block.successors.first()
             val predecessor = block.predecessors.first()
