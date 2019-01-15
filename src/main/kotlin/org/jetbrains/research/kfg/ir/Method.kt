@@ -118,6 +118,9 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     override val asmDesc
         get() = desc.asmDesc
 
+    fun isEmpty() = basicBlocks.isEmpty()
+    fun isNotEmpty() = !isEmpty()
+
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
             require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
