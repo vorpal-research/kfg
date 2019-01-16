@@ -93,7 +93,7 @@ fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
     return Pair(args.dropLast(1).toTypedArray(), rettype)
 }
 
-fun parseStringToType(tf: TypeFactory, name: String) = when (name) {
+fun parseStringToType(tf: TypeFactory, name: String): Type = when (name) {
     "null" -> tf.nullType
     "void" -> tf.voidType
     "bool" -> tf.boolType
@@ -109,7 +109,7 @@ fun parseStringToType(tf: TypeFactory, name: String) = when (name) {
             if (it == '[') ++arrCount
             it == '[' || it == ']'
         }
-        var subtype = tf.getRefType(end)
+        var subtype = parseStringToType(tf, end)
         while (arrCount > 0) {
             --arrCount
             subtype = tf.getArrayType(subtype)
