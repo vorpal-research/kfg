@@ -58,7 +58,6 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
             is CatchBlock -> bb.getAllPredecessors()
-            else -> setOf()
         }
 
         require(predecessors.size == inst.predecessors.size) {
