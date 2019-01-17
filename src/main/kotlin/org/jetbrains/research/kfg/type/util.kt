@@ -93,7 +93,7 @@ fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
     return Pair(args.dropLast(1).toTypedArray(), rettype)
 }
 
-fun parseStringToType(tf: TypeFactory, name: String): Type = when (name) {
+private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {
     "null" -> tf.nullType
     "void" -> tf.voidType
     "bool" -> tf.boolType
@@ -103,19 +103,24 @@ fun parseStringToType(tf: TypeFactory, name: String): Type = when (name) {
     "int" -> tf.intType
     "float" -> tf.floatType
     "double" -> tf.doubleType
-    else -> {
-        var arrCount = 0
-        val end = name.dropLastWhile {
-            if (it == '[') ++arrCount
-            it == '[' || it == ']'
-        }
-        var subtype = parseStringToType(tf, end)
-        while (arrCount > 0) {
-            --arrCount
-            subtype = tf.getArrayType(subtype)
-        }
-        subtype
+    else -> null
+}
+
+fun parseStringToType(tf: TypeFactory, name: String): Type {
+    val namedType = parseNamedType(tf, name)
+    if (namedType != null) return namedType
+
+    var arrCount = 0
+    val end = name.dropLastWhile {
+        if (it == '[') ++arrCount
+        it == '[' || it == ']'
     }
+    var subtype = parseNamedType(tf, end) ?: tf.getRefType(end)
+    while (arrCount > 0) {
+        --arrCount
+        subtype = tf.getArrayType(subtype)
+    }
+    return subtype
 }
 
 fun Type.getExpandedBitsize() = when (this) {
