@@ -107,9 +107,6 @@ private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {
 }
 
 fun parseStringToType(tf: TypeFactory, name: String): Type {
-    val namedType = parseNamedType(tf, name)
-    if (namedType != null) return namedType
-
     var arrCount = 0
     val end = name.dropLastWhile {
         if (it == '[') ++arrCount
