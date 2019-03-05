@@ -8,8 +8,11 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.ReturnInst
+import org.jetbrains.research.kfg.type.Integral
+import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import kotlin.math.abs
 
 class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
     private val retvals = hashMapOf<BasicBlock, ReturnInst>()
@@ -54,6 +57,20 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
 
                 val returnValue = when (type) {
                     method.returnType -> retval
+                    is Integral -> {
+                        val methodRetType = method.returnType
+                        require(methodRetType is Integral) { "Return value type is integral and method return type is ${method.returnType}" }
+
+                        // if return type is Int and return value type is Long (or vice versa), we need casting
+                        // otherwise it's fine
+                        if (abs(type.bitsize - methodRetType.bitsize) >= Type.WORD) {
+                            val retvalCasted = instructions.getCast("retval.casted", method.returnType, retval)
+                            insts.add(retvalCasted)
+                            retvalCasted
+                        } else {
+                            retval
+                        }
+                    }
                     else -> {
                         val retvalCasted = instructions.getCast("retval.casted", method.returnType, retval)
                         insts.add(retvalCasted)

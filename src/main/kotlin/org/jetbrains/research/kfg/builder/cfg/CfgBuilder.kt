@@ -8,10 +8,7 @@ import org.jetbrains.research.kfg.ir.value.UsableValue
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueUser
 import org.jetbrains.research.kfg.ir.value.instruction.*
-import org.jetbrains.research.kfg.type.BoolType
-import org.jetbrains.research.kfg.type.mergeTypes
-import org.jetbrains.research.kfg.type.parseDesc
-import org.jetbrains.research.kfg.type.parsePrimaryType
+import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.DominatorTreeBuilder
 import org.jetbrains.research.kfg.util.TopologicalSorter
 import org.jetbrains.research.kfg.util.print
@@ -643,7 +640,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val `class` = cm.getByName(insn.owner)
+        val `class` = when {
+            // FIXME: This is literally fucked up. If insn owner is an array, class of the CallInst should be java/lang/Object,
+            //  because java array don't have their own methods
+            insn.owner.startsWith("[") -> cm.getByName(TypeFactory.objectClass)
+            else -> cm.getByName(insn.owner)
+        }
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
         method.argTypes.forEach { _ -> args.add(0, pop()) }
