@@ -11,6 +11,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
+import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class IRVerifier(override val cm: ClassManager) : MethodVisitor {
@@ -61,7 +62,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         }
 
         require(predecessors.size == inst.predecessors.size) {
-            "Phi insts predecessors are different from block predecessors"
+            "Phi insts predecessors are different from block predecessors: ${inst.print()}"
         }
         for (predecessor in inst.predecessors) {
             require(predecessor in predecessors) {

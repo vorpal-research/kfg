@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.ir.BasicBlock
+import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
@@ -28,32 +28,31 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
             for (catch in handlers) {
                 catch.removeThrower(block)
             }
+
+            val blockPhiUsers = block.users.mapNotNull { it as? PhiInst }
+            for (phi in blockPhiUsers) {
+                val parent = phi.parent ?: continue
+
+                val oldIncomings = phi.incomings
+                val incomings = when (parent) {
+                    is CatchBlock ->  when (block) {
+                        in parent.entries -> oldIncomings.map { if (it.key == block) predecessor to it.value else it.key to it.value }.toMap()
+                        else -> oldIncomings.mapNotNull { if (it.key == block) null else it.key to it.value }.toMap()
+                    }
+                    else -> oldIncomings.map { if (it.key == block) predecessor to it.value else it.key to it.value }.toMap()
+                }
+                val newPhi = cm.instruction.getPhi(phi.type, incomings)
+
+                phi.replaceAllUsesWith(newPhi)
+                parent.replace(phi, newPhi)
+            }
+
             method.remove(block)
             predecessor.removeSuccessor(block)
             block.removeSuccessor(successor)
             predecessor.addSuccessor(successor)
             successor.addPredecessor(predecessor)
             block.replaceAllUsesWith(successor)
-
-            for (phi in successor.mapNotNull { it as? PhiInst }) {
-                val incomings = phi.incomings.map { if (it.key == block) predecessor to it.value else it.key to it.value }.toMap()
-
-                val newPhi = cm.instruction.getPhi(phi.type, incomings)
-
-                phi.replaceAllUsesWith(newPhi)
-                successor.replace(phi, newPhi)
-            }
-
-            for (catch in handlers) {
-                for (phi in catch.mapNotNull { it as? PhiInst }) {
-                    val incomings = phi.incomings.toMutableMap()
-                    incomings.remove(block)
-                    val newPhi = cm.instruction.getPhi(phi.type, incomings)
-
-                    phi.replaceAllUsesWith(newPhi)
-                    catch.replace(phi, newPhi)
-                }
-            }
 
         }
     }
