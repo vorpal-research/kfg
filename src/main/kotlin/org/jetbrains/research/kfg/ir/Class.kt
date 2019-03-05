@@ -109,7 +109,9 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     }
 
     override fun getField(name: String, type: Type) = fields.getOrElse(FieldKey(name, type)) {
-        superClass?.getFieldConcrete(name, type) ?: throw UnknownInstance("No field \"$name\" in class $this")
+        superClass?.getFieldConcrete(name, type)
+                ?: interfaces.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+                ?: throw UnknownInstance("No field \"$name\" in class $this")
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {

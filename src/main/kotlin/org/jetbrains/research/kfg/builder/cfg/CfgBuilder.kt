@@ -1069,6 +1069,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         }
 
         buildCFG()  // build basic blocks graph
+
+        if (method.isEmpty()) {
+            // if method does not contain any code, we can't build cfg for it
+            return method
+        }
+
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
