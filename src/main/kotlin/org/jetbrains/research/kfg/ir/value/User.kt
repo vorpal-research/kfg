@@ -34,7 +34,7 @@ abstract class UsableValue : Usable<Value>() {
         super.addUser(user)
     }
 
-    fun replaceAllUsesWith(to: UsableValue) {
+    open fun replaceAllUsesWith(to: UsableValue) {
         users.forEach { it.replaceUsesOf(this, to) }
     }
 }

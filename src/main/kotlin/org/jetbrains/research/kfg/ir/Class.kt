@@ -15,6 +15,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
 
+        override fun toString() = "$name$desc"
         override fun hashCode() = simpleHash(name, desc)
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -64,7 +65,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         }
         cn.methods.forEach {
             it as MethodNode
-            methods[MethodKey(cm.type,  it.name, it.desc)] = Method(cm, it, this)
+            methods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
         }
     }
 
@@ -109,20 +110,19 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     }
 
     override fun getField(name: String, type: Type) = fields.getOrElse(FieldKey(name, type)) {
-        superClass?.getFieldConcrete(name, type)
-                ?: interfaces.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+        val parents = (listOf(superClass) + interfaces).filterNotNull()
+        parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+                ?: parents.mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
                 ?: throw UnknownInstance("No field \"$name\" in class $this")
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
         return methods.getOrElse(methodDesc) {
-            val `super` = superClass
-            getMethodConcrete(name, desc)
-                    ?: if (`super` != null && `super` is OuterClass)
-                        `super`.getMethod(name, desc)
-                    else interfaces.firstOrNull { it is OuterClass }?.getMethod(name, desc)
-                            ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
+            val parents = (listOf(superClass) + interfaces).filterNotNull()
+            parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+                    ?: parents.mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
+                    ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
         }
     }
 

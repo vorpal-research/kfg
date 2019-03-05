@@ -1,15 +1,16 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kfg.ir.value.Name
-import org.jetbrains.research.kfg.ir.value.UsableBlock
-import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 
 class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     : Instruction(name, type, incomings.values.toTypedArray()), BlockUser {
     private val preds = incomings.keys.toTypedArray()
+
+    init {
+        incomings.keys.forEach { it.addUser(this) }
+    }
 
     val predecessors: List<BasicBlock>
         get() = preds.toList()
@@ -38,5 +39,15 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
                     preds[it] = to.get()
                     to.addUser(this)
                 }
+    }
+
+    override fun replaceAllUsesWith(to: UsableValue) {
+        super.replaceAllUsesWith(to)
+        if (to is BlockUser) {
+            preds.forEach {
+                it.removeUser(this)
+                it.addUser(to)
+            }
+        }
     }
 }
