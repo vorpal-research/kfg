@@ -19,7 +19,7 @@ import java.lang.NullPointerException
 import java.util.*
 import kotlin.collections.ArrayList
 
-class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
+private class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
     override fun clear() {
         values.forEach { it.removeUser(this) }
@@ -56,7 +56,7 @@ class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     }
 }
 
-class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : ValueUser, MutableList<Value> by stack {
+private class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : ValueUser, MutableList<Value> by stack {
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
         stack.replaceAll { if (it == from) to.get() else it }
     }
@@ -141,7 +141,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     val values get() = cm.value
     val types get() = cm.type
 
-    inner class StackFrame(val bb: BasicBlock) {
+    private class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
         val stack = FrameStack()
 
@@ -319,8 +319,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     }
 
     private fun convertPop(insn: InsnNode) {
-        val opcode = insn.opcode
-        when (opcode) {
+        when (val opcode = insn.opcode) {
             POP -> pop()
             POP2 -> {
                 val top = pop()
@@ -331,8 +330,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     }
 
     private fun convertDup(insn: InsnNode) {
-        val opcode = insn.opcode
-        when (opcode) {
+        when (val opcode = insn.opcode) {
             DUP -> push(peek())
             DUP_X1 -> {
                 val top = pop()
@@ -701,8 +699,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     private fun convertLabel(lbl: LabelNode) = Unit
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
-        val cst = insn.cst
-        when (cst) {
+        when (val cst = insn.cst) {
             is Int -> push(values.getIntConstant(cst))
             is Float -> push(values.getFloatConstant(cst))
             is Double -> push(values.getDoubleConstant(cst))
@@ -1130,12 +1127,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         }
 
         method.slottracker.rerun()
-
-        try {
-            IRVerifier(cm).visit(method)
-        } catch (e: NoSuchElementException) {
-            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
-        }
+        IRVerifier(cm).visit(method)
 
         return method
     }

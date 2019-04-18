@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.util.JarUtils
+import org.jetbrains.research.kfg.util.updateJar
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.util.jar.JarFile
@@ -11,7 +11,7 @@ import org.junit.Test as test
 import kotlin.test.assertTrue
 import java.io.File
 
-internal fun deleteDirectory(directory: File): Boolean {
+private fun deleteDirectory(directory: File): Boolean {
     if (directory.exists()) {
         val files = directory.listFiles()
         if (null != files) {
@@ -52,7 +52,7 @@ class KfgIntegrationTest {
 
         val jarFile = JarFile(jar)
         val cm = ClassManager(jarFile, `package`)
-        JarUtils.updateJar(cm, jarFile, target, `package`)
+        updateJar(cm, jarFile, target, `package`)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

@@ -12,28 +12,24 @@ import java.io.StringWriter
 private val printer = Textifier()
 private val mp = TraceMethodVisitor(printer)
 
-fun ClassNode.print(): String {
-    val sb = StringBuilder()
-    sb.appendln("Class ${this.name}")
-    val methods = @Suppress("UNCHECKED_CAST") (this.methods as MutableList<MethodNode>)
+fun ClassNode.print() = buildString {
+    appendln("Class ${this@print.name}")
+    val methods = @Suppress("UNCHECKED_CAST") (this@print.methods as MutableList<MethodNode>)
     for (mn in methods) {
-        sb.appendln(mn.print())
+        appendln(mn.print())
     }
-    return sb.toString()
 }
 
-fun MethodNode.print(): String {
-    val sb = StringBuilder()
-    sb.appendln(this.name)
-    for (insn in this.instructions) {
+fun MethodNode.print() = buildString {
+    appendln(this@print.name)
+    for (insn in this@print.instructions) {
         val ain = insn as AbstractInsnNode
-        sb.append(ain.print())
+        append(ain.print())
     }
-    for (insn in this.tryCatchBlocks) {
+    for (insn in this@print.tryCatchBlocks) {
         val ain = insn as TryCatchBlockNode
-        sb.append(ain.print())
+        append(ain.print())
     }
-    return sb.toString()
 }
 
 fun AbstractInsnNode.print(): String {
@@ -44,11 +40,9 @@ fun AbstractInsnNode.print(): String {
     return sw.toString()
 }
 
-fun TryCatchBlockNode.print(): String {
-    val sb = StringBuilder()
-    sb.append("${start.print().dropLast(1)} ")
-    sb.append("${end.print().dropLast(1)} ")
-    sb.append("${handler.print().dropLast(1)} ")
-    sb.appendln(type ?: "java/lang/Throwable")
-    return sb.toString()
+fun TryCatchBlockNode.print() = buildString {
+    append("${start.print().dropLast(1)} ")
+    append("${end.print().dropLast(1)} ")
+    append("${handler.print().dropLast(1)} ")
+    appendln(type ?: "java/lang/Throwable")
 }

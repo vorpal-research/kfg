@@ -8,7 +8,7 @@ import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.Flags
-import org.jetbrains.research.kfg.util.JarUtils
+import org.jetbrains.research.kfg.util.parseJarClasses
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
 import java.util.jar.JarFile
@@ -47,19 +47,19 @@ class ClassManager(jar: JarFile, val `package`: Package = Package("*"), flags: F
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
-    val concreteClasses: List<ConcreteClass>
 
+    private val concreteClasses: List<ConcreteClass>
     private val classNodes = hashMapOf<String, ClassNode>()
     private val classes = hashMapOf<String, Class>()
 
     init {
-        val jarClasses = JarUtils.parseJarClasses(jar, `package`, flags)
+        val jarClasses = parseJarClasses(jar, `package`, flags)
         classNodes.putAll(jarClasses)
         jarClasses.forEach { (name, cn) ->
             classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
         }
         classes.values.forEach {
-            it.methods.forEach { _, method ->
+            it.methods.forEach { (_, method) ->
                 if (!method.isAbstract) CfgBuilder(this, method).build()
             }
         }
