@@ -190,12 +190,10 @@ sealed class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<
 }
 
 class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
-    override fun print(): String {
-        val sb = StringBuilder()
-        sb.append("$name: \t")
-        sb.appendln("//predecessors ${predecessors.joinToString { it.name.toString() }}")
-        sb.append(instructions.joinToString(separator = "\n\t", prefix = "\t") { it.print() })
-        return sb.toString()
+    override fun print() = buildString {
+        append("$name: \t")
+        appendln("//predecessors ${predecessors.joinToString { it.name.toString() }}")
+        append(instructions.joinToString(separator = "\n\t", prefix = "\t") { it.print() })
     }
 }
 
@@ -222,12 +220,10 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)
     fun getAllPredecessors() = throwers + entries
 
-    override fun print(): String {
-        val sb = StringBuilder()
-        sb.append("$name: \t")
-        sb.appendln("//catches from ${throwers.joinToString { it.name.toString() }}")
-        sb.append(instructions.joinToString(separator = "\n", prefix = "\t") { it.print() })
-        return sb.toString()
+    override fun print() = buildString {
+        append("$name: \t")
+        appendln("//catches from ${throwers.joinToString { it.name.toString() }}")
+        append(instructions.joinToString(separator = "\n", prefix = "\t") { it.print() })
     }
 
     companion object {

@@ -18,21 +18,13 @@ class DominatorTreeNode<T : GraphNode<T>>(val value: T) : TreeNode {
     override fun getChilds(): Set<DominatorTreeNode<T>> = dominates
     override fun getParent() = idom
 
-    fun dominates(node: T): Boolean {
-        for (it in dominates) {
-            if (it.value == node) return true
-        }
-        for (it in dominates) {
-            if (it.dominates(node)) return true
-        }
-        return false
+    fun dominates(node: T): Boolean = when {
+        dominates.any { it.value == node } -> true
+        else -> dominates.any { it.dominates(node) }
     }
 }
 
-class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by mutableMapOf<T, DominatorTreeNode<T>>() {
-
-    fun getIdom(node: T) = this.getValue(node).idom
-}
+class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by mutableMapOf<T, DominatorTreeNode<T>>()
 
 class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
     val tree = DominatorTree<T>()
