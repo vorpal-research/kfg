@@ -66,16 +66,12 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     val slottracker = SlotTracker(this)
 
     init {
-        if (mn.parameters != null) {
-            mn.parameters.withIndex().forEach { (indx, param) ->
-                param as ParameterNode
-                parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))
-            }
+        mn.parameters?.withIndex()?.forEach { (indx, param) ->
+            param as ParameterNode
+            parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))
         }
 
-        if (mn.exceptions != null) {
-            mn.exceptions.forEach { exceptions.add(cm.getByName(it as String)) }
-        }
+        mn.exceptions?.forEach { exceptions.add(cm.getByName(it as String)) }
 
         addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.visibleAnnotations as List<AnnotationNode>?))
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))
@@ -93,7 +89,7 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     val bodyBlocks: List<BasicBlock>
         get() {
             val catches = catchBlocks
-            return basicBlocks.asSequence().filter { it !in catches }.toList()
+            return basicBlocks.filter { it !in catches }.toList()
         }
 
     val catchBlocks: List<BasicBlock>
@@ -171,11 +167,9 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     fun getBlockByLocation(location: Location) = basicBlocks.find { it.location == location }
     fun getBlockByName(name: String) = basicBlocks.find { it.name.toString() == name }
 
-    fun print(): String {
-        val sb = StringBuilder()
-        sb.appendln(prototype)
-        sb.append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
-        return sb.toString()
+    fun print() = buildString {
+        appendln(prototype)
+        append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
     }
 
     override fun toString() = prototype
@@ -201,23 +195,27 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
 
     fun graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
         val nodes = hashMapOf<String, GraphView>()
-        nodes[name] = GraphView(name, this.toString())
+        nodes[name] = GraphView(name, prototype)
+
         basicBlocks.map { bb ->
             val label = StringBuilder()
             label.append("${bb.name}: ${bb.predecessors.joinToString(", ") { it.name.toString() }}\\l")
             bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
             nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
         }
+
         if (!isAbstract) {
             val entryNode = nodes.getValue(entry.name.toString())
             nodes.getValue(name).successors.add(entryNode)
         }
+
         basicBlocks.forEach {
             val current = nodes.getValue(it.name.toString())
             for (succ in it.successors) {
                 current.successors.add(nodes.getValue(succ.name.toString()))
             }
         }
+
         if (viewCatchBlocks) {
             catchEntries.forEach {
                 val current = nodes.getOrPut(it.name.toString()) { GraphView(it.name.toString(), "${it.name}:\\l") }
