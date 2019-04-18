@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.util.Flags
-import org.jetbrains.research.kfg.util.JarUtils
+import org.jetbrains.research.kfg.util.updateJar
 import java.io.File
 import java.util.jar.JarFile
 
@@ -13,5 +13,5 @@ fun main(args: Array<String>) {
     val target = File(cfg.getStringValue("target", "instrumented/"))
 
     val cm = ClassManager(jar, `package`, Flags.readAll)
-    JarUtils.updateJar(cm, jar, target, `package`)
+    updateJar(cm, jar, target, `package`)
 }
