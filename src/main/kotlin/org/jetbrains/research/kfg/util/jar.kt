@@ -81,7 +81,7 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
 
 class JarBuilder(val name: String) {
     private val manifest = Manifest()
-    private var jar: JarOutputStream? = null
+    private lateinit var jar: JarOutputStream
 
     fun addMainAttribute(key: Any, attrs: Any) {
         manifest.mainAttributes[key] = attrs
@@ -94,12 +94,11 @@ class JarBuilder(val name: String) {
     /**
      * Initializes jar file output stream. Should be called only after manifest file is configured
      */
-    private fun init() {
+    fun init() {
         jar = JarOutputStream(FileOutputStream(name), manifest)
     }
 
     fun add(source: File) {
-        if (jar == null) init()
         if (source.isDirectory) {
             var name = source.path.replace("\\", "/")
             if (!name.isEmpty()) {
@@ -107,8 +106,8 @@ class JarBuilder(val name: String) {
                     name += "/"
                 val entry = JarEntry(name)
                 entry.time = source.lastModified()
-                jar?.putNextEntry(entry)
-                jar?.closeEntry()
+                jar.putNextEntry(entry)
+                jar.closeEntry()
             }
 
         } else {
@@ -123,86 +122,71 @@ class JarBuilder(val name: String) {
     }
 
     fun add(entry: JarEntry, fis: InputStream) {
-        if (jar == null) init()
-        jar?.putNextEntry(entry)
+        jar.putNextEntry(entry)
         val `in` = BufferedInputStream(fis)
 
         val buffer = ByteArray(1024)
         while (true) {
             val count = `in`.read(buffer)
             if (count == -1) break
-            jar?.write(buffer, 0, count)
+            jar.write(buffer, 0, count)
         }
-        jar?.closeEntry()
+        jar.closeEntry()
     }
 
     fun close() {
-        jar?.close()
+        jar.close()
     }
 }
 
-object JarUtils {
-    private fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): ClassNode {
-        val classReader = ClassReader(input)
-        val classNode = ClassNode()
-        classReader.accept(classNode, flags.value)
-        return classNode
-    }
+private fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): ClassNode {
+    val classReader = ClassReader(input)
+    val classNode = ClassNode()
+    classReader.accept(classNode, flags.value)
+    return classNode
+}
 
-    private fun writeClassNode(loader: ClassLoader,
-                               cn: ClassNode,
-                               filename: String,
-                               flags: Flags = Flags.writeComputeAll): File {
-        val cw = KfgClassWriter(loader, flags)
-        val cca = CheckClassAdapter(cw)
-        cn.accept(cca)
+private fun writeClassNode(loader: ClassLoader,
+                           cn: ClassNode,
+                           filename: String,
+                           flags: Flags = Flags.writeComputeAll): File {
+    val cw = KfgClassWriter(loader, flags)
+    val cca = CheckClassAdapter(cw)
+    cn.accept(cca)
 
-        val file = File(filename)
-        file.parentFile?.mkdirs()
-        val fos = FileOutputStream(file)
-        fos.write(cw.toByteArray())
-        fos.close()
-        return file
-    }
+    val file = File(filename)
+    file.parentFile?.mkdirs()
+    val fos = FileOutputStream(file)
+    fos.write(cw.toByteArray())
+    fos.close()
+    return file
+}
 
-    fun parseJarClasses(jar: JarFile, pack: Package, flags: Flags): Map<String, ClassNode> {
-        val classes = mutableMapOf<String, ClassNode>()
-        val enumeration = jar.entries()
-        while (enumeration.hasMoreElements()) {
-            val entry = enumeration.nextElement() as JarEntry
+private fun writeClass(cm: ClassManager, loader: ClassLoader,
+               klass: Class,
+               filename: String = "${klass.fullname}.class",
+               flags: Flags = Flags.writeComputeFrames): File =
+        writeClassNode(loader, ClassBuilder(cm, klass).build(), filename, flags)
 
-            if (entry.isClass && pack.isParent(entry.name)) {
-                val classNode = readClassNode(jar.getInputStream(entry), flags)
-                classes[classNode.name] = classNode
-            }
+private fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
+    val loader = jar.classLoader
 
-        }
-        return classes
-    }
+    val currentDir = getCurrentDirectory()
+    val enumeration = jar.entries()
 
-    fun writeClass(cm: ClassManager, loader: ClassLoader,
-                   klass: Class,
-                   filename: String = "${klass.fullname}.class",
-                   flags: Flags = Flags.writeComputeFrames): File =
-            writeClassNode(loader, ClassBuilder(cm, klass).build(), filename, flags)
+    while (enumeration.hasMoreElements()) {
+        val entry = enumeration.nextElement() as JarEntry
+        if (entry.name == "META-INF/MANIFEST.MF") continue
 
-    fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
-        val loader = jar.classLoader
-
-        val currentDir = getCurrentDirectory()
-        val enumeration = jar.entries()
-
-        while (enumeration.hasMoreElements()) {
-            val entry = enumeration.nextElement() as JarEntry
-            if (entry.name == "META-INF/MANIFEST.MF") continue
-
-            if (entry.isClass) {
-                if (`package`.isParent(entry.name)) {
+        if (entry.isClass) {
+            when {
+                `package`.isParent(entry.name) -> {
                     val `class` = cm.getByName(entry.name.removeSuffix(".class"))
                     val localPath = "${`class`.fullname}.class"
                     val path = "$currentDir/$localPath"
                     writeClass(cm, loader, `class`, path, Flags.writeComputeFrames)
-                } else if (writeAllClasses) {
+                }
+                writeAllClasses -> {
                     val path = "$currentDir/${entry.name}"
                     val classNode = readClassNode(jar.getInputStream(entry))
                     writeClassNode(loader, classNode, path, Flags.writeComputeNone)
@@ -210,48 +194,65 @@ object JarUtils {
             }
         }
     }
+}
 
-    fun writeClassesToTarget(cm: ClassManager, jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
-        val workingDir = getCurrentDirectory()
-        setCurrentDirectory(target)
-        writeClasses(cm, jar, `package`, writeAllClasses)
-        setCurrentDirectory(workingDir)
+fun writeClassesToTarget(cm: ClassManager, jar: JarFile, target: File, `package`: Package, writeAllClasses: Boolean = false) {
+    val workingDir = getCurrentDirectory()
+    setCurrentDirectory(target)
+    writeClasses(cm, jar, `package`, writeAllClasses)
+    setCurrentDirectory(workingDir)
+}
+
+fun updateJar(cm: ClassManager, jar: JarFile, target: File, `package`: Package): JarFile {
+    val workingDir = getCurrentDirectory()
+    setCurrentDirectory(target)
+    val currentDir = getCurrentDirectory()
+    val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
+    val builder = JarBuilder("$currentDir/$jarName.jar")
+    val enumeration = jar.entries()
+
+    for ((key, value) in jar.manifest.mainAttributes) {
+        builder.addMainAttribute(key, value)
     }
 
-    fun updateJar(cm: ClassManager, jar: JarFile, target: File, `package`: Package): JarFile {
-        val workingDir = getCurrentDirectory()
-        setCurrentDirectory(target)
-        val currentDir = getCurrentDirectory()
-        val jarName = jar.name.substringAfterLast('/').removeSuffix(".jar")
-        val builder = JarBuilder("$currentDir/$jarName.jar")
-        val enumeration = jar.entries()
-
-        for ((key, value) in jar.manifest.mainAttributes) {
-            builder.addMainAttribute(key, value)
-        }
-
-        for ((key, value) in jar.manifest.entries) {
-            builder.addManifestEntry(key, value)
-        }
-        writeClasses(cm, jar, `package`)
-
-        while (enumeration.hasMoreElements()) {
-            val entry = enumeration.nextElement() as JarEntry
-            if (entry.isManifest) continue
-
-            if (entry.isClass && `package`.isParent(entry.name)) {
-                val `class` = cm.getByName(entry.name.removeSuffix(".class"))
-                val localPath = "${`class`.fullname}.class"
-                val path = "$currentDir/$localPath"
-
-                val newEntry = JarEntry(localPath.replace("\\", "/"))
-                builder.add(newEntry, FileInputStream(path))
-            } else {
-                builder.add(entry, jar.getInputStream(entry))
-            }
-        }
-        builder.close()
-        setCurrentDirectory(workingDir)
-        return JarFile(builder.name)
+    for ((key, value) in jar.manifest.entries) {
+        builder.addManifestEntry(key, value)
     }
+    builder.init()
+
+    writeClasses(cm, jar, `package`)
+
+    while (enumeration.hasMoreElements()) {
+        val entry = enumeration.nextElement() as JarEntry
+        if (entry.isManifest) continue
+
+        if (entry.isClass && `package`.isParent(entry.name)) {
+            val `class` = cm.getByName(entry.name.removeSuffix(".class"))
+            val localPath = "${`class`.fullname}.class"
+            val path = "$currentDir/$localPath"
+
+            val newEntry = JarEntry(localPath.replace("\\", "/"))
+            builder.add(newEntry, FileInputStream(path))
+        } else {
+            builder.add(entry, jar.getInputStream(entry))
+        }
+    }
+    builder.close()
+    setCurrentDirectory(workingDir)
+    return JarFile(builder.name)
+}
+
+fun parseJarClasses(jar: JarFile, pack: Package, flags: Flags): Map<String, ClassNode> {
+    val classes = mutableMapOf<String, ClassNode>()
+    val enumeration = jar.entries()
+    while (enumeration.hasMoreElements()) {
+        val entry = enumeration.nextElement() as JarEntry
+
+        if (entry.isClass && pack.isParent(entry.name)) {
+            val classNode = readClassNode(jar.getInputStream(entry), flags)
+            classes[classNode.name] = classNode
+        }
+
+    }
+    return classes
 }
