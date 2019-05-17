@@ -8,11 +8,8 @@ import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
-import java.lang.IllegalArgumentException
 import java.net.URLClassLoader
 import java.util.jar.*
 
@@ -162,13 +159,13 @@ private fun writeClassNode(loader: ClassLoader,
     return file
 }
 
-private fun writeClass(cm: ClassManager, loader: ClassLoader,
+fun writeClass(cm: ClassManager, loader: ClassLoader,
                klass: Class,
                filename: String = "${klass.fullname}.class",
                flags: Flags = Flags.writeComputeFrames): File =
         writeClassNode(loader, ClassBuilder(cm, klass).build(), filename, flags)
 
-private fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
+fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllClasses: Boolean = false) {
     val loader = jar.classLoader
 
     val currentDir = getCurrentDirectory()

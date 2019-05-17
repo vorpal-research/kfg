@@ -47,8 +47,8 @@ class ClassManager(jar: JarFile, val `package`: Package = Package("*"), flags: F
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
+    val concreteClasses: List<ConcreteClass>
 
-    private val concreteClasses: List<ConcreteClass>
     private val classNodes = hashMapOf<String, ClassNode>()
     private val classes = hashMapOf<String, Class>()
 
