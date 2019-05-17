@@ -27,30 +27,30 @@ class Pipeline(val cm: ClassManager, private val target: Package, pipeline: List
         }
     }
 
-    private fun NodeVisitor.wrap(): ClassVisitor = when (this) {
-        is ClassVisitor -> this
+    private fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
+        is ClassVisitor -> visitor
         is MethodVisitor -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
 
             override fun cleanup() {
-                this.cleanup()
+                visitor.cleanup()
             }
 
             override fun visitMethod(method: Method) {
                 super.visitMethod(method)
-                this.visit(method)
+                visitor.visit(method)
             }
         }
         else -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
 
             override fun cleanup() {
-                this.cleanup()
+                visitor.cleanup()
             }
 
             override fun visit(node: Node) {
                 super.visit(node)
-                this.visit(node)
+                visitor.visit(node)
             }
         }
     }
