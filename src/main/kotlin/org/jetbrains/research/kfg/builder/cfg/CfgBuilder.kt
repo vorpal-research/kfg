@@ -705,7 +705,13 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
             is Double -> push(values.getDoubleConstant(cst))
             is Long -> push(values.getLongConstant(cst))
             is String -> push(values.getStringConstant(cst))
-            is org.objectweb.asm.Type -> push(values.getClassConstant(cst.descriptor))
+            is org.objectweb.asm.Type -> {
+                val klass = when (val temp = parseDesc(types, cst.descriptor)) {
+                    is ClassType -> temp.`class`
+                    else -> cm.getByName("$temp")
+                }
+                push(values.getClassConstant(klass))
+            }
             is org.objectweb.asm.Handle -> {
                 val `class` = cm.getByName(cst.owner)
                 val method = `class`.getMethod(cst.name, cst.desc)

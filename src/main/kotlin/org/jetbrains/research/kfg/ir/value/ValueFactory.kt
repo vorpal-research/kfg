@@ -23,6 +23,7 @@ class ValueFactory(val cm: ClassManager) {
     fun getDoubleConstant(value: Double): Value = DoubleConstant(value, types.doubleType)
     fun getStringConstant(value: String): Value = StringConstant(value, types.stringType)
     fun getClassConstant(desc: String): Value = ClassConstant(parseDesc(types, desc))
+    fun getClassConstant(klass: Class): Value = ClassConstant(types.getRefType(klass))
     fun getMethodConstant(method: Method): Value = MethodConstant(method, types.getRefType("java/lang/invoke/MethodHandle"))
 
     fun getZeroConstant(type: Type): Value = when(type) {

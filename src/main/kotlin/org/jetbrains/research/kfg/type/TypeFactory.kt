@@ -45,6 +45,9 @@ class TypeFactory(val cm: ClassManager) {
     val objectType
         get() = getRefType(objectClass)
 
+    val objectArrayClass
+        get() = getRefType(cm.getByName("$objectType[]"))
+
     fun getRefType(cname: Class): Type = ClassType(cname)
     fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
