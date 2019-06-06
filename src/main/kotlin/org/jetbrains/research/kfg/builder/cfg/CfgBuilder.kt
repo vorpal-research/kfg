@@ -757,7 +757,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
 
     private fun convertLineNumber(insn: LineNumberNode) {
         val `package` = method.`class`.`package`
-        val file = method.`class`.cn.sourceFile
+        val file = method.`class`.cn.sourceFile ?: "Unknown"
         val line = insn.line
         currentLocation = Location(`package`, file, line)
     }

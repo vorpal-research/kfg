@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.analysis
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
+import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 
@@ -56,6 +57,20 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
+    private fun mapToCatch(original: BasicBlock, new: BasicBlock, catch: CatchBlock) {
+        catch.addThrowers(listOf(new))
+        new.addHandler(catch)
+
+        catch.mapNotNull { it as? PhiInst }.forEach { phi ->
+            val incomings = phi.incomings.toMutableMap()
+            incomings[new] = incomings[original]!!
+            val newPhi = instructions.getPhi(phi.type, incomings)
+            catch.insertBefore(phi, newPhi)
+            phi.replaceAllUsesWith(newPhi)
+            catch -= phi
+        }
+    }
+
     private fun buildPreheader(loop: Loop) {
         val header = loop.header
         val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
@@ -67,6 +82,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         header.addPredecessor(preheader)
 
         remapPhis(header, loopPredecessors, preheader)
+        header.handlers.forEach { mapToCatch(header, preheader, it) }
         preheader += instructions.getJump(header)
         current!!.addBefore(header, preheader)
     }
