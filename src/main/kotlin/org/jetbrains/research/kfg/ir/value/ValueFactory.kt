@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir.value
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.InvalidStateError
+import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 
@@ -9,6 +10,7 @@ class ValueFactory(val cm: ClassManager) {
     val types get() = cm.type
 
     fun getThis(type: Type): Value = ThisRef(type)
+    fun getThis(klass: Class): Value = getThis(types.getRefType(klass))
     fun getArgument(index: Int, method: Method, type: Type): Value = Argument(index, method, type)
     // constants
     fun getNullConstant(): Value = NullConstant(types.nullType)
