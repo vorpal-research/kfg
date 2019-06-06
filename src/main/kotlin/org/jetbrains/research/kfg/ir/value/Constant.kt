@@ -6,7 +6,6 @@ import org.jetbrains.research.kfg.type.Type
 sealed class Constant(name: String, type: Type) : Value(ConstantName(name), type)
 
 class BoolConstant(val value: Boolean, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -23,7 +22,6 @@ class BoolConstant(val value: Boolean, type: Type) : Constant(value.toString(), 
 }
 
 class ByteConstant(val value: Byte, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -40,7 +38,6 @@ class ByteConstant(val value: Byte, type: Type) : Constant(value.toString(), typ
 }
 
 class ShortConstant(val value: Short, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -57,7 +54,6 @@ class ShortConstant(val value: Short, type: Type) : Constant(value.toString(), t
 }
 
 class IntConstant(val value: Int, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -74,7 +70,6 @@ class IntConstant(val value: Int, type: Type) : Constant(value.toString(), type)
 }
 
 class LongConstant(val value: Long, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -91,7 +86,6 @@ class LongConstant(val value: Long, type: Type) : Constant(value.toString(), typ
 }
 
 class CharConstant(val value: Char, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -108,7 +102,6 @@ class CharConstant(val value: Char, type: Type) : Constant(value.toString(), typ
 }
 
 class FloatConstant(val value: Float, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -125,7 +118,6 @@ class FloatConstant(val value: Float, type: Type) : Constant(value.toString(), t
 }
 
 class DoubleConstant(val value: Double, type: Type) : Constant(value.toString(), type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -142,7 +134,6 @@ class DoubleConstant(val value: Double, type: Type) : Constant(value.toString(),
 }
 
 class StringConstant(val value: String, type: Type) : Constant("\"$value\"", type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -159,7 +150,6 @@ class StringConstant(val value: String, type: Type) : Constant("\"$value\"", typ
 }
 
 class MethodConstant(val method: Method, type: Type) : Constant(method.name, type) {
-    override fun toString()= super.toString()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
