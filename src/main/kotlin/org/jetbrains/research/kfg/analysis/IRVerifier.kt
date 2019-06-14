@@ -11,11 +11,10 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
-import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 class IRVerifier(override val cm: ClassManager) : MethodVisitor {
-    private val valueNameRegex = "(%([a-zA-Z][\\w.]*|\\d+)|arg\\$\\d+|this)".toRegex()
+    private val valueNameRegex = "(%([\$a-zA-Z]+[\\w.]*|\$|\\d+)|arg\\$\\d+|this)".toRegex()
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
