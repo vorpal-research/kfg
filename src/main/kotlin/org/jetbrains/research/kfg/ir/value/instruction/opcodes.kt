@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.objectweb.asm.Opcodes
 import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.simpleHash
+import org.objectweb.asm.Opcodes
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
     in Opcodes.IADD..Opcodes.DADD -> BinaryOpcode.Add()
@@ -22,6 +22,23 @@ fun toBinaryOpcode(opcode: Int) = when (opcode) {
 
 sealed class BinaryOpcode {
     abstract val name: String
+
+    companion object {
+        fun parse(string: String) = when (string.trim()) {
+            "+" -> Add()
+            "-" -> Sub()
+            "*" -> Mul()
+            "/" -> Div()
+            "%" -> Rem()
+            "<<" -> Shl()
+            ">>" -> Shr()
+            "u>>" -> Ushr()
+            "&&" -> And()
+            "||" -> Or()
+            "^" -> Xor()
+            else -> throw IllegalArgumentException("Unknown opcode $string")
+        }
+    }
 
     override fun toString() = name
     override fun hashCode() = simpleHash(name)
@@ -94,6 +111,21 @@ fun getCmpResultType(tf: TypeFactory, opcode: CmpOpcode) = when (opcode) {
 sealed class CmpOpcode {
     abstract val name: String
 
+    companion object {
+        fun parse(string: String) = when (string.trim()) {
+            "==" -> Eq()
+            "!=" -> Neq()
+            "<" -> Lt()
+            ">" -> Gt()
+            "<=" -> Le()
+            ">=" -> Ge()
+            "cmp" -> Cmp()
+            "cmpg" -> Cmpg()
+            "cmpl" -> Cmpl()
+            else -> throw IllegalArgumentException("Unknown opcode $string")
+        }
+    }
+
     override fun toString() = name
 
     class Eq(override val name: String = "==") : CmpOpcode()
@@ -117,6 +149,16 @@ fun toCallOpcode(opcode: Int): CallOpcode = when (opcode) {
 
 sealed class CallOpcode {
     abstract val name: String
+
+    companion object {
+        fun parse(string: String) = when (string.trim()) {
+            "virtual" -> Virtual()
+            "special" -> Special()
+            "static" -> Static()
+            "interface" -> Interface()
+            else -> throw IllegalArgumentException("Unknown opcode $string")
+        }
+    }
 
     override fun toString() = name
 
