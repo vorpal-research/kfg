@@ -34,7 +34,6 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
     val hasSinglePreheader get() = preheaders.size == 1
     val hasSingleLatch get() = body.filter { it.successors.contains(header) }.toSet().size == 1
 
-    fun contains(bb: BasicBlock) = bb in body
     fun containsAll(blocks: Collection<BasicBlock>) = body.containsAll(blocks)
 
     fun addBlock(bb: BasicBlock) {
