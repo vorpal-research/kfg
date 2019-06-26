@@ -10,7 +10,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private var current: Method? = null
 
-    override fun preservesLoopInfo() = false
+    override val preservesLoopInfo get() = false
 
     override fun cleanup() {}
 

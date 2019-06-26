@@ -52,19 +52,9 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<
 
 
 object LoopManager {
-    private class LoopInfo {
-        var valid = false
-        val loops: List<Loop>
-
-        constructor() {
-            this.valid = false
-            this.loops = listOf()
-        }
-
-        constructor(loops: List<Loop>) {
-            this.valid = true
-            this.loops = loops
-        }
+    private class LoopInfo(val loops: List<Loop>, var valid: Boolean) {
+        constructor() : this(listOf(), false)
+        constructor(loops: List<Loop>) : this(loops, true)
     }
 
     private val loopInfo = mutableMapOf<Method, LoopInfo>()
@@ -78,12 +68,17 @@ object LoopManager {
         return when {
             info.valid -> info.loops
             else -> {
-                val loops = LoopAnalysis(method.cm).invoke(method)
+                val loops = performLoopAnalysis(method)
                 loopInfo[method] = LoopInfo(loops)
                 loops
             }
         }
     }
+}
+
+fun performLoopAnalysis(method: Method): List<Loop> {
+    val la = LoopAnalysis(method.cm)
+    return la.invoke(method)
 }
 
 class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
@@ -138,15 +133,15 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
         }
 
         for (loop in allLoops) {
-            val headers = loop.body.fold(0) { acc, basicBlock ->
-                if (loop.containsAll(basicBlock.predecessors)) acc else acc + 1
-            }
+            val headers = loop.count { !loop.containsAll(it.predecessors) }
             require(headers == 1) { "Only loops with single header are supported" }
         }
     }
 }
 
 interface LoopVisitor : MethodVisitor {
+    val preservesLoopInfo get() = false
+
     override fun visit(method: Method) {
         val loops = LoopManager.getMethodLoopInfo(method)
         loops.forEach { visit(it) }
@@ -157,10 +152,8 @@ interface LoopVisitor : MethodVisitor {
         for (it in loop.subloops) visit(it)
     }
 
-    fun preservesLoopInfo() = false
-
     fun updateLoopInfo(method: Method) {
-        if (!this.preservesLoopInfo()) {
+        if (!this.preservesLoopInfo) {
             LoopManager.setInvalid(method)
         }
     }
