@@ -11,5 +11,8 @@ pipelines:
         caches:
           - maven
         script: # Modify the commands below to build your repository.
-          - mvn clean package
-          - mvn verify
+          - mvn -B package
+          - pwd
+          - ls ./
+          - ls ./target
+          - mvn -B verify
