@@ -98,7 +98,7 @@ class JarBuilder(val name: String) {
     fun add(source: File) {
         if (source.isDirectory) {
             var name = source.path.replace("\\", "/")
-            if (!name.isEmpty()) {
+            if (name.isNotEmpty()) {
                 if (!name.endsWith("/"))
                     name += "/"
                 val entry = JarEntry(name)
