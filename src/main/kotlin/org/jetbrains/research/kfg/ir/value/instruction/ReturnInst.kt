@@ -20,8 +20,8 @@ class ReturnInst : TerminateInst {
     override val isTerminate get() = true
     override fun print(): String {
         val sb = StringBuilder()
-        sb.append("return ")
-        if (hasReturnValue) sb.append(returnValue)
+        sb.append("return")
+        if (hasReturnValue) sb.append(" $returnValue")
         return sb.toString()
     }
 

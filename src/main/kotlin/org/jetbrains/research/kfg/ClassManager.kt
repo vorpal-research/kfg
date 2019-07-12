@@ -17,6 +17,10 @@ class Package(name: String) {
     val name: String
     val isConcrete: Boolean = name.lastOrNull() != '*'
 
+    companion object {
+        fun parse(string: String) = Package(string.replace('.', '/'))
+    }
+
     init {
         this.name = when {
             isConcrete -> name
