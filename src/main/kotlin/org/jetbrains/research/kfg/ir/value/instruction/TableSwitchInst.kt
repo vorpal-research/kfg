@@ -17,16 +17,16 @@ class TableSwitchInst(type: Type, index: Value, min: Value, max: Value, default:
     val max: Value
         get() = ops[2]
 
-    fun getDefault() = succs[0]
-    fun getBranches() = succs.drop(1)
+    val default get() = succs[0]
+    val branches get() = succs.drop(1)
 
     override fun print(): String {
         val sb = StringBuilder()
         sb.append("tableswitch ($index) {")
-        getBranches().withIndex().forEach { (index, successor) -> sb.append("$index -> ${successor.name}; ") }
-        sb.append("else -> ${getDefault().name}}")
+        branches.withIndex().forEach { (index, successor) -> sb.append("$index -> ${successor.name}; ") }
+        sb.append("else -> ${default.name}}")
         return sb.toString()
     }
 
-    override fun clone(): Instruction = TableSwitchInst(type, index, min, max, getDefault(), getBranches().toTypedArray())
+    override fun clone(): Instruction = TableSwitchInst(type, index, min, max, default, branches.toTypedArray())
 }
