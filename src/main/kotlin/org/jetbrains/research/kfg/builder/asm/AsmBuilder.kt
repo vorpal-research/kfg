@@ -373,8 +373,8 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         addOperandsToStack(listOf(inst.index))
         val min = (inst.min as IntConstant).value
         val max = (inst.max as IntConstant).value
-        val default = getLabel(inst.getDefault())
-        val labels = inst.getBranches().map { getLabel(it) }.toTypedArray()
+        val default = getLabel(inst.default)
+        val labels = inst.branches.map { getLabel(it) }.toTypedArray()
         val insn = TableSwitchInsnNode(min, max, default, *labels)
         currentInsnList.add(insn)
         stackPop()
