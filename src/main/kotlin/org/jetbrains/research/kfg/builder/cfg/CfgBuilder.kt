@@ -599,7 +599,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
                 addInstruction(bb, inst)
                 push(inst)
             }
-            else -> InvalidOpcodeError("$opcode in TypeInsn")
+            else -> throw InvalidOpcodeError("$opcode in TypeInsn")
         }
     }
 
