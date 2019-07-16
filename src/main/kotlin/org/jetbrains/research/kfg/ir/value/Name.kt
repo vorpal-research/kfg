@@ -14,20 +14,22 @@ sealed class Name {
 }
 
 class StringName(val name: String) : Name() {
+    private val number get() = st?.getStringNumber(this) ?: -1
+
     override fun clone() = StringName(name)
-    private fun getNumber() = st?.getStringNumber(this) ?: -1
     override fun toString(): String {
-        val number = getNumber()
+        val number = this.number
         val suffix = if (number == -1) "" else "$number"
         return "%$name$suffix"
     }
 }
 
 class Slot : Name() {
+    private val number get() = st?.getSlotNumber(this) ?: -1
+
     override fun clone() = Slot()
-    private fun getNumber() = st?.getSlotNumber(this) ?: -1
     override fun toString(): String {
-        val num = this.getNumber()
+        val num = this.number
         return if (num == -1) "NO_SLOT_FOR${System.identityHashCode(this)}" else "%$num"
     }
 }

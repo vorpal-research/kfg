@@ -11,27 +11,29 @@ import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 import java.util.*
 
-fun typeToFullInt(type: Type) = when (type) {
-    is BoolType -> 5
-    is ByteType -> 5
-    is ShortType -> 7
-    is CharType -> 6
-    is IntType -> 0
-    is LongType -> 1
-    is FloatType -> 2
-    is DoubleType -> 3
-    is Reference -> 4
-    else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
-}
+val Type.fullInt
+    get() = when (this) {
+        is BoolType -> 5
+        is ByteType -> 5
+        is ShortType -> 7
+        is CharType -> 6
+        is IntType -> 0
+        is LongType -> 1
+        is FloatType -> 2
+        is DoubleType -> 3
+        is Reference -> 4
+        else -> throw InvalidStateError("Unexpected type for conversion: $name")
+    }
 
-fun typeToInt(type: Type) = when (type) {
-    is LongType -> 1
-    is Integral -> 0
-    is FloatType -> 2
-    is DoubleType -> 3
-    is Reference -> 4
-    else -> throw InvalidStateError("Unexpected type for conversion: ${type.name}")
-}
+val Type.shortInt
+    get() = when (this) {
+        is LongType -> 1
+        is Integral -> 0
+        is FloatType -> 2
+        is DoubleType -> 3
+        is Reference -> 4
+        else -> throw InvalidStateError("Unexpected type for conversion: $name")
+    }
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
@@ -68,7 +70,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         while (stack.isNotEmpty()) {
             val operand = stackPop()
             val local = getLocalFor(operand)
-            val opcode = ISTORE + typeToInt(operand.type)
+            val opcode = ISTORE + operand.type.shortInt
             val insn = VarInsnNode(opcode, local)
             currentInsnList.add(insn)
         }
@@ -125,7 +127,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                 is Constant -> convertConstantToInsn(operand)
                 else -> {
                     val local = getLocalFor(operand)
-                    val opcode = ILOAD + typeToInt(operand.type)
+                    val opcode = ILOAD + operand.type.shortInt
                     VarInsnNode(opcode, local)
                 }
             }
@@ -141,7 +143,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitArrayLoadInst(inst: ArrayLoadInst) {
-        val opcode = IALOAD + typeToFullInt(inst.type)
+        val opcode = IALOAD + inst.type.fullInt
         val insn = InsnNode(opcode)
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -152,7 +154,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitArrayStoreInst(inst: ArrayStoreInst) {
         val type = inst.arrayComponent
-        val opcode = IASTORE + typeToFullInt(type)
+        val opcode = IASTORE + type.fullInt
         val insn = InsnNode(opcode)
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -161,7 +163,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitBinaryInst(inst: BinaryInst) {
-        val opcode = inst.opcode.toAsmOpcode() + typeToInt(inst.type)
+        val opcode = inst.opcode.toAsmOpcode() + inst.type.shortInt
         val insn = InsnNode(opcode)
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -188,7 +190,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         stackSave()
         currentInsnList = getTerminateInsnList(inst.parent!!)
         addOperandsToStack(inst.operands)
-        val opcode = if (inst.hasReturnValue) IRETURN + typeToInt(inst.returnType) else RETURN
+        val opcode = if (inst.hasReturnValue) IRETURN + inst.returnType.shortInt else RETURN
         val insn = InsnNode(opcode)
         currentInsnList.add(insn)
     }
@@ -306,7 +308,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val opcode = if (inst.opcode == UnaryOpcode.LENGTH) {
             ARRAYLENGTH
         } else {
-            INEG + typeToInt(inst.operand.type)
+            INEG + inst.operand.type.shortInt
         }
         val insn = InsnNode(opcode)
         val operands = inst.operands
@@ -430,7 +432,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     private fun buildPhiInst(inst: PhiInst) {
-        val storeOpcode = ISTORE + typeToInt(inst.type)
+        val storeOpcode = ISTORE + inst.type.shortInt
         val local = getLocalFor(inst)
         for ((bb, value) in inst.incomings) {
             val bbInsns = getInsnList(bb)
@@ -438,7 +440,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                 is Constant -> convertConstantToInsn(value)
                 else -> {
                     val lcl = getLocalFor(value)
-                    val opcode = ILOAD + typeToInt(value.type)
+                    val opcode = ILOAD + value.type.shortInt
                     VarInsnNode(opcode, lcl)
                 }
             }
