@@ -78,7 +78,7 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
     }
 
     val entry: BasicBlock
-        get() = basicBlocks.first()
+        get() = basicBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
 
     val prototype: String
         get() = "$`class`.$name$desc"
@@ -134,6 +134,19 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
             require(index >= 0) { "Block ${before.name} does not belong to method $this" }
 
             basicBlocks.add(index, bb)
+            slottracker.addBlock(bb)
+            bb.addUser(this)
+            bb.parent = this
+        }
+    }
+
+    fun addAfter(after: BasicBlock, bb: BasicBlock) {
+        if (!basicBlocks.contains(bb)) {
+            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
+            val index = basicBlocks.indexOf(after)
+            require(index >= 0) { "Block ${after.name} does not belong to method $this" }
+
+            basicBlocks.add(index + 1, bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
             bb.parent = this
