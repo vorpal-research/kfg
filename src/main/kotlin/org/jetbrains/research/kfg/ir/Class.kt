@@ -27,12 +27,12 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     data class FieldKey(val name: String, val type: Type)
 
-    val `package` = Package(cn.name.substringBeforeLast('/'))
+    val `package` = Package(cn.name.substringBeforeLast('/', ""))
     val fields = mutableMapOf<FieldKey, Field>()
     val methods = mutableMapOf<MethodKey, Method>()
 
     val fullname
-        get() = "$`package`/$name"
+        get() = if (`package` == Package.emptyPackage) name else "$`package`/$name"
 
     val canonicalDesc
         get() = fullname.replace('/', '.')

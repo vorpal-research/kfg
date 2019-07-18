@@ -18,6 +18,8 @@ class Package(name: String) {
     val isConcrete: Boolean = name.lastOrNull() != '*'
 
     companion object {
+        val defaultPackage = Package("*")
+        val emptyPackage = Package("")
         fun parse(string: String) = Package(string.replace('.', '/'))
     }
 
