@@ -13,7 +13,7 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
     override fun visitMethod(method: Method) {
         AsmBuilder(cm, method).build()
         // because sometimes ASM is not able to process kotlin-generated signatures
-        method.mn.signature = null
+//        method.mn.signature = null
     }
 
     override fun visitField(field: Field) {
@@ -24,7 +24,7 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
     fun build(): ClassNode {
         visit(`class`)
         // because sometimes ASM is not able to process kotlin-generated signatures
-        `class`.cn.signature = null
+//        `class`.cn.signature = null
         return `class`.cn
     }
 
