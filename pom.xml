@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.1</version>
+    <version>0.0.1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -68,13 +68,17 @@
                     <execution>
                         <id>compile</id>
                         <phase>compile</phase>
-                        <goals> <goal>compile</goal> </goals>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
                     </execution>
 
                     <execution>
                         <id>test-compile</id>
                         <phase>test-compile</phase>
-                        <goals> <goal>test-compile</goal> </goals>
+                        <goals>
+                            <goal>test-compile</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -87,6 +91,10 @@
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
+                    <systemPropertyVariables>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <project.version>${project.version}</project.version>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <execution>
@@ -111,21 +119,25 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.6</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${exec.main}</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
                         <phase>package</phase>
-                        <goals> <goal>single</goal> </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${exec.main}</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
