@@ -2,14 +2,13 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.util.updateJar
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintStream
 import java.util.jar.JarFile
-
-import org.junit.Before as before
-import org.junit.After as after
-import org.junit.Test as test
 import kotlin.test.assertTrue
-import java.io.File
+import org.junit.After as after
+import org.junit.Before as before
+import org.junit.Test as test
 
 private fun deleteDirectory(directory: File): Boolean {
     if (directory.exists()) {
@@ -46,7 +45,8 @@ class KfgIntegrationTest {
 
     @test
     fun run() {
-        val jar = "target/kfg-0.1-jar-with-dependencies.jar"
+        val version = System.getProperty("project.version")
+        val jar = "target/kfg-$version-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
         val target = File("instrumented/")
 
