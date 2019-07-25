@@ -11,8 +11,8 @@ import java.nio.file.Files
 import java.util.*
 
 interface GraphNode<out T : Any> {
-    fun getPredSet(): Set<T>
-    fun getSuccSet(): Set<T>
+    val predecessors: Set<T>
+    val successors: Set<T>
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ class TopologicalSorter<T : GraphNode<T>>(private val nodes: Set<T>) {
             return
         }
         colors[node] = Color.GREY
-        for (edge in node.getSuccSet())
+        for (edge in node.successors)
             dfs(edge)
         colors[node] = Color.BLACK
         order.add(node)
@@ -52,7 +52,7 @@ class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
         val backEdges = arrayListOf<Pair<T, T>>()
 
         for ((current, _) in tree) {
-            for (succ in current.getSuccSet()) {
+            for (succ in current.successors) {
                 val succTreeNode = tree.getValue(succ)
                 if (succTreeNode.dominates(current)) {
                     backEdges.add(succ to current)
@@ -69,7 +69,7 @@ class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
                 val top = stack.pop()
                 if (top !in body) {
                     body.add(top)
-                    top.getPredSet().forEach { stack.push(it) }
+                    top.predecessors.forEach { stack.push(it) }
                 }
             }
             result.getOrPut(header, ::arrayListOf).addAll(body)
@@ -80,20 +80,12 @@ class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GraphView(
+data class GraphView(
         val name: String,
         val label: String,
         val successors: MutableList<GraphView>
 ) {
     constructor(name: String, label: String) : this(name, label, mutableListOf())
-
-    override fun hashCode() = simpleHash(name)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (this.javaClass != other?.javaClass) return false
-        other as GraphView
-        return this.name == other.name
-    }
 }
 
 fun viewCfg(name: String, nodes: List<GraphView>, dot: String, browser: String) {

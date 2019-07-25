@@ -1,6 +1,9 @@
 package org.jetbrains.research.kfg.builder.asm
 
-import org.jetbrains.research.kfg.*
+import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.InvalidOperandError
+import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.*
@@ -163,7 +166,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitBinaryInst(inst: BinaryInst) {
-        val opcode = inst.opcode.toAsmOpcode() + inst.type.shortInt
+        val opcode = inst.opcode.asmOpcode + inst.type.shortInt
         val insn = InsnNode(opcode)
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -181,7 +184,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitNewInst(inst: NewInst) {
-        val insn = TypeInsnNode(NEW, inst.type.toInternalDesc())
+        val insn = TypeInsnNode(NEW, inst.type.internalDesc)
         currentInsnList.add(insn)
         stackPush(inst)
     }
@@ -264,7 +267,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             }
             InsnNode(opcode)
         } else {
-            TypeInsnNode(CHECKCAST, targetType.toInternalDesc())
+            TypeInsnNode(CHECKCAST, targetType.internalDesc)
         }
 
         val operands = inst.operands
@@ -295,7 +298,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val insn = when {
             inst.numDimensions > 1 -> MultiANewArrayInsnNode(inst.type.asmDesc, inst.numDimensions)
             component.isPrimary -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
-            else -> TypeInsnNode(ANEWARRAY, component.toInternalDesc())
+            else -> TypeInsnNode(ANEWARRAY, component.internalDesc)
         }
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -361,7 +364,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitInstanceOfInst(inst: InstanceOfInst) {
-        val insn = TypeInsnNode(INSTANCEOF, inst.targetType.toInternalDesc())
+        val insn = TypeInsnNode(INSTANCEOF, inst.targetType.internalDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -383,7 +386,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitCallInst(inst: CallInst) {
-        val opcode = inst.opcode.toAsmOpcode()
+        val opcode = inst.opcode.asmOpcode
         val insn = MethodInsnNode(opcode, inst.`class`.fullname, inst.method.name, inst.method.asmDesc, opcode == INVOKEINTERFACE)
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -454,7 +457,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val catchBlocks = mutableListOf<TryCatchBlockNode>()
         method.catchEntries.forEach {
             val `catch` = getLabel(it)
-            val exception = it.exception.toInternalDesc()
+            val exception = it.exception.internalDesc
             for (thrower in it.throwers) {
                 val from = getLabel(thrower)
                 val to = getLabel(method.getNext(thrower))
@@ -488,7 +491,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     fun build(): MethodNode {
         super.visit(method)
-        method.flatten().filter { it is PhiInst }.forEach { buildPhiInst(it as PhiInst) }
+        method.flatten().filterIsInstance<PhiInst>().forEach { buildPhiInst(it) }
         val insnList = InsnList()
         for (bb in method.basicBlocks) {
             insnList.add(getLabel(bb))

@@ -24,14 +24,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     }
 
     val asmDesc: String
-        get() {
-            val sb = StringBuilder()
-            sb.append("(")
-            args.forEach { type -> sb.append(type.asmDesc) }
-            sb.append(")")
-            sb.append(retval.asmDesc)
-            return sb.toString()
-        }
+        get() =  "(${args.joinToString(separator = "") { it.asmDesc }})${retval.asmDesc}"
 
     override fun hashCode() = simpleHash(*args, retval)
     override fun equals(other: Any?): Boolean {
@@ -41,13 +34,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
         return this.args.contentEquals(other.args) && this.retval == other.retval
     }
 
-    override fun toString(): String {
-        val sb = StringBuilder()
-        sb.append("(")
-        sb.append(args.joinToString { it.name })
-        sb.append("): ${retval.name}")
-        return sb.toString()
-    }
+    override fun toString() = "(${args.joinToString { it.name }}): ${retval.name}"
 }
 
 class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm, mn.name, mn.access), Iterable<BasicBlock>, BlockUser {

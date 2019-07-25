@@ -1,11 +1,11 @@
 package org.jetbrains.research.kfg.util
 
-import java.util.ArrayList
+import java.util.*
 import kotlin.math.min
 
 interface TreeNode {
-    fun getParent(): TreeNode?
-    fun getChilds(): Set<TreeNode>
+    val parent: TreeNode?
+    val children: Set<TreeNode>
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -15,8 +15,9 @@ class DominatorTreeNode<T : GraphNode<T>>(val value: T) : TreeNode {
         internal set
     val dominates = hashSetOf<DominatorTreeNode<T>>()
 
-    override fun getChilds(): Set<DominatorTreeNode<T>> = dominates
-    override fun getParent() = idom
+    override val children: Set<DominatorTreeNode<T>>
+        get() = dominates
+    override val parent get() = idom
 
     fun dominates(node: T): Boolean = when {
         dominates.any { it.value == node } -> true
@@ -76,7 +77,7 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
         sdom[nodeCounter] = nodeCounter
         dsu[nodeCounter] = nodeCounter
         nodeCounter++
-        for (it in node.getSuccSet()) {
+        for (it in node.successors) {
             if (dfsTree.getValue(it) == -1) {
                 dfs(it)
                 parents[dfsTree.getValue(it)] = dfsTree.getValue(node)
