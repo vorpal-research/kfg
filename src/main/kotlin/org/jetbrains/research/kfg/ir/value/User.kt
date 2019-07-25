@@ -27,7 +27,7 @@ abstract class Usable<T> {
 
 abstract class UsableValue : Usable<Value>() {
     val users: Set<ValueUser>
-        get() = abstractUsers.asSequence().map { it as ValueUser }.toSet()
+        get() = abstractUsers.map { it as ValueUser }.toSet()
 
     override fun addUser(user: User) {
         require(user is ValueUser) { "Trying to register non-value user to value" }
@@ -41,7 +41,7 @@ abstract class UsableValue : Usable<Value>() {
 
 abstract class UsableBlock : Usable<BasicBlock>() {
     val users: Set<BlockUser>
-        get() = abstractUsers.asSequence().map { it as BlockUser }.toSet()
+        get() = abstractUsers.map { it as BlockUser }.toSet()
 
     override fun addUser(user: User) {
         require(user is BlockUser) { "Trying to register non-block user to block" }

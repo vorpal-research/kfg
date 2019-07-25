@@ -3,7 +3,6 @@ package org.jetbrains.research.kfg.ir.value
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.util.simpleHash
 
 sealed class Name {
     internal var st: SlotTracker? = null
@@ -35,25 +34,18 @@ class Slot : Name() {
 }
 
 class BlockName(val name: String) : Name() {
+    private val number get() = st?.getBlockNumber(this) ?: -1
     override fun clone() = BlockName(name)
-    private fun getNumber() = st?.getBlockNumber(this) ?: -1
     override fun toString(): String {
-        val number = getNumber()
+        val number = number
         val suffix = if (number == -1) "" else "$number"
         return "%$name$suffix"
     }
 }
 
-class ConstantName(val name: String) : Name() {
+data class ConstantName(val name: String) : Name() {
     override fun clone() = ConstantName(name)
     override fun toString() = name
-    override fun hashCode() = simpleHash(name)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (this.javaClass != other?.javaClass) return false
-        other as ConstantName
-        return this.name == other.name
-    }
 }
 
 object UndefinedName : Name() {
@@ -124,7 +116,7 @@ class SlotTracker(val method: Method) {
                             val nameCopies = strings.getOrPut(value.name.name, ::arrayListOf)
                             if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
                         }
-                        else -> kotlin.Unit
+                        else -> Unit
                     }
                 }
             }

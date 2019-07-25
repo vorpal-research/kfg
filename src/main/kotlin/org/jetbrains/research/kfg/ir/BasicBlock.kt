@@ -15,8 +15,8 @@ sealed class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<
             field = value
             instructions.forEach { addValueToParent(it) }
         }
-    val predecessors = hashSetOf<BasicBlock>()
-    val successors = hashSetOf<BasicBlock>()
+    override val predecessors = hashSetOf<BasicBlock>()
+    override val successors = hashSetOf<BasicBlock>()
     val instructions = arrayListOf<Instruction>()
     val handlers = arrayListOf<CatchBlock>()
 
@@ -152,9 +152,6 @@ sealed class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<
 
     override fun iterator() = instructions.iterator()
 
-    override fun getSuccSet() = successors.toSet()
-    override fun getPredSet() = predecessors.toSet()
-
     override fun get() = this
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
         when {
@@ -227,7 +224,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     companion object {
-        val defaultException = "java/lang/Throwable"
+        const val defaultException = "java/lang/Throwable"
     }
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {

@@ -151,8 +151,7 @@ private fun writeClassNode(loader: ClassLoader,
     val cca = CheckClassAdapter(cw)
     cn.accept(cca)
 
-    val file = File(filename)
-    file.parentFile?.mkdirs()
+    val file = File(filename).apply { parentFile?.mkdirs() }
     val fos = FileOutputStream(file)
     fos.write(cw.toByteArray())
     fos.close()
@@ -173,7 +172,7 @@ fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllCla
 
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
-        if (entry.name == "META-INF/MANIFEST.MF") continue
+        if (entry.isManifest) continue
 
         if (entry.isClass) {
             when {

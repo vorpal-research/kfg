@@ -15,9 +15,6 @@ import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.*
-import java.lang.NullPointerException
-import java.util.*
-import kotlin.collections.ArrayList
 
 private class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
@@ -902,7 +899,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         val dominatorTree = DominatorTreeBuilder(method.basicBlocks.toSet()).build()
 
         for ((bb, dtn) in dominatorTree) {
-            val preds = bb.getPredSet()
+            val preds = bb.predecessors
             if (preds.size > 1) {
                 for (pred in preds) {
                     var runner: BasicBlock? = pred

@@ -6,23 +6,24 @@ import org.jetbrains.research.kfg.InvalidTypeDescError
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
-fun Type.toInternalDesc(): String = when {
-    this.isPrimary -> this.asmDesc
-    this is ClassType -> this.`class`.fullname
-    this is ArrayType -> "[${(component as? ClassType)?.asmDesc ?: component.toInternalDesc()}"
-    else -> throw InvalidStateError("Unknown type ${this.name}")
-}
+val Type.internalDesc: String
+    get() = when {
+        this.isPrimary -> this.asmDesc
+        this is ClassType -> this.`class`.fullname
+        this is ArrayType -> "[${(component as? ClassType)?.asmDesc ?: component.internalDesc}"
+        else -> throw InvalidStateError("Unknown type ${this.name}")
+    }
 
 fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     tf.nullType in types -> {
-        val filtered = types.asSequence().filterNot { it == tf.nullType }.toSet()
+        val filtered = types.filterNot { it == tf.nullType }.toSet()
         when {
             filtered.isEmpty() -> tf.nullType
             else -> mergeTypes(tf, filtered)
         }
     }
     types.size == 1 -> types.first()
-    types.all { it is Integral } -> types.asSequence().map { it as Integral }.maxBy { it.width }
+    types.all { it is Integral } -> types.map { it as Integral }.maxBy { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
         var result = tf.objectType
@@ -57,9 +58,9 @@ fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
     'D' -> tf.doubleType
     'L' -> {
         if (desc.last() != ';') throw InvalidTypeDescError(desc)
-        tf.getRefType(desc.substring(1).substringBeforeLast(';'))
+        tf.getRefType(desc.drop(1).dropLast(1))
     }
-    '[' -> tf.getArrayType(parseDesc(tf, desc.substring(1)))
+    '[' -> tf.getArrayType(parseDesc(tf, desc.drop(1)))
     else -> throw InvalidTypeDescError(desc)
 }
 
@@ -94,8 +95,8 @@ fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
     while (matcher.find()) {
         args.add(parseDesc(tf, matcher.group(0)))
     }
-    val rettype = args.last()
-    return Pair(args.dropLast(1).toTypedArray(), rettype)
+    val returnType = args.last()
+    return Pair(args.dropLast(1).toTypedArray(), returnType)
 }
 
 private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {
@@ -125,7 +126,8 @@ fun parseStringToType(tf: TypeFactory, name: String): Type {
     return subtype
 }
 
-fun Type.getExpandedBitsize() = when (this) {
-    is ClassType -> `class`.fields.values.fold(0) { acc, field -> acc + field.type.bitsize }
-    else -> bitsize
-}
+val Type.expandedBitsize
+    get() = when (this) {
+        is ClassType -> `class`.fields.values.fold(0) { acc, field -> acc + field.type.bitsize }
+        else -> bitsize
+    }

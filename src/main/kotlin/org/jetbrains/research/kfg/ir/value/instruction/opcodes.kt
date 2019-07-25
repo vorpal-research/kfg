@@ -61,19 +61,20 @@ sealed class BinaryOpcode {
     class Or(override val name: String = "||") : BinaryOpcode()
     class Xor(override val name: String = "^") : BinaryOpcode()
 
-    fun toAsmOpcode(): Int = when (this) {
-        is Add -> Opcodes.IADD
-        is Sub -> Opcodes.ISUB
-        is Mul -> Opcodes.IMUL
-        is Div -> Opcodes.IDIV
-        is Rem -> Opcodes.IREM
-        is Shl -> Opcodes.ISHL
-        is Shr -> Opcodes.ISHR
-        is Ushr -> Opcodes.IUSHR
-        is And -> Opcodes.IAND
-        is Or -> Opcodes.IOR
-        is Xor -> Opcodes.IXOR
-    }
+    val asmOpcode: Int
+        get() = when (this) {
+            is Add -> Opcodes.IADD
+            is Sub -> Opcodes.ISUB
+            is Mul -> Opcodes.IMUL
+            is Div -> Opcodes.IDIV
+            is Rem -> Opcodes.IREM
+            is Shl -> Opcodes.ISHL
+            is Shr -> Opcodes.ISHR
+            is Ushr -> Opcodes.IUSHR
+            is And -> Opcodes.IAND
+            is Or -> Opcodes.IOR
+            is Xor -> Opcodes.IXOR
+        }
 }
 
 fun toCmpOpcode(opcode: Int) = when (opcode) {
@@ -179,12 +180,13 @@ sealed class CallOpcode {
     class Static(override val name: String = "static") : CallOpcode()
     class Interface(override val name: String = "interface") : CallOpcode()
 
-    fun toAsmOpcode(): Int = when (this) {
-        is Virtual -> Opcodes.INVOKEVIRTUAL
-        is Special -> Opcodes.INVOKESPECIAL
-        is Static -> Opcodes.INVOKESTATIC
-        is Interface -> Opcodes.INVOKEINTERFACE
-    }
+    val asmOpcode: Int
+        get() = when (this) {
+            is Virtual -> Opcodes.INVOKEVIRTUAL
+            is Special -> Opcodes.INVOKESPECIAL
+            is Static -> Opcodes.INVOKESTATIC
+            is Interface -> Opcodes.INVOKEINTERFACE
+        }
 }
 
 fun isTerminateInst(opcode: Int) = when (opcode) {

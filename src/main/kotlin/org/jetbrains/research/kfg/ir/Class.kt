@@ -12,17 +12,9 @@ import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
 abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
-    class MethodKey(val name: String, val desc: MethodDesc) {
+    data class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
-
         override fun toString() = "$name$desc"
-        override fun hashCode() = simpleHash(name, desc)
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (other?.javaClass != this.javaClass) return false
-            other as MethodKey
-            return this.name == other.name && this.desc == other.desc
-        }
     }
 
     data class FieldKey(val name: String, val type: Type)
@@ -69,7 +61,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         }
     }
 
-    fun getAllAncestors() = listOf(superClass).asSequence().plus(interfaces).filterNotNull().toList()
+    val allAncestors get() = listOfNotNull(superClass) + interfaces
 
     abstract fun isAncestor(other: Class): Boolean
 
@@ -129,7 +121,7 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun isAncestor(other: Class): Boolean {
         if (this == other) return true
         else {
-            val ancestors = other.getAllAncestors()
+            val ancestors = other.allAncestors
             for (it in ancestors) if (isAncestor(it)) return true
         }
         return false
