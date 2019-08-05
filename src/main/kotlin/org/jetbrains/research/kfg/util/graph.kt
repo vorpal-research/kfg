@@ -86,6 +86,19 @@ data class GraphView(
         val successors: MutableList<GraphView>
 ) {
     constructor(name: String, label: String) : this(name, label, mutableListOf())
+
+    override fun hashCode(): Int {
+        return simpleHash(name, label)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is GraphView) return false
+
+        if (name != other.name) return false
+        if (label != other.label) return false
+        return true
+    }
 }
 
 fun viewCfg(name: String, nodes: List<GraphView>, dot: String, browser: String) {
