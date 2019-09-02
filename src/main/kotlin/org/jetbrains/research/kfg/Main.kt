@@ -10,8 +10,7 @@ fun main(args: Array<String>) {
 
     val jar = JarFile(cfg.getStringValue("jar"))
     val `package` = Package(cfg.getStringValue("package", "*"))
-    val target = File(cfg.getStringValue("target", "instrumented/"))
 
     val cm = ClassManager(jar, `package`, Flags.readAll)
-    updateJar(cm, jar, target, `package`)
+    updateJar(cm, jar, `package`)
 }

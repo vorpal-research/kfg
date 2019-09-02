@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.util.updateJar
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
+import java.nio.file.Files
 import java.util.jar.JarFile
 import kotlin.test.assertTrue
 import org.junit.After as after
@@ -48,11 +49,11 @@ class KfgIntegrationTest {
         val version = System.getProperty("project.version")
         val jar = "target/kfg-$version-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
-        val target = File("instrumented/")
+        val target = Files.createTempDirectory("kfg").toFile()
 
         val jarFile = JarFile(jar)
         val cm = ClassManager(jarFile, `package`)
-        updateJar(cm, jarFile, target, `package`)
+        updateJar(cm, jarFile, `package`, target)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

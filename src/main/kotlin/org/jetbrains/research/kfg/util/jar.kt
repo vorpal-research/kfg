@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.net.URLClassLoader
+import java.nio.file.Files
 import java.util.jar.*
 
 private fun getCurrentDirectory() = File(".").canonicalPath
@@ -199,7 +200,10 @@ fun writeClassesToTarget(cm: ClassManager, jar: JarFile, target: File, `package`
     setCurrentDirectory(workingDir)
 }
 
-fun updateJar(cm: ClassManager, jar: JarFile, target: File, `package`: Package): JarFile {
+fun updateJar(cm: ClassManager, jar: JarFile, `package`: Package) =
+        updateJar(cm, jar, `package`, Files.createTempDirectory("kfg").toFile())
+
+fun updateJar(cm: ClassManager, jar: JarFile, `package`: Package, target: File): JarFile {
     val workingDir = getCurrentDirectory()
     setCurrentDirectory(target)
     val currentDir = getCurrentDirectory()
