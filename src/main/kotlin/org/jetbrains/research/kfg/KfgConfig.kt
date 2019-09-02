@@ -29,10 +29,6 @@ class KfgConfig(args: Array<String>) {
         val packageOpt = Option("p", "package", true, "analyzed package")
         packageOpt.isRequired = false
         options.addOption(packageOpt)
-
-        val targetOpt = Option("t", "target", true, "result target directory")
-        targetOpt.isRequired = false
-        options.addOption(targetOpt)
     }
 
     fun getStringValue(param: String) = cmd.getOptionValue(param)!!
