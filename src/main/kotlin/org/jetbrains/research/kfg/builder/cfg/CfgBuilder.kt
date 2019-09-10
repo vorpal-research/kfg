@@ -455,10 +455,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         val bb = nodeToBlock.getValue(insn)
         val op = pop()
         val type = when (insn.opcode) {
-            in arrayOf(I2L, F2L, D2L) -> types.longType
-            in arrayOf(I2F, L2F, D2F) -> types.floatType
-            in arrayOf(I2D, L2D, F2D) -> types.doubleType
-            in arrayOf(L2I, F2I, D2I) -> types.intType
+            I2L, F2L, D2L -> types.longType
+            I2F, L2F, D2F -> types.floatType
+            I2D, L2D, F2D -> types.doubleType
+            L2I, F2I, D2I -> types.intType
             I2B -> types.byteType
             I2C -> types.charType
             I2S -> types.shortType
@@ -997,8 +997,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
                 instUsers.isEmpty() -> removablePhis.add(inst)
                 instUsers.size == 1 && instUsers.first() == inst -> removablePhis.add(inst)
                 incomings.size == 2 && incomings.contains(inst) -> {
-                    if (incomings.first() == inst) inst.replaceAllUsesWith(incomings.last())
-                    else inst.replaceAllUsesWith(incomings.first())
+                    inst.replaceAllUsesWith(when (inst) {
+                        incomings.first() -> incomings.last()
+                        else -> incomings.first()
+                    })
                     inst.operands.forEach { op -> op.removeUser(inst) }
                     instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
                 }
@@ -1023,8 +1025,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
                 operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
 
             } else if (incomings.size == 2 && incomings.contains(top)) {
-                if (incomings.first() == top) top.replaceAllUsesWith(incomings.last())
-                else top.replaceAllUsesWith(incomings.first())
+                top.replaceAllUsesWith(when (top) {
+                    incomings.first() -> incomings.last()
+                    else -> incomings.first()
+                })
                 operands.forEach { it.removeUser(top) }
                 instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
 
