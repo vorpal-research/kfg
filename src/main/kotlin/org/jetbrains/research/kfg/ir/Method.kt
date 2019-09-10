@@ -7,6 +7,8 @@ import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
+import org.jetbrains.research.kfg.util.Graph
+import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.GraphView
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
@@ -37,7 +39,8 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     override fun toString() = "(${args.joinToString { it.name }}): ${retval.name}"
 }
 
-class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm, mn.name, mn.access), Iterable<BasicBlock>, BlockUser {
+class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class)
+    : Node(cm, mn.name, mn.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser {
 
     companion object {
         private val CONSTRUCTOR_NAMES = arrayOf("<init>", "<clinit>")
@@ -64,7 +67,7 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))
     }
 
-    val entry: BasicBlock
+    override val entry: BasicBlock
         get() = basicBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
 
     val prototype: String
@@ -100,6 +103,9 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class) : Node(cm
 
     override val asmDesc
         get() = desc.asmDesc
+
+    override val nodes: Set<BasicBlock>
+        get() = basicBlocks.toSet()
 
     fun isEmpty() = basicBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()

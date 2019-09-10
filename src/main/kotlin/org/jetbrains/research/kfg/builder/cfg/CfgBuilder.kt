@@ -10,7 +10,7 @@ import org.jetbrains.research.kfg.ir.value.ValueUser
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.DominatorTreeBuilder
-import org.jetbrains.research.kfg.util.TopologicalSorter
+import org.jetbrains.research.kfg.util.GraphTraversal
 import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.JSRInlinerAdapter
@@ -1081,7 +1081,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         buildFrames() // build frame maps for each basic block
 
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
-        val (order, c) = TopologicalSorter(method.basicBlocks.toSet()).sort(method.entry)
+        val (order, c) = GraphTraversal(method).topologicalSort()
         cycleEntries.addAll(c)
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 

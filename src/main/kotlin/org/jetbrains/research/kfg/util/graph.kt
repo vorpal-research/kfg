@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.util
 
 import info.leadinglight.jdot.Edge
-import info.leadinglight.jdot.Graph
+import info.leadinglight.jdot.Graph as JGraph
 import info.leadinglight.jdot.Node
 import info.leadinglight.jdot.enums.Color
 import info.leadinglight.jdot.enums.Shape
@@ -15,8 +15,80 @@ interface GraphNode<out T : Any> {
     val successors: Set<T>
 }
 
+interface Graph<T : GraphNode<T>> {
+    val entry: T
+    val nodes: Set<T>
+}
+
+class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
+    private enum class Colour { WHITE, GREY, BLACK }
+
+    fun <R> dfs(action: (T) -> R): List<R> {
+        val node = graph.entry
+        val search = mutableListOf<R>()
+        val colours = mutableMapOf<T, Colour>()
+        val stack = ArrayDeque<T>()
+        stack.push(node)
+        while (stack.isNotEmpty()) {
+            val top = stack.pollLast()!!
+            if (colours.getOrPut(top) { Colour.BLACK } == Colour.WHITE) {
+                colours[top] = Colour.BLACK
+                search.add(action(top))
+                top.successors.filter { colours[it] != Colour.BLACK }.forEach { stack.push(it) }
+            }
+        }
+        return search
+    }
+
+    fun dfs(): List<T> = dfs { it }
+
+    fun <R> bfs(action: (T) -> R): List<R> {
+        val node = graph.entry
+        val search = mutableListOf<R>()
+        val colours = mutableMapOf<T, Colour>()
+        val stack = ArrayDeque<T>()
+        stack.push(node)
+        while (stack.isNotEmpty()) {
+            val top = stack.poll()!!
+            if (colours.getOrPut(top) { Colour.BLACK } == Colour.WHITE) {
+                colours[top] = Colour.BLACK
+                search.add(action(top))
+                top.successors.filter { colours[it] != Colour.BLACK }.forEach { stack.push(it) }
+            }
+        }
+        return search
+    }
+
+    fun bfs(): List<T> = bfs { it }
+
+    fun <R1, R2> topologicalSort(action: (T) -> R1, cycledHandle: (T) -> R2): Pair<List<R1>, Set<R2>> {
+        val order = arrayListOf<R1>()
+        val cycled = hashSetOf<R2>()
+        val colors = hashMapOf<T, Colour>()
+
+        fun dfs(node: T) {
+            if (colors.getOrPut(node) { Colour.WHITE } == Colour.BLACK) return
+            if (colors.getValue(node) == Colour.GREY) {
+                cycled.add(cycledHandle(node))
+                return
+            }
+            colors[node] = Colour.GREY
+            for (edge in node.successors)
+                dfs(edge)
+            colors[node] = Colour.BLACK
+            order.add(action(node))
+        }
+
+        dfs(graph.entry)
+        return order to cycled
+    }
+
+    fun topologicalSort(): Pair<List<T>, Set<T>> = topologicalSort({ it }, { it })
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
+@Deprecated("Use GraphTraversal instead")
 class TopologicalSorter<T : GraphNode<T>>(private val nodes: Set<T>) {
     private val order = arrayListOf<T>()
     private val cycled = hashSetOf<T>()
@@ -102,8 +174,8 @@ data class GraphView(
 }
 
 fun viewCfg(name: String, nodes: List<GraphView>, dot: String, browser: String) {
-    Graph.setDefaultCmd(dot)
-    val graph = Graph(name)
+    JGraph.setDefaultCmd(dot)
+    val graph = JGraph(name)
     graph.addNodes(*nodes.map {
         Node(it.name).setShape(Shape.box).setLabel(it.label).setFontSize(12.0)
     }.toTypedArray())
