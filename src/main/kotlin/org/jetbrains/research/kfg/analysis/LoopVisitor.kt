@@ -3,12 +3,19 @@ package org.jetbrains.research.kfg.analysis
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.util.Graph
 import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Iterable<BasicBlock> {
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<BasicBlock>, Iterable<BasicBlock> {
     var parent: Loop? = null
     val subloops = hashSetOf<Loop>()
+
+    override val entry: BasicBlock
+        get() = header
+
+    override val nodes: Set<BasicBlock>
+        get() = body
 
     val method: Method?
         get() = header.parent

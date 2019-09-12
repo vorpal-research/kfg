@@ -27,7 +27,7 @@ class DominatorTreeNode<T : GraphNode<T>>(val value: T) : TreeNode {
 
 class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by mutableMapOf<T, DominatorTreeNode<T>>()
 
-class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
+class DominatorTreeBuilder<T : GraphNode<T>>(private val graph: Graph<T>) {
     val tree = DominatorTree<T>()
 
     private var nodeCounter: Int = 0
@@ -42,7 +42,7 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
     private val bucket = arrayListOf<MutableSet<Int>>()
 
     init {
-        for (i in nodes) {
+        for (i in graph.nodes) {
             parents.add(-1)
             labels.add(-1)
             sdom.add(-1)
@@ -53,7 +53,7 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
             bucket.add(mutableSetOf())
             reverseGraph.add(arrayListOf())
         }
-        tree.putAll(nodes.map { it to DominatorTreeNode(it) })
+        tree.putAll(graph.nodes.map { it to DominatorTreeNode(it) })
     }
 
     private fun union(u: Int, v: Int) {
@@ -87,7 +87,7 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val nodes: Set<T>) {
     }
 
     fun build(): DominatorTree<T> {
-        for (it in nodes) if (dfsTree[it] == -1) dfs(it)
+        for (it in graph.nodes) if (dfsTree[it] == -1) dfs(it)
         val n = dfsTree.size
         for (i in n - 1 downTo 0) {
             for (j in reverseGraph[i]) {

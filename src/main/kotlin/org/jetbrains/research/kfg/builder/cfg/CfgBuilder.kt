@@ -896,7 +896,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     }
 
     private fun buildPhiBlocks() {
-        val dominatorTree = DominatorTreeBuilder(method.basicBlocks.toSet()).build()
+        val dominatorTree = DominatorTreeBuilder(method).build()
 
         for ((bb, dtn) in dominatorTree) {
             val preds = bb.predecessors

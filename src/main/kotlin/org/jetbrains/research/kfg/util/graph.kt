@@ -31,7 +31,7 @@ class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
         stack.push(node)
         while (stack.isNotEmpty()) {
             val top = stack.pollLast()!!
-            if (colours.getOrPut(top) { Colour.BLACK } == Colour.WHITE) {
+            if (colours.getOrPut(top) { Colour.WHITE } == Colour.WHITE) {
                 colours[top] = Colour.BLACK
                 search.add(action(top))
                 top.successors.filter { colours[it] != Colour.BLACK }.forEach { stack.push(it) }
@@ -50,7 +50,7 @@ class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
         stack.push(node)
         while (stack.isNotEmpty()) {
             val top = stack.poll()!!
-            if (colours.getOrPut(top) { Colour.BLACK } == Colour.WHITE) {
+            if (colours.getOrPut(top) { Colour.WHITE } == Colour.WHITE) {
                 colours[top] = Colour.BLACK
                 search.add(action(top))
                 top.successors.filter { colours[it] != Colour.BLACK }.forEach { stack.push(it) }
@@ -118,9 +118,15 @@ class TopologicalSorter<T : GraphNode<T>>(private val nodes: Set<T>) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fun <T : GraphNode<T>> Set<T>.asGraph(): Graph<T> = object : Graph<T> {
+    override val entry: T
+        get() = this@asGraph.first()
+    override val nodes = this@asGraph
+}
+
 class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
     fun search(): Map<T, List<T>> {
-        val tree = DominatorTreeBuilder(nodes).build()
+        val tree = DominatorTreeBuilder(nodes.asGraph()).build()
         val backEdges = arrayListOf<Pair<T, T>>()
 
         for ((current, _) in tree) {
