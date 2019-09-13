@@ -83,4 +83,16 @@ class TypeFactory(val cm: ClassManager) {
     fun getRefType(cname: Class): Type = ClassType(cname)
     fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
+
+    fun getWrapper(type: Type): Type = when (type) {
+        is BoolType -> boolWrapper
+        is ByteType -> byteWrapper
+        is CharType -> charWrapper
+        is ShortType -> shortWrapper
+        is IntType -> intWrapper
+        is LongType -> longWrapper
+        is FloatType -> floatWrapper
+        is DoubleType -> doubleWrapper
+        else -> throw IllegalArgumentException("Can't find wrapper for type $type")
+    }
 }
