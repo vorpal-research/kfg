@@ -7,6 +7,14 @@ class TypeFactory(val cm: ClassManager) {
     companion object {
         const val stringClass = "java/lang/String"
         const val objectClass = "java/lang/Object"
+        const val booleanClass = "java/lang/Boolean"
+        const val byteClass = "java/lang/Byte"
+        const val charClass = "java/lang/Char"
+        const val shortClass = "java/lang/Short"
+        const val integerClass = "java/lang/Integer"
+        const val longClass = "java/lang/Long"
+        const val floatClass = "java/lang/Float"
+        const val doubleClass = "java/lang/Double"
     }
 
     val voidType: Type
@@ -44,6 +52,30 @@ class TypeFactory(val cm: ClassManager) {
 
     val objectType
         get() = getRefType(objectClass)
+
+    val boolWrapper: Type
+        get() = getRefType(booleanClass)
+
+    val byteWrapper: Type
+        get() = getRefType(byteClass)
+
+    val charWrapper: Type
+        get() = getRefType(charClass)
+
+    val shortWrapper: Type
+        get() = getRefType(shortClass)
+
+    val intWrapper: Type
+        get() = getRefType(integerClass)
+
+    val longWrapper: Type
+        get() = getRefType(longClass)
+
+    val floatWrapper: Type
+        get() = getRefType(floatClass)
+
+    val doubleWrapper: Type
+        get() = getRefType(doubleClass)
 
     val objectArrayClass
         get() = getRefType(cm.getByName("$objectType[]"))
