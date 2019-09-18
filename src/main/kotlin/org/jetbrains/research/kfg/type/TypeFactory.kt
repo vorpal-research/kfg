@@ -9,7 +9,7 @@ class TypeFactory(val cm: ClassManager) {
         const val objectClass = "java/lang/Object"
         const val booleanClass = "java/lang/Boolean"
         const val byteClass = "java/lang/Byte"
-        const val charClass = "java/lang/Char"
+        const val charClass = "java/lang/Character"
         const val shortClass = "java/lang/Short"
         const val integerClass = "java/lang/Integer"
         const val longClass = "java/lang/Long"
