@@ -71,18 +71,29 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val graph: Graph<T>) {
     }
 
     private fun dfs(node: T) {
-        dfsTree[node] = nodeCounter
-        reverseMapping[nodeCounter] = node
-        labels[nodeCounter] = nodeCounter
-        sdom[nodeCounter] = nodeCounter
-        dsu[nodeCounter] = nodeCounter
-        nodeCounter++
-        for (it in node.successors) {
-            if (dfsTree.getValue(it) == -1) {
-                dfs(it)
-                parents[dfsTree.getValue(it)] = dfsTree.getValue(node)
+        val stack = ArrayDeque<Pair<T, Int>>()
+        stack.push(node to -1)
+
+        while (stack.isNotEmpty()) {
+            val (top, parent) = stack.pop()
+            if (dfsTree.getValue(top) != -1) continue
+
+            dfsTree[top] = nodeCounter
+            reverseMapping[nodeCounter] = top
+            labels[nodeCounter] = nodeCounter
+            sdom[nodeCounter] = nodeCounter
+            dsu[nodeCounter] = nodeCounter
+            nodeCounter++
+            if (parent >= 0) {
+                parents[dfsTree.getValue(top)] = parent
+                reverseGraph[dfsTree.getValue(top)].add(parent)
             }
-            reverseGraph[dfsTree.getValue(it)].add(dfsTree.getValue(node))
+
+            for (it in top.successors) {
+                if (dfsTree.getValue(it) == -1) {
+                    stack.push(it to dfsTree.getValue(top))
+                }
+            }
         }
     }
 
