@@ -207,11 +207,13 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
             return entries
         }
 
+    fun addThrower(thrower: BasicBlock) {
+        throwers.add(thrower)
+        thrower.addUser(this)
+    }
+
     fun addThrowers(throwers: List<BasicBlock>) {
-        throwers.forEach {
-            this.throwers.add(it)
-            it.addUser(this)
-        }
+        throwers.forEach { addThrower(it) }
     }
 
     fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)

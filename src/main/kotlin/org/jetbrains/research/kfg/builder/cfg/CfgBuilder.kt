@@ -2,6 +2,8 @@ package org.jetbrains.research.kfg.builder.cfg
 
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
+import org.jetbrains.research.kfg.analysis.Loop
+import org.jetbrains.research.kfg.analysis.LoopVisitor
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.ir.value.UsableValue
@@ -1084,9 +1086,34 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
-        method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.addSuccessor(cb) } }
-        val (order, c) = GraphTraversal(method).topologicalSort()
-        cycleEntries.addAll(c)
+        val latches = hashMapOf<BasicBlock, BasicBlock>()
+        object : LoopVisitor {
+            override val cm: ClassManager
+                get() = this@CfgBuilder.cm
+
+            override fun cleanup() {}
+
+            override fun visit(loop: Loop) {
+                super.visit(loop)
+                cycleEntries.add(loop.header)
+                loop.latches.forEach {
+                    latches[it] = loop.header
+                }
+            }
+        }.visit(method)
+
+        method.catchEntries.forEach { cb ->
+            cb.getAllPredecessors().forEach {
+                // this is generally fucked up:
+                // some of the catch entry block may contain connections to themselves (loops)
+                // we don't need to process this loops in topological sort, but need to remember that kind of blocks
+                if (it != cb) it.addSuccessor(cb)
+                else cycleEntries.add(it)
+            }
+        }
+        latches.forEach { (latch, header) -> latch.removeSuccessor(header) }
+        val order = GraphTraversal(method).topologicalSort()
+        latches.forEach { (latch, header) -> latch.addSuccessor(header) }
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 
         for (bb in order.reversed()) {

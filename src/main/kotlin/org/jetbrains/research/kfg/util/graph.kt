@@ -10,6 +10,8 @@ import java.io.File
 import java.nio.file.Files
 import java.util.*
 
+class NoTopologicalSortingException(msg: String) : Exception(msg)
+
 interface GraphNode<out T : Any> {
     val predecessors: Set<T>
     val successors: Set<T>
@@ -61,16 +63,14 @@ class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
 
     fun bfs(): List<T> = bfs { it }
 
-    fun <R1, R2> topologicalSort(action: (T) -> R1, cycledHandle: (T) -> R2): Pair<List<R1>, Set<R2>> {
-        val order = arrayListOf<R1>()
-        val cycled = hashSetOf<R2>()
+    fun <R> topologicalSort(action: (T) -> R): List<R> {
+        val order = arrayListOf<R>()
         val colors = hashMapOf<T, Colour>()
 
         fun dfs(node: T) {
             if (colors.getOrPut(node) { Colour.WHITE } == Colour.BLACK) return
             if (colors.getValue(node) == Colour.GREY) {
-                cycled.add(cycledHandle(node))
-                return
+                throw NoTopologicalSortingException("Could not perform topological sort")
             }
             colors[node] = Colour.GREY
             for (edge in node.successors)
@@ -80,10 +80,10 @@ class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
         }
 
         dfs(graph.entry)
-        return order to cycled
+        return order
     }
 
-    fun topologicalSort(): Pair<List<T>, Set<T>> = topologicalSort({ it }, { it })
+    fun topologicalSort(): List<T> = topologicalSort { it }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
