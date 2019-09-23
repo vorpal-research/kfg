@@ -4,18 +4,27 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.util.Graph
+import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<BasicBlock>, Iterable<BasicBlock> {
+data class LoopNode(val parent: Loop, val block: BasicBlock) : GraphNode<LoopNode> {
+    override val predecessors: Set<LoopNode>
+        get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, block) }.toSet()
+
+    override val successors: Set<LoopNode>
+        get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, block) }.toSet()
+}
+
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode> {
     var parent: Loop? = null
     val subloops = hashSetOf<Loop>()
 
-    override val entry: BasicBlock
-        get() = header
+    override val entry: LoopNode
+        get() = LoopNode(this, header)
 
-    override val nodes: Set<BasicBlock>
-        get() = body
+    override val nodes: Set<LoopNode>
+        get() = body.map { LoopNode(this, it) }.toSet()
 
     val method: Method?
         get() = header.parent
@@ -41,7 +50,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Bas
     val hasSinglePreheader get() = preheaders.size == 1
     val hasSingleLatch get() = body.filter { it.successors.contains(header) }.toSet().size == 1
 
-    fun containsAll(blocks: Collection<BasicBlock>) = body.containsAll(blocks)
+    fun containsAll(blocks: Collection<LoopNode>) = body.containsAll(blocks.map { it.block })
 
     fun addBlock(bb: BasicBlock) {
         body.add(bb)
@@ -54,7 +63,9 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Bas
         parent?.removeBlock(bb)
     }
 
-    override fun iterator() = body.iterator()
+    override fun iterator() = nodes.iterator()
+
+    operator fun contains(block: BasicBlock) = block in body
 }
 
 
@@ -140,7 +151,7 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
         }
 
         for (loop in allLoops) {
-            val headers = loop.count { !loop.containsAll(it.predecessors) }
+            val headers = loop.body.count { !it.predecessors.all { pred -> pred in loop } }
             require(headers == 1) { "Only loops with single header are supported" }
         }
     }
