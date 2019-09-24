@@ -1113,7 +1113,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         }
         latches.forEach { (latch, header) -> latch.removeSuccessor(header) }
         val order = GraphTraversal(method).topologicalSort()
-        latches.forEach { (latch, header) -> latch.addSuccessor(header) }
+        latches.forEach { (latch, header) ->
+            latch.addSuccessor(header)
+            header.addPredecessor(latch)
+        }
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 
         for (bb in order.reversed()) {
