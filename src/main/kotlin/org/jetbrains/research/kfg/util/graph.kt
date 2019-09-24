@@ -68,15 +68,28 @@ class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {
         val colors = hashMapOf<T, Colour>()
 
         fun dfs(node: T) {
-            if (colors.getOrPut(node) { Colour.WHITE } == Colour.BLACK) return
-            if (colors.getValue(node) == Colour.GREY) {
-                throw NoTopologicalSortingException("Could not perform topological sort")
+            val stack = ArrayDeque<Pair<T, Boolean>>()
+            stack.push(node to false)
+            while (stack.isNotEmpty()) {
+                val (top, isPostprocessing) = stack.poll()
+                if (colors[top] == Colour.BLACK)
+                    continue
+
+                if (isPostprocessing) {
+                    colors[top] = Colour.BLACK
+                    order += action(top)
+                } else {
+                    stack.push(top to true)
+                    colors[top] = Colour.GREY
+                    for (edge in top.successors) {
+                        val currentColour = colors.getOrPut(edge) { Colour.WHITE }
+                        if (currentColour == Colour.GREY)
+                            throw NoTopologicalSortingException("Could not perform topological sort")
+                        else if (currentColour != Colour.BLACK)
+                            stack.push(edge to false)
+                    }
+                }
             }
-            colors[node] = Colour.GREY
-            for (edge in node.successors)
-                dfs(edge)
-            colors[node] = Colour.BLACK
-            order.add(action(node))
         }
 
         dfs(graph.entry)

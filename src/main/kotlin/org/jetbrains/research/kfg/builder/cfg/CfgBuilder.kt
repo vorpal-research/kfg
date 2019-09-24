@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.analysis.Loop
 import org.jetbrains.research.kfg.analysis.LoopVisitor
+import org.jetbrains.research.kfg.analysis.NullTypeAdapter
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.ir.value.UsableValue
@@ -1154,6 +1155,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         buildPhiInstructions()
         RetvalBuilder(cm).visit(method)
         CfgOptimizer(cm).visit(method)
+        NullTypeAdapter(cm).visit(method)
 //        BoolValueAdapter.visit(method)
 
         // this is fucked up, but sometimes there are really empty blocks in bytecode

@@ -42,7 +42,6 @@ class InstructionFactory(val cm: ClassManager) {
 
     fun getArrayStore(array: Value, index: Value, value: Value): Instruction = ArrayStoreInst(array, types.voidType, index, value)
 
-
     fun getFieldLoad(name: String, field: Field): Instruction = getFieldLoad(StringName(name), field)
     fun getFieldLoad(name: Name, field: Field): Instruction = FieldLoadInst(name, field)
     fun getFieldLoad(field: Field): Instruction = FieldLoadInst(Slot(), field)
