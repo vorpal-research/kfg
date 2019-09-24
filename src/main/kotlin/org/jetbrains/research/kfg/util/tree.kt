@@ -25,7 +25,31 @@ class DominatorTreeNode<T : GraphNode<T>>(val value: T) : TreeNode {
     }
 }
 
-class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by mutableMapOf<T, DominatorTreeNode<T>>()
+class DominatorTree<T : GraphNode<T>> : MutableMap<T, DominatorTreeNode<T>> by mutableMapOf<T, DominatorTreeNode<T>>() {
+    fun graphView(): List<GraphView> {
+        val nodes = hashMapOf<String, GraphView>()
+        this.keys.forEach {
+            nodes[it.toString().replace("\"", "\\\"")] =
+                    GraphView(
+                            it.toString().replace("\"", "\\\""),
+                            it.toString().replace("\"", "\\\"")
+                    )
+        }
+
+        this.entries.forEach { (node, tnode) ->
+            val current = nodes.getValue(node.toString().replace("\"", "\\\""))
+            val idom = tnode.idom?.value?.toString()
+            if (idom != null) {
+                val parent = nodes.getValue(idom.replace("\"", "\\\""))
+                parent.successors += current
+            }
+        }
+
+        return nodes.values.toList()
+    }
+
+    fun viewCfg(dot: String, browser: String) = viewCfg("domtree", graphView(), dot, browser)
+}
 
 class DominatorTreeBuilder<T : GraphNode<T>>(private val graph: Graph<T>) {
     val tree = DominatorTree<T>()
@@ -70,13 +94,32 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val graph: Graph<T>) {
         return if (x != 0) v else labels[u]
     }
 
+    private fun rdfs(node: T) {
+        dfsTree[node] = nodeCounter
+        reverseMapping[nodeCounter] = node
+        labels[nodeCounter] = nodeCounter
+        sdom[nodeCounter] = nodeCounter
+        dsu[nodeCounter] = nodeCounter
+        nodeCounter++
+        for (it in node.successors) {
+            if (dfsTree.getValue(it) == -1) {
+                rdfs(it)
+                parents[dfsTree.getValue(it)] = dfsTree.getValue(node)
+            }
+            reverseGraph[dfsTree.getValue(it)].add(dfsTree.getValue(node))
+        }
+    }
+
     private fun dfs(node: T) {
         val stack = ArrayDeque<Pair<T, Int>>()
         stack.push(node to -1)
 
         while (stack.isNotEmpty()) {
             val (top, parent) = stack.pop()
-            if (dfsTree.getValue(top) != -1) continue
+            if (dfsTree.getValue(top) != -1) {
+                if (parent >= 0) reverseGraph[dfsTree.getValue(top)].add(parent)
+                continue
+            }
 
             dfsTree[top] = nodeCounter
             reverseMapping[nodeCounter] = top
@@ -89,9 +132,11 @@ class DominatorTreeBuilder<T : GraphNode<T>>(private val graph: Graph<T>) {
                 reverseGraph[dfsTree.getValue(top)].add(parent)
             }
 
-            for (it in top.successors) {
+            for (it in top.successors.reversed()) {
                 if (dfsTree.getValue(it) == -1) {
                     stack.push(it to dfsTree.getValue(top))
+                } else {
+                    reverseGraph[dfsTree.getValue(it)].add(dfsTree.getValue(top))
                 }
             }
         }

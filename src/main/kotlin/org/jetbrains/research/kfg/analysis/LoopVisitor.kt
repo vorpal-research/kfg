@@ -10,10 +10,10 @@ import org.jetbrains.research.kfg.visitor.MethodVisitor
 
 data class LoopNode(val parent: Loop, val block: BasicBlock) : GraphNode<LoopNode> {
     override val predecessors: Set<LoopNode>
-        get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, block) }.toSet()
+        get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 
     override val successors: Set<LoopNode>
-        get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, block) }.toSet()
+        get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 }
 
 class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode> {
