@@ -8,17 +8,21 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
-    private var current: Method? = null
+    private lateinit var current: Method
 
     override val preservesLoopInfo get() = false
 
     override fun cleanup() {}
 
     override fun visit(method: Method) {
+        if (method.name == "loadFromResource")
+            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         current = method
+        println(method)
         super.visit(method)
+        if (method.name == "loadFromResource")
+            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         IRVerifier(cm).visit(method)
-        current = null
     }
 
     override fun visit(loop: Loop) {
@@ -84,22 +88,25 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         remapPhis(header, loopPredecessors, preheader)
         header.handlers.forEach { mapToCatch(header, preheader, it) }
         preheader += instructions.getJump(header)
-        current!!.addBefore(header, preheader)
+        current.addBefore(header, preheader)
     }
 
     private fun buildLatch(loop: Loop) {
         val header = loop.header
-        val latches = loop.body.filter { it.successors.contains(header) }.toSet()
+        val latches = loop.latches
         if (latches.size == 1) return
 
         val latch = BodyBlock("loop.latch")
-        latches.forEach { remapBlocks(it, header, latch) }
+        latches.forEach {
+            remapBlocks(it, header, latch)
+            it.handlers.forEach { catch -> mapToCatch(it, latch, catch) }
+        }
         latch.addSuccessor(header)
         header.addPredecessor(latch)
 
         remapPhis(header, latches, latch)
         latch += instructions.getJump(header)
-        current!!.add(latch)
+        current.addAfter(latches.first(), latch)
         loop.addBlock(latch)
     }
 }
