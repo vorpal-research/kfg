@@ -15,13 +15,8 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     override fun cleanup() {}
 
     override fun visit(method: Method) {
-        if (method.name == "loadFromResource")
-            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         current = method
-        println(method)
         super.visit(method)
-        if (method.name == "loadFromResource")
-            method.viewCfg("/usr/bin/dot", "/usr/bin/chromium")
         IRVerifier(cm).visit(method)
     }
 
