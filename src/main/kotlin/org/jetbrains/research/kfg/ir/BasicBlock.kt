@@ -9,7 +9,8 @@ import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 
-sealed class BasicBlock(val name: BlockName) : Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser, UsableBlock() {
+sealed class BasicBlock(val name: BlockName)
+    : UsableBlock(), Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser  {
     var parent: Method? = null
         internal set(value) {
             field = value

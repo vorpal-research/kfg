@@ -8,7 +8,6 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.Graph
-import org.jetbrains.research.kfg.util.GraphNode
 import org.jetbrains.research.kfg.util.GraphView
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.AnnotationNode
@@ -43,7 +42,8 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class)
     : Node(cm, mn.name, mn.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser {
 
     companion object {
-        private val CONSTRUCTOR_NAMES = arrayOf("<init>", "<clinit>")
+        private val CONSTRUCTOR_NAMES = arrayOf("<init>")
+        private val STATIC_INIT_NAMES = arrayOf("<clinit>")
     }
 
     val desc = MethodDesc.fromDesc(cm.type, mn.desc)
@@ -75,6 +75,9 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class)
 
     val isConstructor: Boolean
         get() = name in CONSTRUCTOR_NAMES
+
+    val isStaticInitializer: Boolean
+        get() = name in STATIC_INIT_NAMES
 
     val bodyBlocks: List<BasicBlock>
         get() {
