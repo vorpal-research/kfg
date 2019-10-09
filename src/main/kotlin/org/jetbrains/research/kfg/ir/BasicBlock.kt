@@ -10,14 +10,14 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.util.GraphNode
 
 sealed class BasicBlock(val name: BlockName)
-    : UsableBlock(), Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser  {
+    : UsableBlock(), Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser {
     var parent: Method? = null
         internal set(value) {
             field = value
             instructions.forEach { addValueToParent(it) }
         }
-    override val predecessors = hashSetOf<BasicBlock>()
-    override val successors = hashSetOf<BasicBlock>()
+    override val predecessors = linkedSetOf<BasicBlock>()
+    override val successors = linkedSetOf<BasicBlock>()
     val instructions = arrayListOf<Instruction>()
     val handlers = arrayListOf<CatchBlock>()
 

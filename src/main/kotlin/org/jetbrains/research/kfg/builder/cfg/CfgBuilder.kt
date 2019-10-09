@@ -959,7 +959,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
                     when (type) {
                         null -> removablePhis.add(phi)
                         else -> {
-                            val newPhi = instFactory.getPhi(phi.name, type, incomings)
+                            val newPhi = instFactory.getPhi(type, incomings)
                             phi.replaceAllUsesWith(newPhi)
                             phi.operands.forEach { it.removeUser(phi) }
                             bb.replace(phi, newPhi)
@@ -1011,6 +1011,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         }
 
         processPhis.addAll(removablePhis)
+        // this is generally fucked up
+        processPhis.sortBy { it.name.toString() }
         while (processPhis.isNotEmpty()) {
             val top = processPhis.first()
             processPhis.removeAt(0)
