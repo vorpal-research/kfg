@@ -7,7 +7,6 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.parseJarClasses
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
@@ -49,11 +48,14 @@ class Package(name: String) {
     }
 }
 
-class ClassManager(jar: JarFile, val `package`: Package = Package("*"), flags: Flags = Flags.readSkipFrames) {
+class ClassManager(jar: JarFile, val config: Config = Config()) {
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
     val concreteClasses: List<ConcreteClass>
+
+    val `package` get() = config.`package`
+    val flags get() = config.flags
 
     private val classNodes = hashMapOf<String, ClassNode>()
     private val classes = hashMapOf<String, Class>()

@@ -1,9 +1,16 @@
 package org.jetbrains.research.kfg
 
 import org.apache.commons.cli.*
+import org.jetbrains.research.kfg.util.Flags
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.system.exitProcess
+
+data class Config(
+        val flags: Flags = Flags.readCodeOnly,
+        val `package`: Package = Package.defaultPackage,
+        val failOnError: Boolean = true
+)
 
 class KfgConfig(args: Array<String>) {
     private val options = Options()

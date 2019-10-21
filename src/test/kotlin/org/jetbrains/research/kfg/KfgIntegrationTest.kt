@@ -52,7 +52,7 @@ class KfgIntegrationTest {
         val target = Files.createTempDirectory("kfg").toFile()
 
         val jarFile = JarFile(jar)
-        val cm = ClassManager(jarFile, `package`)
+        val cm = ClassManager(jarFile, Config(`package`= `package`))
         updateJar(cm, jarFile, `package`, target)
 
         assertTrue(deleteDirectory(target), "could not delete directory")
