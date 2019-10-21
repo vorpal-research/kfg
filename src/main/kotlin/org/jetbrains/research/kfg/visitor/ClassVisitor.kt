@@ -8,8 +8,8 @@ interface ClassVisitor : NodeVisitor {
     fun visit(`class`: Class) {
         super.visit(`class`)
         `class`.run {
-            fields.values.forEach { visitField(it) }
-            methods.values.forEach { visitMethod(it) }
+            fields.forEach { visitField(it) }
+            methods.forEach { visitMethod(it) }
         }
     }
 

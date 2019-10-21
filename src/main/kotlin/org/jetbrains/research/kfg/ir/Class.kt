@@ -19,9 +19,12 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     data class FieldKey(val name: String, val type: Type)
 
+    protected val innerMethods = mutableMapOf<MethodKey, Method>()
+    protected val innerFields = mutableMapOf<FieldKey, Field>()
     val `package` = Package(cn.name.substringBeforeLast('/', ""))
-    val fields = mutableMapOf<FieldKey, Field>()
-    val methods = mutableMapOf<MethodKey, Method>()
+
+    val methods get() = innerMethods.values.toSet()
+    val fields get() = innerFields.values.toSet()
 
     val fullname
         get() = if (`package` == Package.emptyPackage) name else "$`package`/$name"
@@ -53,11 +56,11 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         cn.fields.forEach {
             it as FieldNode
             val field = Field(cm, it, this)
-            fields[FieldKey(field.name, field.type)] = field
+            innerFields[FieldKey(field.name, field.type)] = field
         }
         cn.methods.forEach {
             it as MethodNode
-            methods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
+            innerMethods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
         }
     }
 
@@ -85,9 +88,9 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
 class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getFieldConcrete(name: String, type: Type): Field? =
-            fields.getOrElse(FieldKey(name, type)) { superClass?.getFieldConcrete(name, type) }
+            innerFields.getOrElse(FieldKey(name, type)) { superClass?.getFieldConcrete(name, type) }
 
-    override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = methods.getOrElse(MethodKey(name, desc)) {
+    override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = innerMethods.getOrElse(MethodKey(name, desc)) {
         val uppers = listOf(superClass).asSequence().plus(interfaces).filterNotNull().toList()
         val res: Method? = uppers
                 .asSequence()
@@ -101,7 +104,7 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
         res
     }
 
-    override fun getField(name: String, type: Type) = fields.getOrElse(FieldKey(name, type)) {
+    override fun getField(name: String, type: Type) = innerFields.getOrElse(FieldKey(name, type)) {
         val parents = (listOf(superClass) + interfaces).filterNotNull()
         parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
                 ?: parents.mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
@@ -110,7 +113,7 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
-        return methods.getOrElse(methodDesc) {
+        return innerMethods.getOrElse(methodDesc) {
             val parents = (listOf(superClass) + interfaces).filterNotNull()
             parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
                     ?: parents.mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
@@ -132,14 +135,14 @@ class OuterClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
-    override fun getField(name: String, type: Type): Field = fields.getOrPut(FieldKey(name, type)) {
+    override fun getField(name: String, type: Type): Field = innerFields.getOrPut(FieldKey(name, type)) {
         val fn = FieldNode(0, name, type.asmDesc, null, null)
         Field(cm, fn, this)
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
-        return methods.getOrPut(methodDesc) {
+        return innerMethods.getOrPut(methodDesc) {
             val mn = MethodNode()
             mn.name = name
             mn.desc = desc.asmDesc

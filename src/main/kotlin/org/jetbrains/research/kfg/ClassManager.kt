@@ -65,7 +65,7 @@ class ClassManager(jar: JarFile, val `package`: Package = Package("*"), flags: F
             classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
         }
         classes.values.forEach {
-            it.methods.forEach { (_, method) ->
+            it.methods.forEach { method ->
                 if (!method.isAbstract) CfgBuilder(this, method).build()
             }
         }

@@ -137,9 +137,9 @@ fun <T : GraphNode<T>> Set<T>.asGraph(): Graph<T> = object : Graph<T> {
     override val nodes = this@asGraph
 }
 
-class LoopDetector<T : GraphNode<T>>(private val nodes: Set<T>) {
+class LoopDetector<T : GraphNode<T>>(private val graph: Graph<T>) {
     fun search(): Map<T, List<T>> {
-        val tree = DominatorTreeBuilder(nodes.asGraph()).build()
+        val tree = DominatorTreeBuilder(graph).build()
         val backEdges = arrayListOf<Pair<T, T>>()
 
         for ((current, _) in tree) {

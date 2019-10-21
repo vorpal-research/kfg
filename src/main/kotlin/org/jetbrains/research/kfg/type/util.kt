@@ -128,6 +128,6 @@ fun parseStringToType(tf: TypeFactory, name: String): Type {
 
 val Type.expandedBitsize
     get() = when (this) {
-        is ClassType -> `class`.fields.values.fold(0) { acc, field -> acc + field.type.bitsize }
+        is ClassType -> `class`.fields.fold(0) { acc, field -> acc + field.type.bitsize }
         else -> bitsize
     }

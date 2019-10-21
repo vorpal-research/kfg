@@ -114,8 +114,7 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
     override fun visit(method: Method) {
         cleanup()
 
-        val allLoops = LoopDetector(method.basicBlocks.toSet()).search()
-                .map { Loop(it.key, it.value.toMutableSet()) }
+        val allLoops = LoopDetector(method).search().map { Loop(it.key, it.value.toMutableSet()) }
 
         val parents = hashMapOf<Loop, MutableSet<Loop>>()
         for (loop in allLoops) {
