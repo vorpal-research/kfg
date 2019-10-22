@@ -89,6 +89,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                 classes[name] = when (name) {
                     in failedClasses -> OuterClass(this, ClassNode().also { it.name = name }).also { it.init() }
                     else -> ConcreteClass(this, classNodes.getValue(name)).also {
+                        it.init()
                         it.methods.forEach { method ->
                             if (!method.isAbstract) CfgBuilder(this, method).build()
                         }
