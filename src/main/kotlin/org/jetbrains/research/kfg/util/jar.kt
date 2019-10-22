@@ -5,6 +5,7 @@ import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
@@ -176,9 +177,9 @@ fun writeClasses(cm: ClassManager, jar: JarFile, `package`: Package, writeAllCla
         if (entry.isManifest) continue
 
         if (entry.isClass) {
+            val `class` = cm.getByName(entry.name.removeSuffix(".class"))
             when {
-                `package`.isParent(entry.name) -> {
-                    val `class` = cm.getByName(entry.name.removeSuffix(".class"))
+                `package`.isParent(entry.name) && `class` is ConcreteClass -> {
                     val localPath = "${`class`.fullname}.class"
                     val path = "$currentDir/$localPath"
                     writeClass(cm, loader, `class`, path, Flags.writeComputeFrames)
@@ -228,11 +229,16 @@ fun updateJar(cm: ClassManager, jar: JarFile, `package`: Package, target: File):
 
         if (entry.isClass && `package`.isParent(entry.name)) {
             val `class` = cm.getByName(entry.name.removeSuffix(".class"))
-            val localPath = "${`class`.fullname}.class"
-            val path = "$currentDir/$localPath"
 
-            val newEntry = JarEntry(localPath.replace("\\", "/"))
-            builder.add(newEntry, FileInputStream(path))
+            if (`class` is ConcreteClass) {
+                val localPath = "${`class`.fullname}.class"
+                val path = "$currentDir/$localPath"
+
+                val newEntry = JarEntry(localPath.replace("\\", "/"))
+                builder.add(newEntry, FileInputStream(path))
+            } else {
+                builder.add(entry, jar.getInputStream(entry))
+            }
         } else {
             builder.add(entry, jar.getInputStream(entry))
         }

@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
+import org.jetbrains.research.kfg.util.NoTopologicalSortingException
 import org.jetbrains.research.kfg.util.parseJarClasses
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
@@ -48,7 +49,7 @@ class Package(name: String) {
     }
 }
 
-class ClassManager(jar: JarFile, val config: Config = Config()) {
+class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().build()) {
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
@@ -66,9 +67,33 @@ class ClassManager(jar: JarFile, val config: Config = Config()) {
         jarClasses.forEach { (name, cn) ->
             classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
         }
-        classes.values.forEach {
-            it.methods.forEach { method ->
-                if (!method.isAbstract) CfgBuilder(this, method).build()
+
+        val failedClasses = hashSetOf<String>()
+        classes.forEach { (name, klass) ->
+            try {
+                klass.methods.forEach { method ->
+                    if (!method.isAbstract) CfgBuilder(this, method).build()
+                }
+            } catch (e: NoTopologicalSortingException) {
+                if (config.failOnError) throw e
+                failedClasses += name
+            }
+        }
+        // this is fucked up, but i don't know any other way to do this
+        // if `failOnError` option is enabled and we have some failed classes, we need to
+        // rebuild all the methods so they will not use invalid instance of ConcreteClass for failing class
+        if (!config.failOnError && failedClasses.isNotEmpty()) {
+            val oldClasses = classes.toMap()
+            classes.clear()
+            for ((name, _) in oldClasses) {
+                classes[name] = when (name) {
+                    in failedClasses -> OuterClass(this, ClassNode().also { it.name = name }).also { it.init() }
+                    else -> ConcreteClass(this, classNodes.getValue(name)).also {
+                        it.methods.forEach { method ->
+                            if (!method.isAbstract) CfgBuilder(this, method).build()
+                        }
+                    }
+                }
             }
         }
         concreteClasses = classes.values.mapNotNull { it as? ConcreteClass }
