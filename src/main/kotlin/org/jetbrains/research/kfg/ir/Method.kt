@@ -10,6 +10,7 @@ import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.Graph
 import org.jetbrains.research.kfg.util.GraphView
 import org.jetbrains.research.kfg.util.simpleHash
+import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
@@ -25,7 +26,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     }
 
     val asmDesc: String
-        get() =  "(${args.joinToString(separator = "") { it.asmDesc }})${retval.asmDesc}"
+        get() = "(${args.joinToString(separator = "") { it.asmDesc }})${retval.asmDesc}"
 
     override fun hashCode() = simpleHash(*args, retval)
     override fun equals(other: Any?): Boolean {
@@ -38,15 +39,16 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     override fun toString() = "(${args.joinToString { it.name }}): ${retval.name}"
 }
 
-class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class)
-    : Node(cm, mn.name, mn.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser {
+class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
+    : Node(cm, node.name, node.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser {
 
     companion object {
         private val CONSTRUCTOR_NAMES = arrayOf("<init>")
         private val STATIC_INIT_NAMES = arrayOf("<clinit>")
     }
 
-    val desc = MethodDesc.fromDesc(cm.type, mn.desc)
+    val mn: MethodNode
+    val desc = MethodDesc.fromDesc(cm.type, node.desc)
     val argTypes get() = desc.args
     val returnType get() = desc.retval
     val parameters = arrayListOf<Parameter>()
@@ -56,6 +58,10 @@ class Method(cm: ClassManager, val mn: MethodNode, val `class`: Class)
     val slottracker = SlotTracker(this)
 
     init {
+        mn = JSRInlinerAdapter(node, node.access, node.name,
+                node.desc, node.signature,
+                node.exceptions?.mapNotNull { it as? String }?.toTypedArray())
+        node.accept(mn)
         mn.parameters?.withIndex()?.forEach { (indx, param) ->
             param as ParameterNode
             parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))

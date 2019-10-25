@@ -16,7 +16,7 @@ import org.jetbrains.research.kfg.util.DominatorTreeBuilder
 import org.jetbrains.research.kfg.util.GraphTraversal
 import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.commons.JSRInlinerAdapter
+import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 
 private class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
@@ -134,9 +134,7 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
-class CfgBuilder(val cm: ClassManager, val method: Method)
-    : JSRInlinerAdapter(Opcodes.ASM5, method.mn, method.modifiers, method.name, method.asmDesc,
-        method.mn.signature, method.exceptions.map { it.fullname }.toTypedArray()) {
+class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private val instFactory get() = cm.instruction
     val values get() = cm.value
     val types get() = cm.type
@@ -752,7 +750,6 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
 
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        super.visitMultiANewArrayInsn(insn.desc, insn.dims)
         val dimensions = arrayListOf<Value>()
         for (it in 0 until insn.dims) dimensions.add(pop())
         val type = parseDesc(types, insn.desc)
