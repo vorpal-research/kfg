@@ -14,6 +14,7 @@ import org.objectweb.asm.tree.MethodNode
 abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
     data class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
+
         override fun toString() = "$name$desc"
     }
 
@@ -105,18 +106,40 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     }
 
     override fun getField(name: String, type: Type) = innerFields.getOrElse(FieldKey(name, type)) {
-        val parents = (listOf(superClass) + interfaces).filterNotNull()
-        parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-                ?: parents.mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
+        var prnts = (listOf(superClass) + interfaces).filterNotNull()
+
+        var result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+        while (prnts.isNotEmpty()) {
+            if (result != null) break
+            prnts = prnts
+                    .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
+                    .flatten()
+
+            result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+        }
+
+        result
+                ?: (listOf(superClass) + interfaces).filterNotNull().mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
                 ?: throw UnknownInstance("No field \"$name\" in class $this")
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
         return innerMethods.getOrElse(methodDesc) {
-            val parents = (listOf(superClass) + interfaces).filterNotNull()
-            parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-                    ?: parents.mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
+            var prnts = (listOf(superClass) + interfaces).filterNotNull()
+
+            var result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+            while (prnts.isNotEmpty()) {
+                if (result != null) break
+                prnts = prnts
+                        .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
+                        .flatten()
+
+                result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+            }
+
+            result
+                    ?: (listOf(superClass) + interfaces).filterNotNull().mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
                     ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
         }
     }

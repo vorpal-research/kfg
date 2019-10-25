@@ -670,8 +670,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
     private fun convertJumpInsn(insn: JumpInsnNode) {
         val bb = nodeToBlock.getValue(insn)
 
-        when (GOTO) {
-            insn.opcode -> {
+        when (insn.opcode) {
+            GOTO -> {
                 val trueSuccessor = nodeToBlock.getValue(insn.label)
                 addInstruction(bb, instFactory.getJump(trueSuccessor))
             }
@@ -883,7 +883,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
                 cur = cur.next
             }
 
-            if (throwers.isEmpty()) throwers.add(thrower)
+            if (throwers.isEmpty()) {
+                throwers.add(thrower)
+                thrower.addHandler(handle)
+            }
             handle.addThrowers(throwers)
             method.addCatchBlock(handle)
         }
@@ -902,7 +905,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method)
         val dominatorTree = DominatorTreeBuilder(method).build()
 
         for ((bb, dtn) in dominatorTree) {
-            val preds = bb.predecessors
+            val preds = when (bb) {
+                is CatchBlock -> bb.getAllPredecessors()
+                else -> bb.predecessors
+            }
             if (preds.size > 1) {
                 for (pred in preds) {
                     var runner: BasicBlock? = pred

@@ -77,6 +77,9 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
             } catch (e: NoTopologicalSortingException) {
                 if (config.failOnError) throw e
                 failedClasses += name
+            } catch (e: UnsupportedOperation) {
+                if (config.failOnError) throw e
+                failedClasses += name
             }
         }
         // this is fucked up, but i don't know any other way to do this
