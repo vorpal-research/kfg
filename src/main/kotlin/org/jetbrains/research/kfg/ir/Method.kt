@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -58,10 +59,11 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     val slottracker = SlotTracker(this)
 
     init {
-        mn = JSRInlinerAdapter(node, node.access, node.name,
+        val temp = JSRInlinerAdapter(node, node.access, node.name,
                 node.desc, node.signature,
                 node.exceptions?.mapNotNull { it as? String }?.toTypedArray())
-        node.accept(mn)
+        node.accept(temp)
+        mn = LabelFilterer(temp).build()
         mn.parameters?.withIndex()?.forEach { (indx, param) ->
             param as ParameterNode
             parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))

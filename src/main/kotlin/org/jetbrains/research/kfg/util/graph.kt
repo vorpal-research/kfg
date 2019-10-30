@@ -6,11 +6,12 @@ import info.leadinglight.jdot.Node
 import info.leadinglight.jdot.enums.Color
 import info.leadinglight.jdot.enums.Shape
 import info.leadinglight.jdot.impl.Util
+import org.jetbrains.research.kfg.KfgException
 import java.io.File
 import java.nio.file.Files
 import java.util.*
 
-class NoTopologicalSortingException(msg: String) : Exception(msg)
+class NoTopologicalSortingException(msg: String) : KfgException(msg)
 
 interface GraphNode<out T : Any> {
     val predecessors: Set<T>
@@ -20,6 +21,16 @@ interface GraphNode<out T : Any> {
 interface Graph<T : GraphNode<T>> {
     val entry: T
     val nodes: Set<T>
+
+    fun findEntries(): Set<T> {
+        val hasEntry = nodes.map { it to false }.toMap().toMutableMap()
+        for (node in nodes) {
+            node.successors.forEach { succ ->
+                hasEntry[succ] = true
+            }
+        }
+        return hasEntry.filter { !it.value }.keys
+    }
 }
 
 class GraphTraversal<T : GraphNode<T>>(val graph: Graph<T>) {

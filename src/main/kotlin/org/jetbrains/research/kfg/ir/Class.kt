@@ -63,6 +63,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
             it as MethodNode
             innerMethods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
         }
+        cn.methods = this.methods.map { it.mn }
     }
 
     val allAncestors get() = listOfNotNull(superClass) + interfaces

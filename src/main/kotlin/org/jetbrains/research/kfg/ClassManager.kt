@@ -7,7 +7,6 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.NoTopologicalSortingException
 import org.jetbrains.research.kfg.util.parseJarClasses
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
@@ -74,10 +73,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                 klass.methods.forEach { method ->
                     if (!method.isAbstract) CfgBuilder(this, method).build()
                 }
-            } catch (e: NoTopologicalSortingException) {
-                if (config.failOnError) throw e
-                failedClasses += name
-            } catch (e: UnsupportedOperation) {
+            } catch (e: KfgException) {
                 if (config.failOnError) throw e
                 failedClasses += name
             }

@@ -18,6 +18,20 @@ import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
+import java.util.*
+import kotlin.collections.ArrayList
+
+fun MethodNode.instructions(): List<AbstractInsnNode> {
+    val list = mutableListOf<AbstractInsnNode>()
+    var current: AbstractInsnNode? = instructions.first
+    while (current != null) {
+        list += current
+        current = current.next
+    }
+    return list
+}
+
+fun MethodNode.tryCatchBlocks() = this.tryCatchBlocks.mapNotNull { it as? TryCatchBlockNode }
 
 private class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
     : ValueUser, MutableMap<Int, Value> by locals {
@@ -1015,10 +1029,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
         processPhis.addAll(removablePhis)
         // this is generally fucked up
-        processPhis.sortBy { it.name.toString() }
-        while (processPhis.isNotEmpty()) {
-            val top = processPhis.first()
-            processPhis.removeAt(0)
+        val deque = ArrayDeque<PhiInst>(processPhis.sortedBy { it.name.toString() })
+        while (deque.isNotEmpty()) {
+            val top = deque.pollFirst()
             val incomings = top.incomingValues
             val incomingsSet = incomings.toSet()
             val instUsers = top.users.mapNotNull { it as? Instruction }
@@ -1028,41 +1041,43 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 val first = incomingsSet.first()
                 top.replaceAllUsesWith(first)
                 operands.forEach { it.removeUser(top) }
-                if (first is PhiInst) processPhis.add(first)
+                if (first is PhiInst) deque.add(first)
                 top.parent?.remove(top) ?: continue
-                operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                operands.mapNotNull { it as? PhiInst }.forEach { deque.add(it) }
 
-            } else if (incomings.size == 2 && incomings.contains(top)) {
+            } else if (incomingsSet.size == 2 && incomingsSet.contains(top)) {
                 top.replaceAllUsesWith(when (top) {
-                    incomings.first() -> incomings.last()
-                    else -> incomings.first()
+                    incomingsSet.first() -> incomingsSet.last()
+                    else -> incomingsSet.first()
                 })
                 operands.forEach { it.removeUser(top) }
-                instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                instUsers.mapNotNull { it as? PhiInst }.forEach { deque.add(it) }
 
             } else if (instUsers.isEmpty()) {
                 operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
-                operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                operands.mapNotNull { it as? PhiInst }.forEach { deque.add(it) }
 
             } else if (instUsers.size == 1 && instUsers.first() == top) {
                 operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top)
                 operands.asSequence().mapNotNull { it as? PhiInst }
                         .mapNotNull { if (it == top) null else it }.toList()
-                        .forEach { processPhis.add(it) }
+                        .forEach { deque.add(it) }
 
             } else if (removablePhis.containsAll(instUsers)) {
                 operands.forEach { it.removeUser(top) }
                 top.parent?.remove(top) ?: continue
-                operands.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
+                operands.mapNotNull { it as? PhiInst }.forEach { deque.add(it) }
             }
         }
 
         removablePhis.forEach { phi ->
             val instUsers = phi.users.mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
-            require(methodInstUsers.isEmpty()) { "Instruction ${phi.print()} still have usages" }
+            require(methodInstUsers.isEmpty()) {
+                "Instruction ${phi.print()} still have usages"
+            }
             phi.parent?.remove(phi)
         }
     }
@@ -1117,6 +1132,11 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 else cycleEntries.add(it)
             }
         }
+
+        if (method.findEntries().size > 1) {
+            throw UnsupportedCfgException("Method $method has more than one enrty")
+        }
+
         latches.forEach { (latch, header) -> latch.removeSuccessor(header) }
         val order = GraphTraversal(method).topologicalSort()
         latches.forEach { (latch, header) ->
