@@ -1075,8 +1075,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         removablePhis.forEach { phi ->
             val instUsers = phi.users.mapNotNull { it as? Instruction }
             val methodInstUsers = instUsers.mapNotNull { if (it.parent != null) it else null }
-            require(methodInstUsers.isEmpty()) {
-                "Instruction ${phi.print()} still have usages"
+            if (methodInstUsers.isNotEmpty()) {
+                throw UnsupportedCfgException("Instruction ${phi.print()} still have usages")
             }
             phi.parent?.remove(phi)
         }

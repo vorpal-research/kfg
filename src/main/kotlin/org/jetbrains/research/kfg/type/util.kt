@@ -41,6 +41,13 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     types.all { it is Reference } -> when {
         types.any { it is ClassType } -> tf.objectType
         types.map { it as ArrayType }.map { it.component }.toSet().size == 1 -> types.first()
+        types.all { it is ArrayType } -> {
+            val components = types.map { (it as ArrayType).component }.toSet()
+            when (val merged = mergeTypes(tf, components)) {
+                null -> tf.objectType
+                else -> tf.getArrayType(merged)
+            }
+        }
         else -> tf.objectType
     }
     else -> null
