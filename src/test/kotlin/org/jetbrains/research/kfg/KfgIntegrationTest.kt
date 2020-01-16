@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.util.updateJar
+import org.jetbrains.research.kfg.util.update
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
@@ -49,13 +49,13 @@ class KfgIntegrationTest {
         val version = System.getProperty("project.version")
         val jar = "target/kfg-$version-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
-        val target = Files.createTempDirectory("kfg").toFile()
+        val target = Files.createTempDirectory("kfg")
 
         val jarFile = JarFile(jar)
         val cm = ClassManager(jarFile, KfgConfigBuilder().`package`(`package`).build())
-        updateJar(cm, jarFile, `package`, target)
+        jarFile.update(cm, `package`, target)
 
-        assertTrue(deleteDirectory(target), "could not delete directory")
+        assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())
         assertTrue(err.toString().isBlank(), err.toString())
     }

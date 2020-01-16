@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.parseJarClasses
+import org.jetbrains.research.kfg.util.parse
 import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
 import java.util.jar.JarFile
@@ -61,7 +61,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
     private val classes = hashMapOf<String, Class>()
 
     init {
-        val jarClasses = parseJarClasses(jar, `package`, flags)
+        val jarClasses = jar.parse(`package`, flags)
         classNodes.putAll(jarClasses)
         jarClasses.forEach { (name, cn) ->
             classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
