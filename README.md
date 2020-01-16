@@ -33,7 +33,7 @@ fun example(jar: JarFile, `package`: Package) {
         }
     }
     // save all changes to methods back to jar
-    updateJar(cm, jar, `package`)
+    jar.update(cm, `package`)
 }
 ```
 
