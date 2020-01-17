@@ -1,4 +1,5 @@
 # KFG
+[![](https://jitpack.io/v/vorpal-research/kfg.svg)](https://jitpack.io/#vorpal-research/kfg)
 
 Library for building control flow graph from Java bytecode.
 
