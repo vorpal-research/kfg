@@ -17,6 +17,7 @@ import java.nio.file.Path
 import java.util.jar.*
 
 val JarEntry.isClass get() = this.name.endsWith(".class")
+val JarEntry.className get() = this.name.removeSuffix(".class")
 val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
@@ -230,7 +231,7 @@ fun JarFile.parse(pack: Package, flags: Flags): Map<String, ClassNode> {
     while (enumeration.hasMoreElements()) {
         val entry = enumeration.nextElement() as JarEntry
 
-        if (entry.isClass && pack.isParent(entry.name)) {
+        if (entry.isClass && pack.isParent(entry.className)) {
             val classNode = readClassNode(this.getInputStream(entry), flags)
             classes[classNode.name] = classNode
         }
