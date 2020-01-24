@@ -28,7 +28,7 @@ fun example(jar: JarFile, `package`: Package) {
     val cm = ClassManager(jar, `package`, Flags.readAll)
     // iterate over all found classes
     for (klass in cm.concreteClasses) {
-        for ((_, method) in klass.methods) {
+        for (method in klass.allMethods) {
             // view each method as graph
             method.viewCfg("/usr/bin/dot", "/usr/bin/browser")
         }
