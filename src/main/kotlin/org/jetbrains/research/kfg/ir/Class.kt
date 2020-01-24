@@ -24,7 +24,9 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     protected val innerFields = mutableMapOf<FieldKey, Field>()
     val `package` = Package(cn.name.substringBeforeLast('/', ""))
 
-    val methods get() = innerMethods.values.toSet()
+    val allMethods get() = innerMethods.values.toSet()
+    val constructors get() = allMethods.filter { it.isConstructor }.toSet()
+    val methods get() = allMethods.filterNot { it.isConstructor }.toSet()
     val fields get() = innerFields.values.toSet()
 
     val fullname
@@ -63,7 +65,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
             it as MethodNode
             innerMethods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
         }
-        cn.methods = this.methods.map { it.mn }
+        cn.methods = this.allMethods.map { it.mn }
     }
 
     val allAncestors get() = listOfNotNull(superClass) + interfaces

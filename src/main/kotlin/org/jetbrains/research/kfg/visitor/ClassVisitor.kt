@@ -9,7 +9,7 @@ interface ClassVisitor : NodeVisitor {
         super.visit(`class`)
         `class`.run {
             fields.forEach { visitField(it) }
-            methods.forEach { visitMethod(it) }
+            allMethods.forEach { visitMethod(it) }
         }
     }
 

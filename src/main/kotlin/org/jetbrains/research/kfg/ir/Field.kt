@@ -42,4 +42,6 @@ class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, 
         result = 31 * result + (defaultValue?.hashCode() ?: 0)
         return result
     }
+
+    override fun toString() = "${`class`.fullname}.$name: $type"
 }

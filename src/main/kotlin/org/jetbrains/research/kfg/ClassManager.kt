@@ -70,7 +70,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
         val failedClasses = hashSetOf<String>()
         classes.forEach { (name, klass) ->
             try {
-                klass.methods.forEach { method ->
+                klass.allMethods.forEach { method ->
                     if (!method.isAbstract) CfgBuilder(this, method).build()
                 }
             } catch (e: KfgException) {
@@ -89,7 +89,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                     in failedClasses -> OuterClass(this, ClassNode().also { it.name = name }).also { it.init() }
                     else -> ConcreteClass(this, classNodes.getValue(name)).also {
                         it.init()
-                        it.methods.forEach { method ->
+                        it.allMethods.forEach { method ->
                             if (!method.isAbstract) CfgBuilder(this, method).build()
                         }
                     }
