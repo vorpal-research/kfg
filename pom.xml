@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.6-1</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
