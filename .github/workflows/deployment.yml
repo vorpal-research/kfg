@@ -28,7 +28,7 @@ jobs:
         run: mv target/*-sources.jar sources.jar
 
       - name: Move target jar file
-        run: mv target/*.jar target.jar
+        run: mv target/*[^a-zA-Z].jar target.jar
 
       - name: Attach source jar to release
         id: upload-source-asset
