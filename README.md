@@ -15,6 +15,26 @@ mvn clean package
 mvn clean verify
 ```
 
+# Download
+
+The latest release of the KFG is available at vorpal-research bintray repository:
+```xml
+<repository>
+    <id>bintray-vorpal-research-kotlin-maven</id>
+    <url>https://dl.bintray.com/vorpal-research/kotlin-maven</url>
+</repository>
+```
+
+Include:
+```xml
+<dependency>
+	<groupId>org.jetbrains.research</groupId>
+	<artifactId>kfg</artifactId>
+	<version>0.0.6-1</version>
+	<type>pom</type>
+</dependency>
+``` 
+
 # Usage example
 
 Simple example of how to scan Jar file
