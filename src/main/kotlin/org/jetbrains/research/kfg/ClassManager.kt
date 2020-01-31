@@ -52,7 +52,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
-    val concreteClasses: List<ConcreteClass>
+    val concreteClasses: Set<ConcreteClass>
 
     val `package` get() = config.`package`
     val flags get() = config.flags
@@ -96,7 +96,7 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                 }
             }
         }
-        concreteClasses = classes.values.mapNotNull { it as? ConcreteClass }
+        concreteClasses = classes.values.mapNotNull { it as? ConcreteClass }.toSet()
     }
 
     fun get(cn: ClassNode) = classes.getOrPut(cn.name) { ConcreteClass(this, cn) }

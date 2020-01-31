@@ -6,10 +6,7 @@ import org.jetbrains.research.kfg.UnknownInstance
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.simpleHash
-import org.objectweb.asm.tree.AnnotationNode
-import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.*
 
 abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
     data class MethodKey(val name: String, val desc: MethodDesc) {
@@ -48,7 +45,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         get() = if (cn.outerMethod != null) outerClass?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
 
     val innerClasses
-        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.getByName(it as String) } else listOf()
+        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.getByName((it as InnerClassNode).name) } else listOf()
 
     override val asmDesc
         get() = "L$fullname;"
