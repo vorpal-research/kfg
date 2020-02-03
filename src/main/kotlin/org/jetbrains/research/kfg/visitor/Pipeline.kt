@@ -99,6 +99,11 @@ class MethodPipeline(cm: ClassManager, val targets: Collection<Method>, pipeline
                 visitor.cleanup()
             }
 
+            override fun visit(`class`: Class) {
+                super.visit(`class`)
+                visitor.visit(`class`)
+            }
+
             override fun visitMethod(method: Method) {
                 if (method in targets) {
                     super.visitMethod(method)
