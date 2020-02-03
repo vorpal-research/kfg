@@ -8,19 +8,19 @@ import org.jetbrains.research.kfg.ir.Node
 import java.util.*
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
-    protected val pipeline = pipeline.map { it.wrap() }.toMutableList()
+    protected open val pipeline = pipeline.map { it.wrap() }.toMutableList()
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
     operator fun plusAssign(visitor: NodeVisitor) {
         add(visitor)
     }
 
-    fun add(visitor: NodeVisitor) = pipeline.add(visitor.wrap())
+    open fun add(visitor: NodeVisitor) = pipeline.add(visitor.wrap())
     fun add(vararg visitors: NodeVisitor) {
         visitors.forEach { add(it) }
     }
 
-    private fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
+    protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> visitor
         is MethodVisitor -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
@@ -49,7 +49,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     }
 
     operator fun NodeVisitor.unaryPlus() {
-        pipeline.add(this.wrap())
+        add(this)
     }
 
     abstract fun run()
@@ -67,7 +67,7 @@ class PackagePipeline(cm: ClassManager, val target: Package, pipeline: List<Node
 }
 
 class ClassPipeline(cm: ClassManager, target: Class, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
-    val targets = mutableSetOf<Class>()
+    private val targets = mutableSetOf<Class>()
 
     init {
         val classQueue = ArrayDeque<Class>(listOf(target))
@@ -87,6 +87,53 @@ class ClassPipeline(cm: ClassManager, target: Class, pipeline: List<NodeVisitor>
     }
 }
 
+class MethodPipeline(cm: ClassManager, val targets: Collection<Method>, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
+    private val classTargets = targets.map { it.`class` }.toMutableSet()
+    override val pipeline = pipeline.map { it.methodWrap() }.toMutableList()
+
+    protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
+        is ClassVisitor -> object : ClassVisitor {
+            override val cm get() = this@MethodPipeline.cm
+
+            override fun cleanup() {
+                visitor.cleanup()
+            }
+
+            override fun visitMethod(method: Method) {
+                if (method in targets) {
+                    super.visitMethod(method)
+                    visitor.visitMethod(method)
+                }
+            }
+        }
+        is MethodVisitor -> object : ClassVisitor {
+            override val cm get() = this@MethodPipeline.cm
+
+            override fun cleanup() {
+                visitor.cleanup()
+            }
+
+            override fun visitMethod(method: Method) {
+                if (method in targets) {
+                    super.visitMethod(method)
+                    visitor.visit(method)
+                }
+            }
+        }
+        else -> this.wrap()
+    }
+
+    override fun add(visitor: NodeVisitor) = pipeline.add(visitor.methodWrap())
+
+    override fun run() {
+        for (pass in pipeline) {
+            for (`class` in classTargets) {
+                pass.visit(`class`)
+            }
+        }
+    }
+}
+
 fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline = PackagePipeline(cm, target).also {
     it.init()
 }
@@ -95,8 +142,15 @@ fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): P
     it.init()
 }
 
+fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline = MethodPipeline(cm, targets).also {
+    it.init()
+}
+
 fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
         buildPipeline(cm, target, init).run()
 
 fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
         buildPipeline(cm, target, init).run()
+
+fun executePipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
+        buildPipeline(cm, targets, init).run()

@@ -79,7 +79,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         get() = basicBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
 
     val prototype: String
-        get() = "$`class`.$name$desc"
+        get() = "$`class`::$name$desc"
 
     val isConstructor: Boolean
         get() = name in CONSTRUCTOR_NAMES

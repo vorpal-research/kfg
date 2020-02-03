@@ -74,6 +74,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     abstract fun getField(name: String, type: Type): Field
 
+    fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(cm.type, desc))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 

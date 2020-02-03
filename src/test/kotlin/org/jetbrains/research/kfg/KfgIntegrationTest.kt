@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.util.update
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
@@ -118,5 +119,29 @@ class KfgIntegrationTest {
 
         assertEquals(targetClasses.intersect(visitedClasses), targetClasses)
         assertTrue((targetClasses - visitedClasses).isEmpty())
+    }
+
+    @Test
+    fun methodPipelineTest() {
+        val klass = cm.concreteClasses.random()
+        val targetMethods = klass.getMethods(klass.methods.random().name)
+
+        val visitedMethods = mutableSetOf<Method>()
+        executePipeline(cm, targetMethods) {
+            +object : ClassVisitor {
+                override val cm: ClassManager
+                    get() = this@KfgIntegrationTest.cm
+
+                override fun cleanup() {}
+
+                override fun visitMethod(method: Method) {
+                    super.visitMethod(method)
+                    visitedMethods += method
+                }
+            }
+        }
+
+        assertEquals(targetMethods.intersect(visitedMethods), targetMethods)
+        assertTrue((targetMethods - visitedMethods).isEmpty())
     }
 }
