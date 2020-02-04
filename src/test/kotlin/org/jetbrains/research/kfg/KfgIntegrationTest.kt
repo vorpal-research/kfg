@@ -123,7 +123,12 @@ class KfgIntegrationTest {
 
     @Test
     fun methodPipelineTest() {
-        val klass = cm.concreteClasses.random()
+        val klass = run {
+            var temp = cm.concreteClasses.random()
+            while (temp.methods.isEmpty())
+                temp = cm.concreteClasses.random()
+            temp
+        }
         val targetMethods = klass.getMethods(klass.methods.random().name)
 
         val visitedMethods = mutableSetOf<Method>()
