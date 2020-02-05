@@ -1,7 +1,9 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.UnknownTypeException
+import org.jetbrains.research.kfg.ir.Class
+import java.lang.Class as JClass
 
 class TypeFactory(val cm: ClassManager) {
     companion object {
@@ -94,5 +96,21 @@ class TypeFactory(val cm: ClassManager) {
         is FloatType -> floatWrapper
         is DoubleType -> doubleWrapper
         else -> throw IllegalArgumentException("Can't find wrapper for type $type")
+    }
+
+    fun get(klass: JClass<*>): Type = when {
+        klass.isPrimitive -> when (klass) {
+            Void::class.java -> voidType
+            Boolean::class.javaPrimitiveType -> boolType
+            Byte::class.javaPrimitiveType -> byteType
+            Short::class.javaPrimitiveType -> shortType
+            Int::class.javaPrimitiveType -> intType
+            Long::class.javaPrimitiveType -> longType
+            Float::class.javaPrimitiveType -> floatType
+            Double::class.javaPrimitiveType -> doubleType
+            else -> throw UnknownTypeException("Unknown primitive type $klass")
+        }
+        klass.isArray -> getArrayType(get(klass.componentType))
+        else -> getRefType(cm.getByName(klass.canonicalName.replace('.', '/')))
     }
 }

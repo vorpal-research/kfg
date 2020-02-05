@@ -23,3 +23,5 @@ class UnknownInstance(msg: String) : KfgException(msg)
 class UnsupportedOperation(msg: String) : KfgException(msg)
 
 class UnsupportedCfgException(msg: String): KfgException(msg)
+
+class UnknownTypeException(msg: String): KfgException(msg)
