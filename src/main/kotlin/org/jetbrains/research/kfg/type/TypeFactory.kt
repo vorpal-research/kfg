@@ -111,6 +111,6 @@ class TypeFactory(val cm: ClassManager) {
             else -> throw UnknownTypeException("Unknown primitive type $klass")
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm.getByName(klass.canonicalName.replace('.', '/')))
+        else -> getRefType(cm.getByName(klass.name.replace('.', '/')))
     }
 }
