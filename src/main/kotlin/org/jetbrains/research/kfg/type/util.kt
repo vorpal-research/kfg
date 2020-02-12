@@ -29,7 +29,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         var result = tf.objectType
         for (i in 0..classes.lastIndex) {
             val isAncestor = classes.fold(true) { acc, `class` ->
-                acc && classes[i].`class`.isAncestor(`class`.`class`)
+                acc && classes[i].`class`.isAncestorOf(`class`.`class`)
             }
 
             if (isAncestor) {

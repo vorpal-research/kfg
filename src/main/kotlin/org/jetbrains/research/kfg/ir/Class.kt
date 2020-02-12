@@ -67,7 +67,8 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     val allAncestors get() = listOfNotNull(superClass) + interfaces
 
-    abstract fun isAncestor(other: Class): Boolean
+    abstract fun isAncestorOf(other: Class): Boolean
+    fun isInheritorOf(other: Class) = other.isAncestorOf(this)
 
     abstract fun getFieldConcrete(name: String, type: Type): Field?
     abstract fun getMethodConcrete(name: String, desc: MethodDesc): Method?
@@ -145,11 +146,11 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
         }
     }
 
-    override fun isAncestor(other: Class): Boolean {
+    override fun isAncestorOf(other: Class): Boolean {
         if (this == other) return true
         else {
             val ancestors = other.allAncestors
-            for (it in ancestors) if (isAncestor(it)) return true
+            for (it in ancestors) if (isAncestorOf(it)) return true
         }
         return false
     }
@@ -174,5 +175,5 @@ class OuterClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
         }
     }
 
-    override fun isAncestor(other: Class) = true
+    override fun isAncestorOf(other: Class) = true
 }
