@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import com.abdullin.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Location
 import org.jetbrains.research.kfg.ir.value.*
@@ -8,8 +9,13 @@ import org.jetbrains.research.kfg.type.Type
 abstract class Instruction(name: Name, type: Type, protected val ops: Array<Value>)
     : Value(name, type), ValueUser, Iterable<Value> {
 
-    var parent: BasicBlock? = null
+    internal var parentUnsafe: BasicBlock? = null
     var location = Location()
+        internal set
+
+    val parent get() = asserted(hasParent) { parentUnsafe!! }
+    val hasParent get() = parentUnsafe != null
+
     open val isTerminate = false
 
     val operands: List<Value>

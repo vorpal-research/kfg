@@ -1,9 +1,8 @@
 package org.jetbrains.research.kfg.builder.asm
 
-import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.InvalidOpcodeError
-import org.jetbrains.research.kfg.InvalidOperandError
-import org.jetbrains.research.kfg.InvalidStateError
+import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.*
@@ -25,7 +24,7 @@ val Type.fullInt
         is FloatType -> 2
         is DoubleType -> 3
         is Reference -> 4
-        else -> throw InvalidStateError("Unexpected type for conversion: $name")
+        else -> unreachable { log.error("Unexpected type for conversion: $name") }
     }
 
 val Type.shortInt
@@ -35,7 +34,7 @@ val Type.shortInt
         is FloatType -> 2
         is DoubleType -> 3
         is Reference -> 4
-        else -> throw InvalidStateError("Unexpected type for conversion: $name")
+        else -> unreachable { log.error("Unexpected type for conversion: $name") }
     }
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
@@ -88,7 +87,8 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         old
     }
 
-    private fun getLabel(bb: BasicBlock) = labels[bb] ?: throw InvalidStateError("Unknown basic block ${bb.name}")
+    private fun getLabel(bb: BasicBlock) = labels[bb]
+            ?: throw UnknownInstance("No label corresponding to block ${bb.name}")
 
     private fun convertConstantToInsn(`const`: Constant) = when (`const`) {
         is BoolConstant -> InsnNode(if (`const`.value) ICONST_1 else ICONST_0)
@@ -119,7 +119,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(`const`.value)
         is ClassConstant -> LdcInsnNode(org.objectweb.asm.Type.getType(`const`.type.asmDesc))
-        is MethodConstant -> throw IllegalArgumentException("Cannot convert constant $`const`")
+        is MethodConstant -> unreachable { log.error("Cannot convert constant $`const`") }
     }
 
     // register all instructions for loading required arguments to stack
@@ -177,7 +177,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitJumpInst(inst: JumpInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parent)
         val successor = getLabel(inst.successor)
         val insn = JumpInsnNode(GOTO, successor)
         currentInsnList.add(insn)
@@ -191,7 +191,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitReturnInst(inst: ReturnInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parent)
         addOperandsToStack(inst.operands)
         val opcode = if (inst.hasReturnValue) IRETURN + inst.returnType.shortInt else RETURN
         val insn = InsnNode(opcode)
@@ -200,9 +200,9 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitBranchInst(inst: BranchInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parentUnsafe!!)
 
-        val cond = inst.cond as? CmpInst ?: error("Unknown branch condition: ${inst.print()}")
+        val cond = inst.cond as? CmpInst ?: unreachable { log.error("Unknown branch condition: ${inst.print()}") }
         val opcode = if (cond.lhv.type is Reference) {
             when (cond.opcode) {
                 is CmpOpcode.Eq -> IF_ACMPEQ
@@ -308,10 +308,9 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitUnaryInst(inst: UnaryInst) {
-        val opcode = if (inst.opcode == UnaryOpcode.LENGTH) {
-            ARRAYLENGTH
-        } else {
-            INEG + inst.operand.type.shortInt
+        val opcode = when (inst.opcode) {
+            UnaryOpcode.LENGTH -> ARRAYLENGTH
+            else -> INEG + inst.operand.type.shortInt
         }
         val insn = InsnNode(opcode)
         val operands = inst.operands
@@ -323,7 +322,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitThrowInst(inst: ThrowInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parent)
         val operands = inst.operands
         addOperandsToStack(operands)
         val insn = InsnNode(ATHROW)
@@ -333,7 +332,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitSwitchInst(inst: SwitchInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parent)
         addOperandsToStack(listOf(inst.key))
         val default = getLabel(inst.default)
         val branches = inst.branches
@@ -374,7 +373,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitTableSwitchInst(inst: TableSwitchInst) {
         stackSave()
-        currentInsnList = getTerminateInsnList(inst.parent!!)
+        currentInsnList = getTerminateInsnList(inst.parent)
         addOperandsToStack(listOf(inst.index))
         val min = (inst.min as IntConstant).value
         val max = (inst.max as IntConstant).value
@@ -483,8 +482,8 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             val `this` = values.getThis(types.getRefType(method.`class`))
             locals[`this`] = getLocalFor(`this`)
         }
-        for ((indx, type) in method.argTypes.withIndex()) {
-            val arg = values.getArgument(indx, method, type)
+        for ((index, type) in method.argTypes.withIndex()) {
+            val arg = values.getArgument(index, method, type)
             locals[arg] = getLocalFor(arg)
         }
     }

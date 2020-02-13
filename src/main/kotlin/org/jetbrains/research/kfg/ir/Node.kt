@@ -6,7 +6,6 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.AnnotationNode
 
 abstract class Node(val cm: ClassManager, val name: String, val modifiers: Int) {
-    var builded = false
     val visibleAnnotations = mutableListOf<Annotation>()
     val invisibleAnnotations = mutableListOf<Annotation>()
 

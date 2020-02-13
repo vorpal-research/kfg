@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.analysis
 
-import com.abdullin.kthelper.util.AssertionException
-import com.abdullin.kthelper.util.log
+import com.abdullin.kthelper.assert.AssertionException
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.ir.BasicBlock
@@ -26,13 +26,13 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
 
     private val Instruction.parents
         get(): Pair<Method, BasicBlock> {
-            val bb = parent!!
-            val method = bb.parent!!
+            val bb = parent
+            val method = bb.parent
             return method to bb
         }
 
     private fun visitValue(value: Value) {
-        if (value.name !== UndefinedName && value !is Constant) {
+        if (value.name !is UndefinedName && value !is Constant) {
             assert(valueNameRegex.matches(value.name.toString())) { log.error("Incorrect value name format $value") }
             val storedVal = valueNames[value.name.toString()]
             assert(storedVal == null || storedVal == value) { log.error("Same names for two different values") }
@@ -47,7 +47,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         visitValue(inst)
 
         inst.run {
-            assert(parent != null) { log.error("Instruction $inst with no parent in method") }
+            assert(hasParent) { log.error("Instruction $inst with no parent in method") }
             assert(parent in method) { log.error("Instruction parent does not belong to method") }
         }
 
@@ -62,7 +62,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         }
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
-            is CatchBlock -> bb.getAllPredecessors()
+            is CatchBlock -> bb.allPredecessors
         }
 
         assert(predecessors.size == inst.predecessors.size) {
@@ -89,7 +89,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
     }
 
     override fun visitBasicBlock(bb: BasicBlock) {
-        val method = bb.parent!!
+        val method = bb.parent
 
         assert(blockNameRegex.matches(bb.name.toString())) { log.error("Incorrect value name format ${bb.name}") }
         val storedVal = blockNames[bb.name.toString()]

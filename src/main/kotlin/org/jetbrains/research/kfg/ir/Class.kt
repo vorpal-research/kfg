@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir
 
-import com.abdullin.kthelper.util.defaultHashCode
+import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
@@ -108,16 +108,16 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     }
 
     override fun getField(name: String, type: Type) = innerFields.getOrElse(FieldKey(name, type)) {
-        var prnts = (listOf(superClass) + interfaces).filterNotNull()
+        var parents = (listOf(superClass) + interfaces).filterNotNull()
 
-        var result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-        while (prnts.isNotEmpty()) {
+        var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+        while (parents.isNotEmpty()) {
             if (result != null) break
-            prnts = prnts
+            parents = parents
                     .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
                     .flatten()
 
-            result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+            result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
         }
 
         result
@@ -128,16 +128,16 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
         return innerMethods.getOrElse(methodDesc) {
-            var prnts = (listOf(superClass) + interfaces).filterNotNull()
+            var parents = (listOf(superClass) + interfaces).filterNotNull()
 
-            var result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-            while (prnts.isNotEmpty()) {
+            var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+            while (parents.isNotEmpty()) {
                 if (result != null) break
-                prnts = prnts
+                parents = parents
                         .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
                         .flatten()
 
-                result = prnts.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+                result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
             }
 
             result

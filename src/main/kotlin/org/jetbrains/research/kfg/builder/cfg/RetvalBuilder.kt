@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Method
@@ -22,7 +22,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
     }
 
     override fun visitReturnInst(inst: ReturnInst) {
-        val bb = inst.parent ?: throw InvalidStateError("Method instruction does not have parent")
+        val bb = inst.parent
         retvals[bb] = inst
     }
 
@@ -49,8 +49,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
         val `return` = when {
             method.returnType.isVoid -> instructions.getReturn()
             else -> {
-                val type = mergeTypes(types, incomings.values.map { it.type }.toSet())
-                        ?: method.returnType
+                val type = mergeTypes(types, incomings.values.map { it.type }.toSet()) ?: method.returnType
 
                 val retval = instructions.getPhi("retval", type, incomings)
                 insts.add(retval)
@@ -59,7 +58,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
                     method.returnType -> retval
                     is Integral -> {
                         val methodRetType = method.returnType
-                        require(methodRetType is Integral) { "Return value type is integral and method return type is ${method.returnType}" }
+                        assert(methodRetType is Integral) { log.error("Return value type is integral and method return type is ${method.returnType}") }
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine

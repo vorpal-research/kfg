@@ -15,8 +15,6 @@ class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, 
         get() = type.asmDesc
 
     init {
-        this.builded = true
-
         @Suppress("UNCHECKED_CAST") addVisibleAnnotations(fn.visibleAnnotations as List<AnnotationNode>?)
         @Suppress("UNCHECKED_CAST") addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
     }

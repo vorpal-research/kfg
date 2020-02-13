@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import com.abdullin.kthelper.util.defaultHashCode
+import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.InvalidCallError
 import org.jetbrains.research.kfg.ir.Class
 

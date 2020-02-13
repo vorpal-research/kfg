@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.ArrayType
@@ -18,8 +20,7 @@ class ArrayStoreInst(arrayRef: Value, type: Type, index: Value, value: Value)
         get() = ops[2]
 
     val arrayComponent: Type
-        get() = (arrayRef.type as? ArrayType)?.component
-                ?: throw IllegalStateException("Non-array ref in array store")
+        get() = (arrayRef.type as? ArrayType)?.component ?: unreachable { log.error("Non-array ref in array store") }
 
     override fun print() = "$arrayRef[$index] = $value"
     override fun clone(): Instruction = ArrayStoreInst(arrayRef, type, index, value)

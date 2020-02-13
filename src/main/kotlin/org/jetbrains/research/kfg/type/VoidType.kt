@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import com.abdullin.kthelper.util.defaultHashCode
+import com.abdullin.kthelper.defaultHashCode
 
 object VoidType : Type {
     override val bitsize: Int

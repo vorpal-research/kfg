@@ -135,22 +135,24 @@ private fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): Cla
 }
 
 private fun ClassNode.write(loader: ClassLoader,
-                           filename: String,
-                           flags: Flags = Flags.writeComputeAll): File {
+                            filename: String,
+                            flags: Flags = Flags.writeComputeAll): File {
     val cw = KfgClassWriter(loader, flags)
     val cca = CheckClassAdapter(cw)
     this.accept(cca)
 
-    val file = File(filename).apply { parentFile?.mkdirs() }
-    val fos = FileOutputStream(file)
-    fos.write(cw.toByteArray())
-    fos.close()
-    return file
+    return File(filename).apply {
+        parentFile?.mkdirs()
+    }.also {
+        FileOutputStream(it).use { fos ->
+            fos.write(cw.toByteArray())
+        }
+    }
 }
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
-               filename: String = "$fullname.class",
-               flags: Flags = Flags.writeComputeFrames): File =
+                filename: String = "$fullname.class",
+                flags: Flags = Flags.writeComputeFrames): File =
         ClassBuilder(cm, this).build().write(loader, filename, flags)
 
 fun JarFile.unpack(cm: ClassManager, target: Path, `package`: Package, unpackAllClasses: Boolean = false) {

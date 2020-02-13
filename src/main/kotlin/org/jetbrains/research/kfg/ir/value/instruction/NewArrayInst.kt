@@ -17,7 +17,7 @@ class NewArrayInst(name: Name, type: Type, dimensions: Array<Value>): Instructio
     init {
         var current = type
         repeat(numDimensions) {
-            require(current is ArrayType)
+            assert(current is ArrayType)
             current = (current as ArrayType).component
         }
         this.component = current

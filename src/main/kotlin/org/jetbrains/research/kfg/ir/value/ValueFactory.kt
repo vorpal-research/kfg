@@ -1,7 +1,8 @@
 package org.jetbrains.research.kfg.ir.value
 
+import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
@@ -37,7 +38,7 @@ class ValueFactory(val cm: ClassManager) {
         is FloatType -> getFloatConstant(0.0f)
         is DoubleType -> getDoubleConstant(0.0)
         is Reference -> getNullConstant()
-        else -> throw InvalidStateError("Unknown type: ${type.name}")
+        else -> unreachable { log.error("Unknown type: ${type.name}") }
     }
 
     fun getConstant(value: Any?): Value? = when (value) {

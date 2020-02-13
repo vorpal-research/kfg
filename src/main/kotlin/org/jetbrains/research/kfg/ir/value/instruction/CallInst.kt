@@ -59,7 +59,7 @@ class CallInst : Instruction {
 
     override fun print(): String {
         val sb = StringBuilder()
-        if (name !== UndefinedName) sb.append("$name = ")
+        if (name !is UndefinedName) sb.append("$name = ")
 
         sb.append("$opcode ")
         if (isStatic) sb.append(`class`.name)

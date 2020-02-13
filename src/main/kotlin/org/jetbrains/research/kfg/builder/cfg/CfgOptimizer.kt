@@ -31,15 +31,15 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
 
             val blockPhiUsers = block.users.mapNotNull { it as? PhiInst }
             for (phi in blockPhiUsers) {
-                val parent = phi.parent ?: continue
+                val parent = phi.parentUnsafe ?: continue
 
                 val oldIncomings = phi.incomings
                 val incomings = when (parent) {
-                    is CatchBlock ->  when (block) {
-                        in parent.entries -> oldIncomings.map { if (it.key == block) predecessor to it.value else it.key to it.value }.toMap()
+                    is CatchBlock -> when (block) {
+                        in parent.entries -> oldIncomings.map { (if (it.key == block) predecessor else it.key) to it.value }.toMap()
                         else -> oldIncomings.mapNotNull { if (it.key == block) null else it.key to it.value }.toMap()
                     }
-                    else -> oldIncomings.map { if (it.key == block) predecessor to it.value else it.key to it.value }.toMap()
+                    else -> oldIncomings.map { (if (it.key == block) predecessor else it.key) to it.value }.toMap()
                 }
                 val newPhi = cm.instruction.getPhi(phi.type, incomings)
 

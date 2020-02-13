@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.analysis
 
 import com.abdullin.kthelper.algorithm.Graph
 import com.abdullin.kthelper.algorithm.LoopDetector
+import com.abdullin.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
@@ -16,8 +17,12 @@ data class LoopNode(val parent: Loop, val block: BasicBlock) : Graph.Vertex<Loop
 }
 
 class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode> {
-    var parent: Loop? = null
-    val subloops = hashSetOf<Loop>()
+    internal var parentUnsafe: Loop? = null
+
+    val parent get() = asserted(hasParent) { parentUnsafe!! }
+    val hasParent = parentUnsafe != null
+
+    val subLoops = hashSetOf<Loop>()
 
     override val entry: LoopNode
         get() = LoopNode(this, header)
@@ -26,7 +31,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Loo
         get() = body.map { LoopNode(this, it) }.toSet()
 
     val method: Method?
-        get() = header.parent
+        get() = header.parentUnsafe
 
     val exitingBlocks: Set<BasicBlock>
         get() = body.filterNot { body.containsAll(it.successors) }.toSet()
@@ -53,13 +58,13 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Loo
 
     fun addBlock(bb: BasicBlock) {
         body.add(bb)
-        parent?.addBlock(bb)
+        parentUnsafe?.addBlock(bb)
     }
 
-    fun addSubloop(loop: Loop) = subloops.add(loop)
+    fun addSubLoop(loop: Loop) = subLoops.add(loop)
     fun removeBlock(bb: BasicBlock) {
         body.remove(bb)
-        parent?.removeBlock(bb)
+        parentUnsafe?.removeBlock(bb)
     }
 
     override fun iterator() = nodes.iterator()
@@ -132,8 +137,8 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
 
             for ((child, possibleParents) in parents) {
                 if (possibleParents.size == 1) {
-                    possibleParents.first().addSubloop(child)
-                    child.parent = possibleParents.first()
+                    possibleParents.first().addSubLoop(child)
+                    child.parentUnsafe = possibleParents.first()
 
                     remove.add(child)
                     removableParents.add(possibleParents.first())
@@ -165,7 +170,7 @@ interface LoopVisitor : MethodVisitor {
     }
 
     fun visit(loop: Loop) {
-        for (it in loop.subloops) visit(it)
+        for (it in loop.subLoops) visit(it)
     }
 
     fun updateLoopInfo(method: Method) {

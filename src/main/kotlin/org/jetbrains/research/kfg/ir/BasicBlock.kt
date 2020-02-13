@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import com.abdullin.kthelper.algorithm.Graph
+import com.abdullin.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -9,13 +10,16 @@ import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
 
-sealed class BasicBlock(val name: BlockName)
-    : UsableBlock(), Iterable<Instruction>, Graph.Vertex<BasicBlock>, BlockUser {
-    var parent: Method? = null
+sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instruction>, Graph.Vertex<BasicBlock>, BlockUser {
+    internal var parentUnsafe: Method? = null
         internal set(value) {
             field = value
             instructions.forEach { addValueToParent(it) }
         }
+
+    val hasParent get() = parentUnsafe != null
+    val parent get() = asserted(hasParent) { parentUnsafe!! }
+
     override val predecessors = linkedSetOf<BasicBlock>()
     override val successors = linkedSetOf<BasicBlock>()
     val instructions = arrayListOf<Instruction>()
@@ -37,7 +41,7 @@ sealed class BasicBlock(val name: BlockName)
         get() = instructions.size
 
     private fun addValueToParent(value: Value) {
-        parent?.slottracker?.addValue(value)
+        parentUnsafe?.slottracker?.addValue(value)
     }
 
     fun addSuccessor(bb: BasicBlock) {
@@ -88,7 +92,7 @@ sealed class BasicBlock(val name: BlockName)
 
     fun add(inst: Instruction) {
         instructions.add(inst)
-        inst.parent = this
+        inst.parentUnsafe = this
         addValueToParent(inst)
     }
 
@@ -111,7 +115,7 @@ sealed class BasicBlock(val name: BlockName)
         var index = instructions.indexOf(before)
         for (inst in insts) {
             instructions.add(index++, inst)
-            inst.parent = this
+            inst.parentUnsafe = this
             addValueToParent(inst)
         }
     }
@@ -120,15 +124,15 @@ sealed class BasicBlock(val name: BlockName)
         var index = instructions.indexOf(after) + 1
         for (inst in insts) {
             instructions.add(index++, inst)
-            inst.parent = this
+            inst.parentUnsafe = this
             addValueToParent(inst)
         }
     }
 
     fun remove(inst: Instruction) {
-        if (inst.parent == this) {
+        if (inst.parentUnsafe == this) {
             instructions.remove(inst)
-            inst.parent = null
+            inst.parentUnsafe = null
         }
     }
 
@@ -142,7 +146,7 @@ sealed class BasicBlock(val name: BlockName)
     fun replace(from: Instruction, to: Instruction) {
         (0..instructions.lastIndex).filter { instructions[it] == from }.forEach {
             instructions[it] = to
-            to.parent = this
+            to.parentUnsafe = this
             addValueToParent(to)
         }
     }
@@ -159,11 +163,11 @@ sealed class BasicBlock(val name: BlockName)
             removePredecessor(from.get()) -> addPredecessor(to.get())
             removeSuccessor(from.get()) -> addSuccessor(to.get())
             handlers.contains(from.get()) -> {
-                require(from.get() is CatchBlock)
+                assert(from.get() is CatchBlock)
                 val fromCatch = from.get() as CatchBlock
                 removeHandler(fromCatch)
 
-                require(to.get() is CatchBlock)
+                assert(to.get() is CatchBlock)
                 val toCatch = to.get() as CatchBlock
                 toCatch.addThrowers(listOf(this))
             }
@@ -175,11 +179,11 @@ sealed class BasicBlock(val name: BlockName)
         when {
             removeSuccessor(from.get()) -> addSuccessor(to.get())
             handlers.contains(from.get()) -> {
-                require(from.get() is CatchBlock)
+                assert(from.get() is CatchBlock)
                 val fromCatch = from.get() as CatchBlock
                 removeHandler(fromCatch)
 
-                require(to.get() is CatchBlock)
+                assert(to.get() is CatchBlock)
                 val toCatch = to.get() as CatchBlock
                 toCatch.addThrowers(listOf(this))
             }
@@ -218,7 +222,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)
-    fun getAllPredecessors() = throwers + entries
+    val allPredecessors get() = throwers + entries
 
     override fun print() = buildString {
         append("$name: \t")

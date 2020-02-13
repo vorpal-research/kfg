@@ -3,7 +3,9 @@ package org.jetbrains.research.kfg.ir
 import com.abdullin.kthelper.algorithm.Graph
 import com.abdullin.kthelper.algorithm.GraphView
 import com.abdullin.kthelper.algorithm.Viewable
-import com.abdullin.kthelper.util.defaultHashCode
+import com.abdullin.kthelper.collection.queueOf
+import com.abdullin.kthelper.defaultHashCode
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.value.BlockUser
@@ -16,7 +18,6 @@ import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.ParameterNode
-import java.util.*
 
 data class MethodDesc(val args: Array<Type>, val retval: Type) {
 
@@ -98,17 +99,16 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         get() {
             val catchMap = hashMapOf<BasicBlock, Boolean>()
             val result = arrayListOf<BasicBlock>()
-            val queue = ArrayDeque<BasicBlock>()
+            val queue = queueOf<BasicBlock>()
             queue.addAll(catchEntries)
             while (queue.isNotEmpty()) {
-                val top = queue.first
+                val top = queue.poll()
                 val isCatch = top.predecessors.fold(true) { acc, bb -> acc && catchMap.getOrPut(bb) { false } }
                 if (isCatch) {
                     result.add(top)
                     queue.addAll(top.successors)
                     catchMap[top] = true
                 }
-                queue.pollFirst()
             }
             return result
         }
@@ -124,43 +124,43 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
+            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             basicBlocks.add(bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
-            bb.parent = this
+            bb.parentUnsafe = this
         }
     }
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
+            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(before)
-            require(index >= 0) { "Block ${before.name} does not belong to method $this" }
+            assert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
 
             basicBlocks.add(index, bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
-            bb.parent = this
+            bb.parentUnsafe = this
         }
     }
 
     fun addAfter(after: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            require(bb.parent == null) { "Block ${bb.name} already belongs to other method" }
+            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(after)
-            require(index >= 0) { "Block ${after.name} does not belong to method $this" }
+            assert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
 
             basicBlocks.add(index + 1, bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
-            bb.parent = this
+            bb.parentUnsafe = this
         }
     }
 
     fun remove(block: BasicBlock) {
         if (basicBlocks.contains(block)) {
-            require(block.parent == this) { "Block ${block.name} don't belong to $this" }
+            assert(block.parentUnsafe == this) { log.error("Block ${block.name} don't belong to $this") }
             basicBlocks.remove(block)
 
             if (block in catchEntries) {
@@ -168,7 +168,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             }
 
             block.removeUser(this)
-            block.parent = null
+            block.parentUnsafe = null
         }
     }
 

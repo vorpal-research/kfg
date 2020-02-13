@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.type
 
+import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.UnknownTypeException
 import org.jetbrains.research.kfg.ir.Class
@@ -86,7 +88,7 @@ class TypeFactory(val cm: ClassManager) {
     fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
 
-    fun getWrapper(type: Type): Type = when (type) {
+    fun getWrapper(type: PrimaryType): Type = when (type) {
         is BoolType -> boolWrapper
         is ByteType -> byteWrapper
         is CharType -> charWrapper
@@ -95,7 +97,7 @@ class TypeFactory(val cm: ClassManager) {
         is LongType -> longWrapper
         is FloatType -> floatWrapper
         is DoubleType -> doubleWrapper
-        else -> throw IllegalArgumentException("Can't find wrapper for type $type")
+        else -> unreachable { log.error("Unknown primary type $type") }
     }
 
     fun get(klass: JClass<*>): Type = when {

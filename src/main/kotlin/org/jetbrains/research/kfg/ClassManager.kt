@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg
 
-import com.abdullin.kthelper.util.defaultHashCode
+import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass

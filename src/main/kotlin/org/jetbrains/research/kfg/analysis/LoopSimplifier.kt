@@ -38,8 +38,8 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         target.instructions.mapNotNull { it as? PhiInst }.forEach { phi ->
             val fromIncomings = phi.incomings.filter { it.key in from }
             val fromValues = fromIncomings.values.toSet()
-            val toValue = when {
-                fromValues.size == 1 -> fromValues.first()
+            val toValue = when (fromValues.size) {
+                1 -> fromValues.first()
                 else -> {
                     val newPhi = instructions.getPhi(phi.type, fromIncomings)
                     to += newPhi
