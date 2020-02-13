@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg
 
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
@@ -8,7 +9,6 @@ import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.parse
-import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.ClassNode
 import java.util.jar.JarFile
 
@@ -39,7 +39,7 @@ class Package(name: String) {
     fun isChild(name: String) = isChild(Package(name))
 
     override fun toString() = "$name${if (isConcrete) "" else "/*"}"
-    override fun hashCode() = simpleHash(name, isConcrete)
+    override fun hashCode() = defaultHashCode(name, isConcrete)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

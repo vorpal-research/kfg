@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.ir.value
 
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.util.simpleHash
 
 abstract class Value(val name: Name, val type: Type) : UsableValue() {
 
@@ -20,7 +20,7 @@ class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantN
         const val argPrefix = "arg\$"
     }
 
-    override fun hashCode() = simpleHash(name, type, method)
+    override fun hashCode() = defaultHashCode(name, type, method)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -31,7 +31,7 @@ class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantN
 }
 
 class ThisRef(type: Type) : Value(ConstantName("this"), type) {
-    override fun hashCode() = simpleHash(name, type)
+    override fun hashCode() = defaultHashCode(name, type)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -5,10 +5,10 @@ import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.ir.value.StringName
-import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.Name
 import org.jetbrains.research.kfg.ir.value.Slot
+import org.jetbrains.research.kfg.ir.value.StringName
+import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
 

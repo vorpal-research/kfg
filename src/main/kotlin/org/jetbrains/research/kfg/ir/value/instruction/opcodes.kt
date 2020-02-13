@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.Opcodes
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
@@ -41,7 +41,7 @@ sealed class BinaryOpcode {
     }
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

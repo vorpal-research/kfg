@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.builder.cfg
 
+import com.abdullin.kthelper.algorithm.DominatorTreeBuilder
+import com.abdullin.kthelper.algorithm.GraphTraversal
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.analysis.Loop
@@ -12,14 +14,11 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueUser
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
-import org.jetbrains.research.kfg.util.DominatorTreeBuilder
-import org.jetbrains.research.kfg.util.GraphTraversal
 import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 import java.util.*
-import kotlin.collections.ArrayList
 
 fun MethodNode.instructions(): List<AbstractInsnNode> {
     val list = mutableListOf<AbstractInsnNode>()
@@ -1145,7 +1144,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
         method.catchEntries.forEach { cb -> cb.getAllPredecessors().forEach { it.removeSuccessor(cb) } }
 
-        for (bb in order.reversed()) {
+        for (bb in order) {
             recoverState(bb)
             for (insn in blockToNode.getValue(bb)) {
                 when (insn) {

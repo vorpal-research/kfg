@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.util.simpleHash
+import com.abdullin.kthelper.util.defaultHashCode
 
 interface Real : Type {
     override val isPrimary get() = true
@@ -13,7 +13,7 @@ object FloatType : Real {
     override val asmDesc = "F"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass
@@ -27,7 +27,7 @@ object DoubleType : Real {
     override val asmDesc = "D"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass != other?.javaClass

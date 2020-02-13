@@ -1,11 +1,11 @@
 package org.jetbrains.research.kfg.ir
 
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.tree.*
 
 abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
@@ -80,7 +80,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = fullname
-    override fun hashCode() = simpleHash(name, `package`)
+    override fun hashCode() = defaultHashCode(name, `package`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

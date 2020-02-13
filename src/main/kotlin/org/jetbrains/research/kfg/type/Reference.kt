@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.type
 
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.InvalidCallError
 import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.util.simpleHash
 
 interface Reference : Type {
     override val bitsize: Int
@@ -18,7 +18,7 @@ open class ClassType(val `class`: Class) : Reference {
     override fun toString() = name
     override val asmDesc get() = "L${`class`.fullname};"
 
-    override fun hashCode() = simpleHash(`class`)
+    override fun hashCode() = defaultHashCode(`class`)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -32,7 +32,7 @@ open class ArrayType(val component: Type) : Reference {
     override fun toString() = name
     override val asmDesc get() = "[${component.asmDesc}"
 
-    override fun hashCode() = simpleHash(component)
+    override fun hashCode() = defaultHashCode(component)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (this.javaClass != other?.javaClass) return false
@@ -47,6 +47,6 @@ object NullType : Reference {
     override fun toString() = name
     override val asmDesc get() = throw InvalidCallError("Called getAsmDesc on NullType")
 
-    override fun hashCode() = simpleHash(name)
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean = this === other
 }

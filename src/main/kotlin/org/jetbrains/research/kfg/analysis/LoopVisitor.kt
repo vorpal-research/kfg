@@ -1,14 +1,13 @@
 package org.jetbrains.research.kfg.analysis
 
+import com.abdullin.kthelper.algorithm.Graph
+import com.abdullin.kthelper.algorithm.LoopDetector
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.util.Graph
-import org.jetbrains.research.kfg.util.GraphNode
-import org.jetbrains.research.kfg.util.LoopDetector
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-data class LoopNode(val parent: Loop, val block: BasicBlock) : GraphNode<LoopNode> {
+data class LoopNode(val parent: Loop, val block: BasicBlock) : Graph.Vertex<LoopNode> {
     override val predecessors: Set<LoopNode>
         get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 

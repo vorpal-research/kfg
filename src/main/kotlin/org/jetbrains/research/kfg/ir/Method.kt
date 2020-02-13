@@ -1,5 +1,9 @@
 package org.jetbrains.research.kfg.ir
 
+import com.abdullin.kthelper.algorithm.Graph
+import com.abdullin.kthelper.algorithm.GraphView
+import com.abdullin.kthelper.algorithm.Viewable
+import com.abdullin.kthelper.util.defaultHashCode
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.value.BlockUser
@@ -8,9 +12,6 @@ import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.jetbrains.research.kfg.util.Graph
-import org.jetbrains.research.kfg.util.GraphView
-import org.jetbrains.research.kfg.util.simpleHash
 import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
@@ -29,7 +30,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     val asmDesc: String
         get() = "(${args.joinToString(separator = "") { it.asmDesc }})${retval.asmDesc}"
 
-    override fun hashCode() = simpleHash(*args, retval)
+    override fun hashCode() = defaultHashCode(*args, retval)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
@@ -41,7 +42,7 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
 }
 
 class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
-    : Node(cm, node.name, node.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser {
+    : Node(cm, node.name, node.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
 
     companion object {
         private val CONSTRUCTOR_NAMES = arrayOf("<init>")
@@ -192,7 +193,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     override fun toString() = prototype
     override fun iterator() = basicBlocks.iterator()
 
-    override fun hashCode() = simpleHash(name, `class`, desc)
+    override fun hashCode() = defaultHashCode(name, `class`, desc)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
@@ -210,40 +211,32 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
                 }
     }
 
-    fun graphView(viewCatchBlocks: Boolean = false): List<GraphView> {
-        val nodes = hashMapOf<String, GraphView>()
-        nodes[name] = GraphView(name, prototype)
+    override val graphView: List<GraphView>
+        get() {
+            val nodes = hashMapOf<String, GraphView>()
+            nodes[name] = GraphView(name, prototype)
 
-        basicBlocks.map { bb ->
-            val label = StringBuilder()
-            label.append("${bb.name}: ${bb.predecessors.joinToString(", ") { it.name.toString() }}\\l")
-            bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
-            nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
-        }
-
-        if (!isAbstract) {
-            val entryNode = nodes.getValue(entry.name.toString())
-            nodes.getValue(name).successors.add(entryNode)
-        }
-
-        basicBlocks.forEach {
-            val current = nodes.getValue(it.name.toString())
-            for (succ in it.successors) {
-                current.successors.add(nodes.getValue(succ.name.toString()))
+            basicBlocks.map { bb ->
+                val label = StringBuilder()
+                label.append("${bb.name}: ${bb.predecessors.joinToString(", ") { it.name.toString() }}\\l")
+                bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
+                nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
             }
-        }
 
-        if (viewCatchBlocks) {
-            catchEntries.forEach {
-                val current = nodes.getOrPut(it.name.toString()) { GraphView(it.name.toString(), "${it.name}:\\l") }
-                for (thrower in it.throwers) {
-                    nodes.getValue(thrower.name.toString()).successors.add(current)
+            if (!isAbstract) {
+                val entryNode = nodes.getValue(entry.name.toString())
+                nodes.getValue(name).addSuccessor(entryNode)
+            }
+
+            basicBlocks.forEach {
+                val current = nodes.getValue(it.name.toString())
+                for (succ in it.successors) {
+                    current.addSuccessor(nodes.getValue(succ.name.toString()))
                 }
             }
-        }
-        return nodes.values.toList()
-    }
 
-    fun viewCfg(dot: String, browser: String, viewCatchBlocks: Boolean = false) =
-            org.jetbrains.research.kfg.util.viewCfg(name, graphView(viewCatchBlocks), dot, browser)
+            return nodes.values.toList()
+        }
+
+    fun view(dot: String, viewer: String) = view(name, dot, viewer)
 }

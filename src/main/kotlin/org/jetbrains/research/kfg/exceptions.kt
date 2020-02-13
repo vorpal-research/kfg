@@ -2,7 +2,12 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 
-abstract class KfgException(msg: String) : Exception(msg)
+abstract class KfgException : Exception {
+    constructor() : super()
+    constructor(msg: String) : super(msg)
+    constructor(msg: String, reason: Throwable) : super(msg, reason)
+    constructor(reason: Throwable) : super(reason)
+}
 
 class InvalidAccessError(msg: String): KfgException(msg)
 

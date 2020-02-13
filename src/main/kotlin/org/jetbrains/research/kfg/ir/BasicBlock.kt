@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir
 
+import com.abdullin.kthelper.algorithm.Graph
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -7,10 +8,9 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kfg.util.GraphNode
 
 sealed class BasicBlock(val name: BlockName)
-    : UsableBlock(), Iterable<Instruction>, GraphNode<BasicBlock>, BlockUser {
+    : UsableBlock(), Iterable<Instruction>, Graph.Vertex<BasicBlock>, BlockUser {
     var parent: Method? = null
         internal set(value) {
             field = value

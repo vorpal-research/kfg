@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.util.simpleHash
+import com.abdullin.kthelper.util.defaultHashCode
 
 interface Integral : Type {
     override val bitsize get() = Type.WORD
@@ -25,7 +25,7 @@ object BoolType : Integral {
     override val asmDesc = "Z"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 
@@ -37,7 +37,7 @@ object ByteType : Integral {
     override val asmDesc = "B"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 
@@ -49,7 +49,7 @@ object ShortType : Integral {
     override val asmDesc = "S"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 
@@ -61,7 +61,7 @@ object IntType : Integral {
     override val asmDesc = "I"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 
@@ -75,7 +75,7 @@ object LongType : Integral {
     override val asmDesc = "J"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 
@@ -87,6 +87,6 @@ object CharType : Integral {
     override val asmDesc = "C"
 
     override fun toString() = name
-    override fun hashCode() = simpleHash(width, signed)
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
