@@ -40,9 +40,10 @@ abstract class Instruction(name: Name, type: Type, protected val ops: Array<Valu
     }
 
     abstract fun clone(): Instruction
-    open fun update(remapping: Map<Value, Value>): Instruction {
+    open fun update(remapping: Map<Value, Value> = mapOf(), loc: Location = location): Instruction {
         val new = clone()
-        remapping.forEach { from, to -> new.replaceUsesOf(from, to) }
+        remapping.forEach { (from, to) -> new.replaceUsesOf(from, to) }
+        new.location = loc
         return new
     }
 }
