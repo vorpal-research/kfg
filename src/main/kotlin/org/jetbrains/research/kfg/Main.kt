@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
     val jar = JarFile(cfg.getStringValue("jar"))
     val `package` = Package(cfg.getStringValue("package", "*"))
 
-    val cm = ClassManager(jar, KfgConfig(`package` = `package`, flags = Flags.readAll, failOnError = false))
+    val cm = ClassManager(jar, KfgConfig(`package` = `package`, flags = Flags.readAll, failOnError = true))
     val target = File("instrumented/")
     jar.unpack(cm, target.toPath(), Package.defaultPackage, true)
     executePipeline(cm, `package`) {
