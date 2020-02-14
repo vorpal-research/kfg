@@ -30,7 +30,7 @@ Include:
 <dependency>
 	<groupId>org.jetbrains.research</groupId>
 	<artifactId>kfg</artifactId>
-	<version>0.0.6-1</version>
+	<version>${kfg.version}</version>
 	<type>pom</type>
 </dependency>
 ``` 
