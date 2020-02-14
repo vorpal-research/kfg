@@ -1,7 +1,9 @@
 package org.jetbrains.research.kfg.analysis
 
 import com.abdullin.kthelper.algorithm.Graph
+import com.abdullin.kthelper.algorithm.GraphView
 import com.abdullin.kthelper.algorithm.LoopDetector
+import com.abdullin.kthelper.algorithm.Viewable
 import com.abdullin.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
@@ -16,11 +18,11 @@ data class LoopNode(val parent: Loop, val block: BasicBlock) : Graph.Vertex<Loop
         get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 }
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode> {
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode>, Viewable {
     internal var parentUnsafe: Loop? = null
 
     val parent get() = asserted(hasParent) { parentUnsafe!! }
-    val hasParent = parentUnsafe != null
+    val hasParent get() = parentUnsafe != null
 
     val subLoops = hashSetOf<Loop>()
 
@@ -70,6 +72,24 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Loo
     override fun iterator() = nodes.iterator()
 
     operator fun contains(block: BasicBlock) = block in body
+
+    override val graphView: List<GraphView>
+        get() {
+            val views = hashMapOf<String, GraphView>()
+
+            nodes.forEach { node ->
+                views[node.block.name.toString()] = GraphView(node.block.name.toString(), "${node.block.name}\\l")
+            }
+
+            nodes.forEach {
+                val current = views.getValue(it.block.name.toString())
+                for (successor in it.successors) {
+                    current.addSuccessor(views.getValue(successor.block.name.toString()))
+                }
+            }
+
+            return views.values.toList()
+        }
 }
 
 
