@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg
 
+import com.abdullin.kthelper.KtException
 import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.ir.Class
@@ -76,6 +77,9 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
             } catch (e: KfgException) {
                 if (config.failOnError) throw e
                 failedClasses += name
+            } catch (e: KtException) {
+                if (config.failOnError) throw e
+                failedClasses += name
             }
         }
         // this is fucked up, but i don't know any other way to do this
@@ -84,14 +88,18 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
         if (!config.failOnError && failedClasses.isNotEmpty()) {
             val oldClasses = classes.toMap()
             classes.clear()
-            for ((name, _) in oldClasses) {
-                classes[name] = when (name) {
-                    in failedClasses -> OuterClass(this, ClassNode().also { it.name = name }).also { it.init() }
-                    else -> ConcreteClass(this, classNodes.getValue(name)).also {
-                        it.init()
-                        it.allMethods.forEach { method ->
-                            if (!method.isAbstract) CfgBuilder(this, method).build()
-                        }
+            for ((name, klass) in oldClasses) {
+                when (name) {
+                    !in failedClasses -> classes.getOrPut(name) { ConcreteClass(this, klass.cn) }.init()
+                    else -> classes.getOrPut(name) { OuterClass(this, ClassNode().also { it.name = name }) }.init()
+                }
+
+            }
+
+            classes.forEach { (name, klass) ->
+                if (name !in failedClasses) {
+                    klass.allMethods.forEach { method ->
+                        if (!method.isAbstract) CfgBuilder(this, method).build()
                     }
                 }
             }
