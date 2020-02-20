@@ -96,11 +96,9 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = innerMethods.getOrElse(MethodKey(name, desc)) {
         val uppers = listOf(superClass).asSequence().plus(interfaces).filterNotNull().toList()
         val res: Method? = uppers
-                .asSequence()
                 .mapNotNull { it as? ConcreteClass }
                 .map { it.getMethodConcrete(name, desc) }
                 .firstOrNull() ?: uppers
-                .asSequence()
                 .mapNotNull { it as? OuterClass }
                 .firstOrNull()
                 ?.getMethodConcrete(name, desc)
