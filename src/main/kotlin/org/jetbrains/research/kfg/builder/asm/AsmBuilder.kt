@@ -408,12 +408,12 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                     is CmpOpcode.Cmpg -> when (inst.lhv.type) {
                         is FloatType -> FCMPG
                         is DoubleType -> DCMPG
-                        else -> throw InvalidOperandError("Non-real operands of CMPG inst")
+                        else -> throw InvalidOperandError("Non-real operands of CMPG inst: ${inst.lhv.type}")
                     }
                     is CmpOpcode.Cmpl -> when (inst.lhv.type) {
                         is FloatType -> FCMPL
                         is DoubleType -> DCMPL
-                        else -> throw InvalidOperandError("Non-real operands of CMPL inst")
+                        else -> throw InvalidOperandError("Non-real operands of CMPL inst: ${inst.lhv.type}")
                     }
                     else -> throw InvalidStateError("Unknown non-branch cmp inst ${inst.print()}")
                 }

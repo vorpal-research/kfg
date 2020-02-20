@@ -10,7 +10,7 @@ sealed class Real : PrimaryType {
     override fun hashCode() = defaultHashCode(FloatType.name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        return this.javaClass != other?.javaClass
+        return this.javaClass == other?.javaClass
     }
 }
 
