@@ -133,7 +133,7 @@ internal fun ClassNode.write(loader: ClassLoader,
     }
 }
 
-internal fun Class.write(cm: ClassManager, loader: ClassLoader,
+fun Class.write(cm: ClassManager, loader: ClassLoader,
                 filename: String = "$fullname.class",
                 flags: Flags = Flags.writeComputeFrames): File =
         ClassBuilder(cm, this).build().write(loader, filename, flags)

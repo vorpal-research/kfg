@@ -18,6 +18,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
     constructor(path: String, `package`: Package) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
+    val name get() = file.name
     val classLoader get() = file.classLoader
 
     init {
