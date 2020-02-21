@@ -19,11 +19,13 @@ data class Jar(private val file: JarFile, val `package`: Package) {
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
     init {
-        for ((key, value) in file.manifest.mainAttributes) {
-            manifest.mainAttributes[key] = value
-        }
-        for ((key, value) in file.manifest.entries) {
-            manifest.entries[key] = value
+        if (file.manifest != null) {
+            for ((key, value) in file.manifest.mainAttributes) {
+                manifest.mainAttributes[key] = value
+            }
+            for ((key, value) in file.manifest.entries) {
+                manifest.entries[key] = value
+            }
         }
     }
 

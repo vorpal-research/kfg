@@ -66,12 +66,13 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         val jar2ClassNode = jars.map { it to it.parse(flags) }.toMap()
         for ((jar, classNodes) in jar2ClassNode) {
             classNodes.forEach { (name, cn) ->
-                val klass = ConcreteClass(this, cn).also { it.init() }
+                val klass = ConcreteClass(this, cn)
                 classes[name] = klass
                 class2jar[klass] = jar
                 jar2class.getOrPut(jar, ::mutableSetOf).add(klass)
             }
         }
+        classes.values.forEach { it.init() }
 
         val failedClasses = hashSetOf<String>()
         classes.forEach { (name, klass) ->
@@ -99,8 +100,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
             for ((name, klass) in oldClasses) {
                 when (name) {
                     !in failedClasses -> {
-                        classes.getOrPut(name) { ConcreteClass(this, klass.cn) }.init()
-                        val newKlass = ConcreteClass(this, klass.cn).also { it.init() }
+                        val newKlass = ConcreteClass(this, klass.cn)
                         classes[name] = newKlass
                         val jar = oldClass2Jar.getValue(klass)
                         class2jar[newKlass] = jar
@@ -108,6 +108,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
                     }
                 }
             }
+            classes.values.forEach { it.init() }
 
             classes.values.filterIsInstance<ConcreteClass>().forEach { klass ->
                 klass.allMethods.forEach { method ->
