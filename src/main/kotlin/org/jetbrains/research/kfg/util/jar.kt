@@ -2,19 +2,18 @@ package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
-import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.net.URLClassLoader
-import java.nio.file.Files
-import java.nio.file.Path
-import java.util.jar.*
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 
 val JarEntry.isClass get() = this.name.endsWith(".class")
 val JarEntry.className get() = this.name.removeSuffix(".class")
@@ -67,24 +66,8 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
     }
 }
 
-class JarBuilder(val name: String) {
-    private val manifest = Manifest()
-    private lateinit var jar: JarOutputStream
-
-    fun addMainAttribute(key: Any, attrs: Any) {
-        manifest.mainAttributes[key] = attrs
-    }
-
-    fun addManifestEntry(key: String, attrs: Attributes) {
-        manifest.entries[key] = attrs
-    }
-
-    /**
-     * Initializes jar file output stream. Should be called only after manifest file is configured
-     */
-    fun init() {
-        jar = JarOutputStream(FileOutputStream(name), manifest)
-    }
+class JarBuilder(val name: String, manifest: Manifest) {
+    private val jar = JarOutputStream(FileOutputStream(name), manifest)
 
     fun add(source: File) {
         if (source.isDirectory) {
@@ -127,14 +110,14 @@ class JarBuilder(val name: String) {
     }
 }
 
-private fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): ClassNode {
+internal fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): ClassNode {
     val classReader = ClassReader(input)
     val classNode = ClassNode()
     classReader.accept(classNode, flags.value)
     return classNode
 }
 
-private fun ClassNode.write(loader: ClassLoader,
+internal fun ClassNode.write(loader: ClassLoader,
                             filename: String,
                             flags: Flags = Flags.writeComputeAll): File {
     val cw = KfgClassWriter(loader, flags)
@@ -150,94 +133,7 @@ private fun ClassNode.write(loader: ClassLoader,
     }
 }
 
-fun Class.write(cm: ClassManager, loader: ClassLoader,
+internal fun Class.write(cm: ClassManager, loader: ClassLoader,
                 filename: String = "$fullname.class",
                 flags: Flags = Flags.writeComputeFrames): File =
         ClassBuilder(cm, this).build().write(loader, filename, flags)
-
-fun JarFile.unpack(cm: ClassManager, target: Path, `package`: Package, unpackAllClasses: Boolean = false) {
-    val loader = this.classLoader
-
-    val absolutePath = target.toAbsolutePath()
-    val enumeration = this.entries()
-
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-        if (entry.isManifest) continue
-
-        if (entry.isClass) {
-            val `class` = cm.getByName(entry.name.removeSuffix(".class"))
-            when {
-                `package`.isParent(entry.name) && `class` is ConcreteClass -> {
-                    val localPath = "${`class`.fullname}.class"
-                    val path = "$absolutePath/$localPath"
-                    `class`.write(cm, loader, path, Flags.writeComputeFrames)
-                }
-                unpackAllClasses -> {
-                    val path = "$absolutePath/${entry.name}"
-                    val classNode = readClassNode(this.getInputStream(entry))
-                    classNode.write(loader, path, Flags.writeComputeNone)
-                }
-            }
-        }
-    }
-}
-
-fun JarFile.update(cm: ClassManager, `package`: Package) =
-        this.update(cm, `package`, Files.createTempDirectory("kfg"))
-
-fun JarFile.update(cm: ClassManager, `package`: Package, target: Path): JarFile {
-    val absolutePath = target.toAbsolutePath()
-    val jarName = this.name.substringAfterLast('/').removeSuffix(".jar")
-    val builder = JarBuilder("$absolutePath/$jarName.jar")
-    val enumeration = this.entries()
-
-    for ((key, value) in this.manifest.mainAttributes) {
-        builder.addMainAttribute(key, value)
-    }
-
-    for ((key, value) in this.manifest.entries) {
-        builder.addManifestEntry(key, value)
-    }
-    builder.init()
-
-    this.unpack(cm, target, `package`)
-
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-        if (entry.isManifest) continue
-
-        if (entry.isClass && `package`.isParent(entry.name)) {
-            val `class` = cm.getByName(entry.name.removeSuffix(".class"))
-
-            if (`class` is ConcreteClass) {
-                val localPath = "${`class`.fullname}.class"
-                val path = "$absolutePath/$localPath"
-
-                val newEntry = JarEntry(localPath.replace("\\", "/"))
-                builder.add(newEntry, FileInputStream(path))
-            } else {
-                builder.add(entry, this.getInputStream(entry))
-            }
-        } else {
-            builder.add(entry, this.getInputStream(entry))
-        }
-    }
-    builder.close()
-    return JarFile(builder.name)
-}
-
-fun JarFile.parse(pack: Package, flags: Flags): Map<String, ClassNode> {
-    val classes = mutableMapOf<String, ClassNode>()
-    val enumeration = this.entries()
-    while (enumeration.hasMoreElements()) {
-        val entry = enumeration.nextElement() as JarEntry
-
-        if (entry.isClass && pack.isParent(entry.className)) {
-            val classNode = readClassNode(this.getInputStream(entry), flags)
-            classes[classNode.name] = classNode
-        }
-
-    }
-    return classes
-}

@@ -9,9 +9,8 @@ import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.jetbrains.research.kfg.util.parse
+import org.jetbrains.research.kfg.util.Flags
 import org.objectweb.asm.tree.ClassNode
-import java.util.jar.JarFile
 
 class Package(name: String) {
     val name: String
@@ -49,23 +48,29 @@ class Package(name: String) {
     }
 }
 
-class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().build()) {
+class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
-    val concreteClasses: Set<ConcreteClass>
 
-    val `package` get() = config.`package`
-    val flags get() = config.flags
+    val flags: Flags get() = config.flags
+    val failOnError: Boolean get() = config.failOnError
 
-    private val classNodes = hashMapOf<String, ClassNode>()
     private val classes = hashMapOf<String, Class>()
+    private val class2jar = hashMapOf<Class, Jar>()
+    private val jar2class = hashMapOf<Jar, MutableSet<Class>>()
 
-    init {
-        val jarClasses = jar.parse(`package`, flags)
-        classNodes.putAll(jarClasses)
-        jarClasses.forEach { (name, cn) ->
-            classes.getOrPut(name) { ConcreteClass(this, cn) }.init()
+    val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
+
+    fun initialize(vararg jars: Jar) {
+        val jar2ClassNode = jars.map { it to it.parse(flags) }.toMap()
+        for ((jar, classNodes) in jar2ClassNode) {
+            classNodes.forEach { (name, cn) ->
+                val klass = ConcreteClass(this, cn).also { it.init() }
+                classes[name] = klass
+                class2jar[klass] = jar
+                jar2class.getOrPut(jar, ::mutableSetOf).add(klass)
+            }
         }
 
         val failedClasses = hashSetOf<String>()
@@ -75,22 +80,32 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                     if (!method.isAbstract) CfgBuilder(this, method).build()
                 }
             } catch (e: KfgException) {
-                if (config.failOnError) throw e
+                if (failOnError) throw e
                 failedClasses += name
             } catch (e: KtException) {
-                if (config.failOnError) throw e
+                if (failOnError) throw e
                 failedClasses += name
             }
         }
         // this is fucked up, but i don't know any other way to do this
         // if `failOnError` option is enabled and we have some failed classes, we need to
         // rebuild all the methods so they will not use invalid instance of ConcreteClass for failing class
-        if (!config.failOnError && failedClasses.isNotEmpty()) {
+        if (!failOnError && failedClasses.isNotEmpty()) {
             val oldClasses = classes.toMap()
+            val oldClass2Jar = class2jar.toMap()
             classes.clear()
+            class2jar.clear()
+            jar2class.clear()
             for ((name, klass) in oldClasses) {
                 when (name) {
-                    !in failedClasses -> classes.getOrPut(name) { ConcreteClass(this, klass.cn) }.init()
+                    !in failedClasses -> {
+                        classes.getOrPut(name) { ConcreteClass(this, klass.cn) }.init()
+                        val newKlass = ConcreteClass(this, klass.cn).also { it.init() }
+                        classes[name] = newKlass
+                        val jar = oldClass2Jar.getValue(klass)
+                        class2jar[newKlass] = jar
+                        jar2class.getOrPut(jar, ::mutableSetOf).add(klass)
+                    }
                 }
             }
 
@@ -100,18 +115,12 @@ class ClassManager(jar: JarFile, val config: KfgConfig = KfgConfigBuilder().buil
                 }
             }
         }
-        concreteClasses = classes.values.mapNotNull { it as? ConcreteClass }.toSet()
     }
 
-    fun get(cn: ClassNode) = classes.getOrPut(cn.name) { ConcreteClass(this, cn) }
-
-    fun getByName(name: String): Class {
-        var cn = classNodes[name]
-        return if (cn != null) get(cn) else {
-            cn = ClassNode()
-            cn.name = name
-            OuterClass(this, cn)
-        }
+    operator fun get(name: String): Class = classes.getOrElse(name) {
+        val cn = ClassNode()
+        cn.name = name
+        OuterClass(this, cn)
     }
 
     fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.`package`) }

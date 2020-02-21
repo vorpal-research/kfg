@@ -33,19 +33,19 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         get() = fullname.replace('/', '.')
 
     val superClass
-        get() = if (cn.superName != null) cm.getByName(cn.superName) else null
+        get() = if (cn.superName != null) cm.get(cn.superName) else null
 
     val interfaces
-        get() = if (cn.interfaces != null) cn.interfaces.map { cm.getByName(it as String) } else listOf()
+        get() = if (cn.interfaces != null) cn.interfaces.map { cm.get(it as String) } else listOf()
 
     val outerClass
-        get() = if (cn.outerClass != null) cm.getByName(cn.outerClass) else null
+        get() = if (cn.outerClass != null) cm.get(cn.outerClass) else null
 
     val outerMethod
         get() = if (cn.outerMethod != null) outerClass?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
 
     val innerClasses
-        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.getByName((it as InnerClassNode).name) } else listOf()
+        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.get((it as InnerClassNode).name) } else listOf()
 
     override val asmDesc
         get() = "L$fullname;"

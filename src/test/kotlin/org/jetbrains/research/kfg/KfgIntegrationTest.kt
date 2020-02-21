@@ -2,7 +2,6 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.util.update
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
 import java.io.ByteArrayOutputStream
@@ -10,7 +9,6 @@ import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import java.util.*
-import java.util.jar.JarFile
 import kotlin.test.*
 
 private fun deleteDirectory(directory: File): Boolean {
@@ -35,7 +33,7 @@ class KfgIntegrationTest {
     private val err = ByteArrayOutputStream()
 
     val `package` = Package("org/jetbrains/research/kfg/*")
-    lateinit var jarFile: JarFile
+    lateinit var jar: Jar
     lateinit var cm: ClassManager
 
     @BeforeTest
@@ -44,11 +42,12 @@ class KfgIntegrationTest {
         System.setErr(PrintStream(err))
 
         val version = System.getProperty("project.version")
-        val jar = "target/kfg-$version-jar-with-dependencies.jar"
+        val jarPath = "target/kfg-$version-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
 
-        jarFile = JarFile(jar)
-        cm = ClassManager(jarFile, KfgConfigBuilder().`package`(`package`).build())
+        jar = Jar(jarPath, `package`)
+        cm = ClassManager(KfgConfigBuilder().build())
+        cm.initialize(jar)
     }
 
     @AfterTest
@@ -60,7 +59,7 @@ class KfgIntegrationTest {
     @Test
     fun run() {
         val target = Files.createTempDirectory("kfg")
-        jarFile.update(cm, `package`, target)
+        jar.update(cm, target)
 
         assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

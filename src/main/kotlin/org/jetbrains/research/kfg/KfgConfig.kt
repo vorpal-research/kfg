@@ -8,7 +8,6 @@ import kotlin.system.exitProcess
 
 data class KfgConfig(
         val flags: Flags = Flags.readCodeOnly,
-        val `package`: Package = Package.defaultPackage,
         val failOnError: Boolean = true
 )
 
@@ -16,7 +15,6 @@ class KfgConfigBuilder private constructor(private val current: KfgConfig) {
     constructor() : this(KfgConfig())
 
     fun flags(flags: Flags) = KfgConfigBuilder(current.copy(flags = flags))
-    fun `package`(`package`: Package) = KfgConfigBuilder(current.copy(`package` = `package`))
     fun failOnError(value: Boolean) = KfgConfigBuilder(current.copy(failOnError = value))
 
     fun build() = current

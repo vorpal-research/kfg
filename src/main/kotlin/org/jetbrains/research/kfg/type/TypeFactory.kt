@@ -82,10 +82,10 @@ class TypeFactory(val cm: ClassManager) {
         get() = getRefType(doubleClass)
 
     val objectArrayClass
-        get() = getRefType(cm.getByName("$objectType[]"))
+        get() = getRefType(cm.get("$objectType[]"))
 
     fun getRefType(cname: Class): Type = ClassType(cname)
-    fun getRefType(cname: String): Type = getRefType(cm.getByName(cname))
+    fun getRefType(cname: String): Type = getRefType(cm.get(cname))
     fun getArrayType(component: Type): Type = ArrayType(component)
 
     fun getWrapper(type: PrimaryType): Type = when (type) {
@@ -113,6 +113,6 @@ class TypeFactory(val cm: ClassManager) {
             else -> throw UnknownTypeException("Unknown primitive type $klass")
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm.getByName(klass.name.replace('.', '/')))
+        else -> getRefType(cm.get(klass.name.replace('.', '/')))
     }
 }

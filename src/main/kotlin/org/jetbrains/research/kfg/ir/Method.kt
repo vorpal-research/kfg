@@ -71,7 +71,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))
         }
 
-        mn.exceptions?.forEach { exceptions.add(cm.getByName(it as String)) }
+        mn.exceptions?.forEach { exceptions.add(cm.get(it as String)) }
 
         addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.visibleAnnotations as List<AnnotationNode>?))
         addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))

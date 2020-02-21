@@ -612,7 +612,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(types, insn.desc)
-        val `class` = cm.getByName(insn.owner)
+        val `class` = cm.get(insn.owner)
         when (opcode) {
             GETSTATIC -> {
                 val field = `class`.getField(insn.name, fieldType)
@@ -646,8 +646,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val `class` = when {
             // FIXME: This is literally fucked up. If insn owner is an array, class of the CallInst should be java/lang/Object,
             //  because java array don't have their own methods
-            insn.owner.startsWith("[") -> cm.getByName(TypeFactory.objectClass)
-            else -> cm.getByName(insn.owner)
+            insn.owner.startsWith("[") -> cm.get(TypeFactory.objectClass)
+            else -> cm.get(insn.owner)
         }
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
@@ -713,12 +713,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             is org.objectweb.asm.Type -> {
                 val klass = when (val temp = parseDesc(types, cst.descriptor)) {
                     is ClassType -> temp.`class`
-                    else -> cm.getByName("$temp")
+                    else -> cm.get("$temp")
                 }
                 push(values.getClassConstant(klass))
             }
             is org.objectweb.asm.Handle -> {
-                val `class` = cm.getByName(cst.owner)
+                val `class` = cm.get(cst.owner)
                 val method = `class`.getMethod(cst.name, cst.desc)
                 push(values.getMethodConstant(method))
             }
