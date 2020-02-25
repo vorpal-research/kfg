@@ -105,6 +105,7 @@ class TypeFactory(val cm: ClassManager) {
             Void::class.java -> voidType
             Boolean::class.javaPrimitiveType -> boolType
             Byte::class.javaPrimitiveType -> byteType
+            Char::class.javaPrimitiveType -> charType
             Short::class.javaPrimitiveType -> shortType
             Int::class.javaPrimitiveType -> intType
             Long::class.javaPrimitiveType -> longType
