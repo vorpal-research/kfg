@@ -1,14 +1,13 @@
 package org.jetbrains.research.kfg.builder.cfg
 
 import com.abdullin.kthelper.`try`
-import com.abdullin.kthelper.algorithm.DominatorTreeBuilder
-import com.abdullin.kthelper.algorithm.GraphTraversal
-import com.abdullin.kthelper.collection.queueOf
+import com.abdullin.kthelper.assert.unreachable
 import com.abdullin.kthelper.logging.log
-import org.jetbrains.research.kfg.*
+import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.InvalidOperandError
+import org.jetbrains.research.kfg.UnsupportedOperation
 import org.jetbrains.research.kfg.analysis.IRVerifier
-import org.jetbrains.research.kfg.analysis.Loop
-import org.jetbrains.research.kfg.analysis.LoopVisitor
 import org.jetbrains.research.kfg.analysis.NullTypeAdapter
 import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Slot
@@ -150,10 +149,69 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
+private fun parseType(types: TypeFactory, any: Any): Type = when (any) {
+    is String -> parseFrameDesc(types, any)
+    is Int -> parsePrimitiveType(types, any)
+    is LabelNode -> {
+        val newNode = any.run {
+            var cur: AbstractInsnNode = this
+            var typeInsnNode = cur.next as? TypeInsnNode
+            while (typeInsnNode == null) {
+                cur = cur.next
+                typeInsnNode = cur.next as? TypeInsnNode
+            }
+            typeInsnNode!!
+        }
+        parseFrameDesc(types, newNode.desc)
+    }
+    else -> unreachable { log.error("Unexpected local type $any") }
+}
+
+private fun List<*>?.parseLocals(types: TypeFactory): SortedMap<Int, Type> {
+    if (this == null) return sortedMapOf()
+    val result = mutableMapOf<Int, Type>()
+    var index = 0
+    for (any in this) {
+        val type = parseType(types, any!!)
+        result[index] = type
+        when {
+            type.isDWord -> index += 2
+            else -> ++index
+        }
+    }
+    return result.toSortedMap()
+}
+
+private fun List<*>?.parseStack(types: TypeFactory) = this?.mapNotNull { parseType(types, it!!) } ?: emptyList()
+
 class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private val instFactory get() = cm.instruction
     val values get() = cm.value
     val types get() = cm.type
+
+    data class FrameState(val local: SortedMap<Int, Type>, val stack: List<Type>) {
+        companion object {
+            fun parse(types: TypeFactory, inst: FrameNode) = FrameState(
+                    inst.local.parseLocals(types),
+                    inst.stack.parseStack(types)
+            )
+        }
+
+        fun appendFrame(types: TypeFactory, inst: FrameNode): FrameState {
+            val maxIndex = (this.local.keys.max() ?: -1) + 1
+            val appendedLocals = inst.local.parseLocals(types)
+            val newLocals = this.local.toMutableMap()
+            for ((index, type) in appendedLocals) {
+                newLocals[maxIndex + index] = type
+            }
+            return copy(local = newLocals.toSortedMap(), stack = listOf())
+        }
+
+        fun dropFrame(types: TypeFactory, inst: FrameNode): FrameState {
+            val newLocals = this.local.toList().dropLast(inst.local.size).toMap().toSortedMap()
+            return copy(local = newLocals, stack = listOf())
+        }
+    }
 
     private class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
@@ -163,14 +221,14 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val localPhis = hashMapOf<Int, PhiInst>()
     }
 
-    private val phiBlocks = hashSetOf<BasicBlock>()
-    private val cycleEntries = hashSetOf<BasicBlock>()
+    private val visitedBlocks = mutableSetOf<BasicBlock>()
     private val locals = LocalArray()
     private val nodeToBlock = hashMapOf<AbstractInsnNode, BasicBlock>()
     private val blockToNode = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val frames = hashMapOf<BasicBlock, StackFrame>()
     private val stack = ArrayList<Value>()
     private var currentLocation = Location()
+    private lateinit var lastFrame: FrameState
 
     private fun pop() = stack.removeAt(stack.lastIndex)
     private fun push(value: Value) = stack.add(value)
@@ -185,17 +243,18 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val sf = frames.getValue(bb)
         sf.stack.addAll(stack)
         sf.locals.putAll(locals)
-        stack.clear()
-        locals.clear()
     }
 
-    private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, size: Int) {
-        for (index in 0 until size) {
-            val incomings = predFrames.map { it.bb to it.stack[index] }.toMap()
+    private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, stackState: List<Type>) {
+        val predStacks = predFrames.map { it.bb to it.stack.takeLast(stackState.size) }.toMap()
+        for (index in stackState.indices) {
+            val type = stackState[index]
+            if (type is VoidType) continue
+            val incomings = predStacks.map { it.key to it.value[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val newPhi = instFactory.getPhi(incomingValues.first().type, incomings)
+                    val newPhi = instFactory.getPhi(type, incomings)
                     addInstruction(bb, newPhi)
                     push(newPhi)
                 }
@@ -204,11 +263,11 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
-    private fun createStackCyclePhis(sf: StackFrame, predFrames: List<StackFrame>, stackSize: Int) {
-        val bb = sf.bb
-        val stacks = predFrames.map { it.stack }
-        for (index in 0 until stackSize) {
-            val type = stacks.filter { it.size > index }.map { it[index] }.first().type
+    private fun createStackCyclePhis(bb: BasicBlock, stackState: List<Type>) {
+        val sf = frames.getValue(bb)
+        for (index in stackState.indices) {
+            val type = stackState[index]
+            if (type is VoidType) continue
             val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
             push(phi)
@@ -216,90 +275,83 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
-    private fun createLocalPhis(bb: BasicBlock, predFrames: List<StackFrame>, definedLocals: Set<Int>) {
-        for (local in definedLocals) {
-            val incomings = predFrames.mapNotNull {
-                val value = it.locals[local]
-                when {
-                    value != null -> it.bb to value
-                    else -> null
-                }
+    private fun createLocalPhis(bb: BasicBlock, predFrames: List<StackFrame>, definedLocals: Map<Int, Type>) {
+        for ((local, type) in definedLocals) {
+            if (type is VoidType) continue
+            val incomings = predFrames.map {
+                it.bb to (it.locals[local]
+                        ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
             }.toMap()
-
-            if (incomings.size < predFrames.size) continue
 
             val incomingValues = incomings.values.toSet()
             when {
                 incomingValues.size > 1 -> {
-                    val type = mergeTypes(types, incomingValues.map { it.type }.toSet())
-                    if (type != null) {
-                        val newPhi = instFactory.getPhi(type, incomings)
-                        addInstruction(bb, newPhi)
-                        locals[local] = newPhi
-                    }
+                    val newPhi = instFactory.getPhi(type, incomings)
+                    addInstruction(bb, newPhi)
+                    locals[local] = newPhi
                 }
                 else -> locals[local] = incomingValues.first()
             }
         }
     }
 
-    private fun createLocalCyclePhis(sf: StackFrame, predFrames: List<StackFrame>, definedLocals: Set<Int>) {
-        val bb = sf.bb
-        for (local in definedLocals) {
-            val type = predFrames.mapNotNull { it.locals[local] }.first().type
+    private fun createLocalCyclePhis(bb: BasicBlock, definedLocals: Map<Int, Type>) {
+        val sf = frames.getValue(bb)
+        for ((index, type) in definedLocals) {
+            if (type is VoidType) continue
             val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
-            locals[local] = phi
-            sf.localPhis[local] = phi as PhiInst
+            locals[index] = phi
+            sf.localPhis[index] = phi as PhiInst
         }
     }
-
-    private fun recoverState(bb: BasicBlock) = when (bb) {
-        is CatchBlock -> {
-            val inst = instFactory.getCatch(bb.exception)
-            addInstruction(bb, inst)
-            push(inst)
-
-            val predFrames = bb.allPredecessors.map { frames.getValue(it) }
-            val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-            when (bb) {
-                in cycleEntries -> createLocalCyclePhis(frames.getValue(bb), predFrames, definedLocals)
-                else -> createLocalPhis(bb, predFrames, definedLocals)
-            }
-
-        }
-        in phiBlocks -> {
-            val sf = frames.getValue(bb)
-            val predFrames = bb.predecessors.map { frames.getValue(it) }
-            val stacks = predFrames.map { it.stack }
-            val stackSizes = stacks.map { it.size }.toSet()
-
-            when (bb) {
-                in cycleEntries -> {
-                    assert(stackSizes.size <= 2) { log.error("Stack sizes of ${bb.name} predecessors are different") }
-
-                    val stackSize = stackSizes.max()!!
-                    createStackCyclePhis(sf, predFrames, stackSize)
-
-                    val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-                    createLocalCyclePhis(sf, predFrames, definedLocals)
-
-                }
-                else -> {
-                    assert(stackSizes.size == 1) { log.error("Stack sizes of ${bb.name} predecessors are different") }
-                    createStackPhis(bb, predFrames, stackSizes.first())
-
-                    val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
-                    createLocalPhis(bb, predFrames, definedLocals)
-                }
-            }
-        }
-        else -> {
-            val predFrame = bb.predecessors.map { frames.getValue(it) }.firstOrNull()
-            predFrame?.stack?.forEach { push(it) }
-            predFrame?.locals?.forEach { local, value -> locals[local] = value }
-        }
-    }
+//
+//    private fun recoverState(bb: BasicBlock) = when (bb) {
+//        is CatchBlock -> {
+//            val inst = instFactory.getCatch(bb.exception)
+//            addInstruction(bb, inst)
+//            push(inst)
+//
+//            val predFrames = bb.allPredecessors.map { frames.getValue(it) }
+//            val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+//            when (bb) {
+//                in cycleEntries -> createLocalCyclePhis(frames.getValue(bb), predFrames, definedLocals)
+//                else -> TODO() //createLocalPhis(bb, predFrames, definedLocals)
+//            }
+//
+//        }
+//        in phiBlocks -> {
+//            val sf = frames.getValue(bb)
+//            val predFrames = bb.predecessors.map { frames.getValue(it) }
+//            val stacks = predFrames.map { it.stack }
+//            val stackSizes = stacks.map { it.size }.toSet()
+//
+//            when (bb) {
+//                in cycleEntries -> {
+//                    assert(stackSizes.size <= 2) { log.error("Stack sizes of ${bb.name} predecessors are different") }
+//
+//                    val stackSize = stackSizes.max()!!
+//                    createStackCyclePhis(sf, predFrames, stackSize)
+//
+//                    val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+//                    createLocalCyclePhis(sf, predFrames, definedLocals)
+//
+//                }
+//                else -> {
+//                    assert(stackSizes.size == 1) { log.error("Stack sizes of ${bb.name} predecessors are different") }
+////                    createStackPhis(bb, predFrames, stackSizes.first())
+//
+//                    val definedLocals = predFrames.map { it.locals.keys }.flatten().toSet()
+////                    createLocalPhis(bb, predFrames, definedLocals)
+//                }
+//            }
+//        }
+//        else -> {
+//            val predFrame = bb.predecessors.map { frames.getValue(it) }.firstOrNull()
+//            predFrame?.stack?.forEach { push(it) }
+//            predFrame?.locals?.forEach { local, value -> locals[local] = value }
+//        }
+//    }
 
     private fun convertConst(insn: InsnNode) = push(
             when (val opcode = insn.opcode) {
@@ -612,7 +664,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(types, insn.desc)
-        val `class` = cm.get(insn.owner)
+        val `class` = cm[insn.owner]
         when (opcode) {
             GETSTATIC -> {
                 val field = `class`.getField(insn.name, fieldType)
@@ -646,8 +698,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val `class` = when {
             // FIXME: This is literally fucked up. If insn owner is an array, class of the CallInst should be java/lang/Object,
             //  because java array don't have their own methods
-            insn.owner.startsWith("[") -> cm.get(TypeFactory.objectClass)
-            else -> cm.get(insn.owner)
+            insn.owner.startsWith("[") -> cm[TypeFactory.objectClass]
+            else -> cm[insn.owner]
         }
         val method = `class`.getMethod(insn.name, insn.desc)
         val args = arrayListOf<Value>()
@@ -713,12 +765,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             is org.objectweb.asm.Type -> {
                 val klass = when (val temp = parseDesc(types, cst.descriptor)) {
                     is ClassType -> temp.`class`
-                    else -> cm.get("$temp")
+                    else -> cm["$temp"]
                 }
                 push(values.getClassConstant(klass))
             }
             is org.objectweb.asm.Handle -> {
-                val `class` = cm.get(cst.owner)
+                val `class` = cm[cst.owner]
                 val method = `class`.getMethod(cst.name, cst.desc)
                 push(values.getMethodConstant(method))
             }
@@ -773,7 +825,89 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun convertFrame(inst: FrameNode) = Unit
+    private fun convertFrame(inst: FrameNode) {
+        val block = nodeToBlock.getValue(inst)
+        val predFrames = block.predecessors.map { frames.getValue(it) }
+        val isCycle = block.predecessors.any { it !in visitedBlocks }
+
+        fun FrameState.copyStackAndLocals(predFrames: List<StackFrame>) {
+            when {
+                predFrames.size == 1 -> {
+                    val predFrame = predFrames.first()
+                    this.stack.withIndex().filter { it.value !is VoidType }.map { it.index }.forEach {
+                        push(predFrame.stack[it])
+                    }
+                    this.local.filterValues { it !is VoidType }.keys.forEach { i ->
+                        locals[i] = predFrame.locals.getValue(i)
+                    }
+                }
+                !isCycle -> {
+                    createStackPhis(block, predFrames, this.stack)
+                    createLocalPhis(block, predFrames, this.local)
+                }
+                else -> {
+                    createStackCyclePhis(block, this.stack)
+                    createLocalCyclePhis(block, this.local)
+                }
+            }
+        }
+
+        fun FrameState.copyLocals(predFrames: List<StackFrame>) {
+            when {
+                predFrames.size == 1 -> {
+                    val predFrame = predFrames.first()
+                    this.local.filterValues { it !is VoidType }.keys.forEach { i ->
+                        locals[i] = predFrame.locals.getValue(i)
+                    }
+                }
+                !isCycle -> createLocalPhis(block, predFrames, this.local)
+                else -> createLocalCyclePhis(block, this.local)
+            }
+        }
+
+        stack.clear()
+        locals.clear()
+
+        when (inst.type) {
+            F_NEW -> unreachable { log.error("Unknown frame node type F_NEW") }
+            F_FULL -> {
+                val frameState = FrameState.parse(types, inst)
+                frameState.copyStackAndLocals(predFrames)
+                lastFrame = frameState
+            }
+            F_APPEND -> {
+                val frameState = lastFrame.appendFrame(types, inst)
+                frameState.copyLocals(predFrames)
+                lastFrame = frameState
+            }
+            F_CHOP -> {
+                val frameState = lastFrame.dropFrame(types, inst)
+                try {
+                    frameState.copyLocals(predFrames)
+                } catch (e: Exception) {
+                    locals.clear()
+                    frameState.copyLocals(predFrames)
+                }
+                lastFrame = frameState
+            }
+            F_SAME -> {
+                val frameState = lastFrame.copy(stack = listOf())
+                try {
+                    frameState.copyLocals(predFrames)
+                } catch (e: Exception) {
+                    locals.clear()
+                    frameState.copyLocals(predFrames)
+                }
+                lastFrame = frameState
+            }
+            F_SAME1 -> {
+                val frameState = lastFrame.copy(stack = inst.stack.parseStack(types))
+                frameState.copyStackAndLocals(predFrames)
+                lastFrame = frameState
+            }
+            else -> unreachable { log.error("Unknown frame node type $inst") }
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun buildCFG() {
@@ -905,179 +1039,31 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
-    private fun buildPhiBlocks() {
-        val dominatorTree = DominatorTreeBuilder(method).build()
+    private fun buildCyclePhis() {
+        for (block in method) {
+            val sf = frames.getValue(block)
+            val predFrames = block.predecessors.map { frames.getValue(it) }
 
-        for ((bb, dtn) in dominatorTree) {
-            val preds = when (bb) {
-                is CatchBlock -> bb.allPredecessors
-                else -> bb.predecessors
-            }
-            if (preds.size > 1) {
-                for (pred in preds) {
-                    var runner: BasicBlock? = pred
-                    while (runner != null && runner != dtn.idom?.value) {
-                        phiBlocks.add(bb)
-                        runner = dominatorTree.getValue(runner).idom?.value
-                    }
-                }
-            }
-        }
-    }
+            for ((index, phi) in sf.stackPhis.withIndex()) {
+                val incomings = predFrames.map { it.bb to it.stack[index] }.toMap()
 
-    private fun recoverStackPhis(sf: StackFrame, predFrames: List<StackFrame>) {
-        val bb = sf.bb
-        for ((indx, phi) in sf.stackPhis.withIndex()) {
-            val incomings = predFrames.map { it.bb to it.stack[indx] }.toMap()
-            val incomingValues = incomings.values.toSet()
-            when {
-                incomingValues.size > 1 -> {
-                    val newPhi = instFactory.getPhi(phi.name, phi.type, incomings)
-                    phi.replaceAllUsesWith(newPhi)
-                    bb.replace(phi, newPhi)
-                }
-                else -> {
-                    phi.replaceAllUsesWith(incomingValues.first())
-                    bb -= phi
-                }
-            }
-            phi.operands.forEach { it.removeUser(phi) }
-        }
-    }
-
-    private fun recoverLocalPhis(sf: StackFrame, predFrames: List<StackFrame>): Set<PhiInst> {
-        val removablePhis = hashSetOf<PhiInst>()
-        val bb = sf.bb
-        for ((local, phi) in sf.localPhis) {
-            val incomings = predFrames.mapNotNull {
-                val value = it.locals[local]
-                when {
-                    value != null -> it.bb to value
-                    else -> null
-                }
-            }.toMap()
-
-            if (incomings.size < predFrames.size) {
-                removablePhis.add(phi)
-                continue
+                val newPhi = instFactory.getPhi(phi.name, phi.type, incomings)
+                phi.replaceAllUsesWith(newPhi)
+                phi.operands.forEach { it.removeUser(phi) }
+                block.replace(phi, newPhi)
             }
 
-            val incomingValues = incomings.values.toSet()
-            when {
-                incomingValues.size > 1 -> {
-                    val type = mergeTypes(types, incomingValues.map { it.type }.toSet())
-                    when (type) {
-                        null -> removablePhis.add(phi)
-                        else -> {
-                            val newPhi = instFactory.getPhi(type, incomings)
-                            phi.replaceAllUsesWith(newPhi)
-                            phi.operands.forEach { it.removeUser(phi) }
-                            bb.replace(phi, newPhi)
-                        }
-                    }
-                }
-                else -> {
-                    phi.replaceAllUsesWith(incomingValues.first())
-                    phi.operands.forEach { it.removeUser(phi) }
-                    bb -= phi
-                }
+            for ((local, phi) in sf.localPhis) {
+                val incomings = predFrames.map {
+                    it.bb to (it.locals[local]
+                            ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
+                }.toMap()
+
+                val newPhi = instFactory.getPhi(phi.type, incomings)
+                phi.replaceAllUsesWith(newPhi)
+                phi.operands.forEach { it.removeUser(phi) }
+                block.replace(phi, newPhi)
             }
-        }
-        return removablePhis
-    }
-
-    private fun buildPhiInstructions() {
-        val removablePhis = hashSetOf<PhiInst>()
-        val processPhis = arrayListOf<PhiInst>()
-
-        for ((bb, sf) in frames) {
-            if (bb !in phiBlocks && bb !in cycleEntries) continue
-
-            val predFrames = when (bb) {
-                is CatchBlock -> bb.allPredecessors
-                else -> bb.predecessors
-            }.map { frames.getValue(it) }
-            recoverStackPhis(sf, predFrames)
-
-            val removable = recoverLocalPhis(sf, predFrames)
-            removablePhis.addAll(removable)
-        }
-
-        for (inst in method.flatten().mapNotNull { it as? PhiInst }) {
-            val incomings = inst.incomingValues
-            val instUsers = inst.users.mapNotNull { it as? Instruction }
-            when {
-                instUsers.isEmpty() -> removablePhis.add(inst)
-                instUsers.size == 1 && instUsers.first() == inst -> removablePhis.add(inst)
-                incomings.size == 2 && incomings.contains(inst) -> {
-                    inst.replaceAllUsesWith(when (inst) {
-                        incomings.first() -> incomings.last()
-                        else -> incomings.first()
-                    })
-                    inst.operands.forEach { it.removeUser(inst) }
-                    instUsers.mapNotNull { it as? PhiInst }.forEach { processPhis.add(it) }
-                }
-            }
-        }
-
-        processPhis.addAll(removablePhis)
-        // this is generally fucked up
-        val queue = queueOf(processPhis.sortedBy { it.name.toString() })
-        loop@ while (queue.isNotEmpty()) {
-            val top = queue.poll()
-            val incomings = top.incomingValues
-            val incomingsSet = incomings.toSet()
-            val instUsers = top.users.mapNotNull { it as? Instruction }
-            val operands = top.operands
-
-            when {
-                incomingsSet.size == 1 -> {
-                    val first = incomingsSet.first()
-                    top.replaceAllUsesWith(first)
-                    operands.forEach { it.removeUser(top) }
-                    if (first is PhiInst) queue.add(first)
-                    top.parentUnsafe?.remove(top) ?: continue@loop
-                    operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
-
-                }
-                incomingsSet.size == 2 && incomingsSet.contains(top) -> {
-                    top.replaceAllUsesWith(when (top) {
-                        incomingsSet.first() -> incomingsSet.last()
-                        else -> incomingsSet.first()
-                    })
-                    operands.forEach { it.removeUser(top) }
-                    instUsers.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
-
-                }
-                instUsers.isEmpty() -> {
-                    operands.forEach { it.removeUser(top) }
-                    top.parentUnsafe?.remove(top) ?: continue@loop
-                    operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
-
-                }
-                instUsers.size == 1 && instUsers.first() == top -> {
-                    operands.forEach { it.removeUser(top) }
-                    top.parentUnsafe?.remove(top)
-                    operands.asSequence().mapNotNull { it as? PhiInst }
-                            .mapNotNull { if (it == top) null else it }.toList()
-                            .forEach { queue.add(it) }
-
-                }
-                removablePhis.containsAll(instUsers) -> {
-                    operands.forEach { it.removeUser(top) }
-                    top.parentUnsafe?.remove(top) ?: continue@loop
-                    operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
-                }
-            }
-        }
-
-        removablePhis.forEach { phi ->
-            val instUsers = phi.users.mapNotNull { it as? Instruction }
-            val methodInstUsers = instUsers.mapNotNull { if (it.hasParent) it else null }
-            if (methodInstUsers.isNotEmpty()) {
-                throw UnsupportedCfgException("Instruction ${phi.print()} still have usages")
-            }
-            phi.parentUnsafe?.remove(phi)
         }
     }
 
@@ -1095,6 +1081,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             else ++localIndex
             method.slottracker.addValue(arg)
         }
+        lastFrame = FrameState(locals.mapValues { it.value.type }.toSortedMap(), stack.map { it.type })
 
         buildCFG()  // build basic blocks graph
 
@@ -1103,91 +1090,57 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             return method
         }
 
-        buildPhiBlocks() // find out to which bb we should insert phi insts using dominator tree
         buildFrames() // build frame maps for each basic block
 
-        val latches = hashMapOf<BasicBlock, BasicBlock>()
-        object : LoopVisitor {
-            override val cm: ClassManager
-                get() = this@CfgBuilder.cm
+        var previousNodeBlock = method.entry
+        lateinit var currentBlock: BasicBlock
+        for (insn in method.mn.instructions()) {
+            currentBlock = nodeToBlock[insn] ?: break
 
-            override fun cleanup() {}
-
-            override fun visit(loop: Loop) {
-                super.visit(loop)
-                cycleEntries.add(loop.header)
-                loop.latches.forEach {
-                    latches[it] = loop.header
+            if (currentBlock != previousNodeBlock) {
+                val last = previousNodeBlock.instructions.lastOrNull()
+                if (last == null || !last.isTerminate) {
+                    require(previousNodeBlock.successors.size == 1)
+                    addInstruction(previousNodeBlock, instFactory.getJump(previousNodeBlock.successors.first()))
                 }
+                reserveState(previousNodeBlock)
+                visitedBlocks += previousNodeBlock
+                previousNodeBlock = currentBlock
             }
-        }.visit(method)
 
-        method.catchEntries.forEach { cb ->
-            cb.allPredecessors.forEach {
-                // this is generally fucked up:
-                // some of the catch entry block may contain connections to themselves (loops)
-                // we don't need to process this loops in topological sort, but need to remember that kind of blocks
-                if (it != cb) it.addSuccessor(cb)
-                else cycleEntries.add(it)
+            when (insn) {
+                is InsnNode -> convertInsn(insn)
+                is IntInsnNode -> convertIntInsn(insn)
+                is VarInsnNode -> convertVarInsn(insn)
+                is TypeInsnNode -> convertTypeInsn(insn)
+                is FieldInsnNode -> convertFieldInsn(insn)
+                is MethodInsnNode -> convertMethodInsn(insn)
+                is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn)
+                is JumpInsnNode -> convertJumpInsn(insn)
+                is LabelNode -> convertLabel(insn)
+                is LdcInsnNode -> convertLdcInsn(insn)
+                is IincInsnNode -> convertIincInsn(insn)
+                is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
+                is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
+                is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
+                is LineNumberNode -> convertLineNumber(insn)
+                is FrameNode -> convertFrame(insn)
+                else -> throw InvalidOpcodeError("Unknown insn: ${insn.print()}")
             }
         }
 
-        if (method.findEntries().size > 1) {
-            throw UnsupportedCfgException("Method $method has more than one enrty")
-        }
-
-        latches.forEach { (latch, header) -> latch.removeSuccessor(header) }
-        val order = GraphTraversal(method).topologicalSort()
-        latches.forEach { (latch, header) ->
-            latch.addSuccessor(header)
-            header.addPredecessor(latch)
-        }
-        method.catchEntries.forEach { cb -> cb.allPredecessors.forEach { it.removeSuccessor(cb) } }
-
-        for (bb in order) {
-            recoverState(bb)
-            for (insn in blockToNode.getValue(bb)) {
-                when (insn) {
-                    is InsnNode -> convertInsn(insn)
-                    is IntInsnNode -> convertIntInsn(insn)
-                    is VarInsnNode -> convertVarInsn(insn)
-                    is TypeInsnNode -> convertTypeInsn(insn)
-                    is FieldInsnNode -> convertFieldInsn(insn)
-                    is MethodInsnNode -> convertMethodInsn(insn)
-                    is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn)
-                    is JumpInsnNode -> convertJumpInsn(insn)
-                    is LabelNode -> convertLabel(insn)
-                    is LdcInsnNode -> convertLdcInsn(insn)
-                    is IincInsnNode -> convertIincInsn(insn)
-                    is TableSwitchInsnNode -> convertTableSwitchInsn(insn)
-                    is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn)
-                    is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
-                    is LineNumberNode -> convertLineNumber(insn)
-                    is FrameNode -> convertFrame(insn)
-                    else -> throw InvalidOpcodeError("Unknown insn: ${insn.print()}")
-                }
-            }
-            val last = bb.instructions.lastOrNull()
-            if (last == null || !last.isTerminate) {
-                require(bb.successors.size == 1)
-                addInstruction(bb, instFactory.getJump(bb.successors.first()))
-            }
-
-            reserveState(bb)
-        }
-
-        buildPhiInstructions()
+        buildCyclePhis()
         RetvalBuilder(cm).visit(method)
         CfgOptimizer(cm).visit(method)
         NullTypeAdapter(cm).visit(method)
 //        BoolValueAdapter.visit(method)
 
-        // this is fucked up, but sometimes there are really empty blocks in bytecode
-        nodeToBlock.values.forEach {
-            if (it.isEmpty && it.predecessors.isEmpty() && it.successors.isEmpty()) {
-                method.remove(it)
-            }
-        }
+//        // this is fucked up, but sometimes there are really empty blocks in bytecode
+//        nodeToBlock.values.forEach {
+//            if (it.isEmpty && it.predecessors.isEmpty() && it.successors.isEmpty()) {
+//                method.remove(it)
+//            }
+//        }
 
         method.slottracker.rerun()
         IRVerifier(cm).visit(method)

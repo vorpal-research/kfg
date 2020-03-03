@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.type
 
+import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.jetbrains.research.kfg.InvalidStateError
 import org.jetbrains.research.kfg.InvalidTypeDescError
@@ -71,6 +73,20 @@ fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
     else -> throw InvalidTypeDescError(desc)
 }
 
+fun parseFrameDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
+    'V' -> tf.voidType
+    'Z' -> tf.boolType
+    'B' -> tf.byteType
+    'C' -> tf.charType
+    'S' -> tf.shortType
+    'I' -> tf.intType
+    'J' -> tf.longType
+    'F' -> tf.floatType
+    'D' -> tf.doubleType
+    '[' -> tf.getArrayType(parseDesc(tf, desc.drop(1)))
+    else -> tf.getRefType(desc)
+}
+
 fun parsePrimaryType(tf: TypeFactory, opcode: Int): Type = when (opcode) {
     Opcodes.T_CHAR -> tf.charType
     Opcodes.T_BOOLEAN -> tf.boolType
@@ -138,3 +154,14 @@ val Type.expandedBitsize
         is ClassType -> `class`.fields.fold(0) { acc, field -> acc + field.type.bitsize }
         else -> bitsize
     }
+
+fun parsePrimitiveType(tf: TypeFactory, opcode: Int) = when (opcode) {
+    0 -> tf.voidType
+    1 -> tf.intType
+    2 -> tf.floatType
+    3 -> tf.doubleType
+    4 -> tf.longType
+    5 -> tf.nullType
+    6 -> TODO()
+    else -> unreachable { log.error("Unknown opcode in primitive type parsing: $opcode") }
+}
