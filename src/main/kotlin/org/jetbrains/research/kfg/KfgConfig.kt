@@ -7,7 +7,7 @@ import java.io.StringWriter
 import kotlin.system.exitProcess
 
 data class KfgConfig(
-        val flags: Flags = Flags.readCodeOnly,
+        val flags: Flags = Flags.readAll,
         val failOnError: Boolean = true
 )
 

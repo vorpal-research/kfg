@@ -149,69 +149,10 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
-private fun parseType(types: TypeFactory, any: Any): Type = when (any) {
-    is String -> parseFrameDesc(types, any)
-    is Int -> parsePrimitiveType(types, any)
-    is LabelNode -> {
-        val newNode = any.run {
-            var cur: AbstractInsnNode = this
-            var typeInsnNode = cur.next as? TypeInsnNode
-            while (typeInsnNode == null) {
-                cur = cur.next
-                typeInsnNode = cur.next as? TypeInsnNode
-            }
-            typeInsnNode!!
-        }
-        parseFrameDesc(types, newNode.desc)
-    }
-    else -> unreachable { log.error("Unexpected local type $any") }
-}
-
-private fun List<*>?.parseLocals(types: TypeFactory): SortedMap<Int, Type> {
-    if (this == null) return sortedMapOf()
-    val result = mutableMapOf<Int, Type>()
-    var index = 0
-    for (any in this) {
-        val type = parseType(types, any!!)
-        result[index] = type
-        when {
-            type.isDWord -> index += 2
-            else -> ++index
-        }
-    }
-    return result.toSortedMap()
-}
-
-private fun List<*>?.parseStack(types: TypeFactory) = this?.mapNotNull { parseType(types, it!!) } ?: emptyList()
-
 class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private val instFactory get() = cm.instruction
     val values get() = cm.value
     val types get() = cm.type
-
-    data class FrameState(val local: SortedMap<Int, Type>, val stack: List<Type>) {
-        companion object {
-            fun parse(types: TypeFactory, inst: FrameNode) = FrameState(
-                    inst.local.parseLocals(types),
-                    inst.stack.parseStack(types)
-            )
-        }
-
-        fun appendFrame(types: TypeFactory, inst: FrameNode): FrameState {
-            val maxIndex = (this.local.keys.max() ?: -1) + 1
-            val appendedLocals = inst.local.parseLocals(types)
-            val newLocals = this.local.toMutableMap()
-            for ((index, type) in appendedLocals) {
-                newLocals[maxIndex + index] = type
-            }
-            return copy(local = newLocals.toSortedMap(), stack = listOf())
-        }
-
-        fun dropFrame(types: TypeFactory, inst: FrameNode): FrameState {
-            val newLocals = this.local.toList().dropLast(inst.local.size).toMap().toSortedMap()
-            return copy(local = newLocals, stack = listOf())
-        }
-    }
 
     private class StackFrame(val bb: BasicBlock) {
         val locals = LocalArray()
@@ -245,11 +186,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         sf.locals.putAll(locals)
     }
 
-    private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, stackState: List<Type>) {
+    private fun createStackPhis(bb: BasicBlock, predFrames: List<StackFrame>, stackState: SortedMap<Int, Type>) {
         val predStacks = predFrames.map { it.bb to it.stack.takeLast(stackState.size) }.toMap()
-        for (index in stackState.indices) {
-            val type = stackState[index]
-            if (type is VoidType) continue
+        for ((index, type) in stackState) {
             val incomings = predStacks.map { it.key to it.value[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
@@ -263,11 +202,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
-    private fun createStackCyclePhis(bb: BasicBlock, stackState: List<Type>) {
+    private fun createStackCyclePhis(bb: BasicBlock, stackState: SortedMap<Int, Type>) {
         val sf = frames.getValue(bb)
-        for (index in stackState.indices) {
-            val type = stackState[index]
-            if (type is VoidType) continue
+        for ((_, type) in stackState) {
             val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
             push(phi)
@@ -277,7 +214,6 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
     private fun createLocalPhis(bb: BasicBlock, predFrames: List<StackFrame>, definedLocals: Map<Int, Type>) {
         for ((local, type) in definedLocals) {
-            if (type is VoidType) continue
             val incomings = predFrames.map {
                 it.bb to (it.locals[local]
                         ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
@@ -298,7 +234,6 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun createLocalCyclePhis(bb: BasicBlock, definedLocals: Map<Int, Type>) {
         val sf = frames.getValue(bb)
         for ((index, type) in definedLocals) {
-            if (type is VoidType) continue
             val phi = instFactory.getPhi(type, mapOf())
             addInstruction(bb, phi)
             locals[index] = phi
@@ -825,19 +760,23 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun convertFrame(inst: FrameNode) {
-        val block = nodeToBlock.getValue(inst)
-        val predFrames = block.predecessors.map { frames.getValue(it) }
-        val isCycle = block.predecessors.any { it !in visitedBlocks }
+    private fun convertFrame(insn: FrameNode) {
+        val block = nodeToBlock.getValue(insn)
+        val predecessors = when (block) {
+            is CatchBlock -> block.allPredecessors
+            else -> block.predecessors
+        }
+        val isCycle = predecessors.any { it !in visitedBlocks }
+        val predFrames = predecessors.map { frames.getValue(it) }
 
         fun FrameState.copyStackAndLocals(predFrames: List<StackFrame>) {
             when {
                 predFrames.size == 1 -> {
                     val predFrame = predFrames.first()
-                    this.stack.withIndex().filter { it.value !is VoidType }.map { it.index }.forEach {
+                    this.stack.keys.forEach {
                         push(predFrame.stack[it])
                     }
-                    this.local.filterValues { it !is VoidType }.keys.forEach { i ->
+                    this.local.keys.forEach { i ->
                         locals[i] = predFrame.locals.getValue(i)
                     }
                 }
@@ -868,44 +807,27 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         stack.clear()
         locals.clear()
 
-        when (inst.type) {
+        lastFrame = when (insn.type) {
             F_NEW -> unreachable { log.error("Unknown frame node type F_NEW") }
-            F_FULL -> {
-                val frameState = FrameState.parse(types, inst)
-                frameState.copyStackAndLocals(predFrames)
-                lastFrame = frameState
+            F_FULL -> FrameState.parse(types, method, insn)
+            F_APPEND -> lastFrame.appendFrame(insn)
+            F_CHOP -> lastFrame.dropFrame(insn)
+            F_SAME -> lastFrame.copy()
+            F_SAME1 -> lastFrame.copy1(insn)
+            else -> unreachable { log.error("Unknown frame node type $insn") }
+        }
+
+        when (block) {
+            is CatchBlock -> {
+                lastFrame.copyLocals(predFrames)
+
+                val inst = instFactory.getCatch(block.exception)
+                addInstruction(block, inst)
+                push(inst)
             }
-            F_APPEND -> {
-                val frameState = lastFrame.appendFrame(types, inst)
-                frameState.copyLocals(predFrames)
-                lastFrame = frameState
+            else -> {
+                lastFrame.copyStackAndLocals(predFrames)
             }
-            F_CHOP -> {
-                val frameState = lastFrame.dropFrame(types, inst)
-                try {
-                    frameState.copyLocals(predFrames)
-                } catch (e: Exception) {
-                    locals.clear()
-                    frameState.copyLocals(predFrames)
-                }
-                lastFrame = frameState
-            }
-            F_SAME -> {
-                val frameState = lastFrame.copy(stack = listOf())
-                try {
-                    frameState.copyLocals(predFrames)
-                } catch (e: Exception) {
-                    locals.clear()
-                    frameState.copyLocals(predFrames)
-                }
-                lastFrame = frameState
-            }
-            F_SAME1 -> {
-                val frameState = lastFrame.copy(stack = inst.stack.parseStack(types))
-                frameState.copyStackAndLocals(predFrames)
-                lastFrame = frameState
-            }
-            else -> unreachable { log.error("Unknown frame node type $inst") }
         }
     }
 
@@ -1042,7 +964,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun buildCyclePhis() {
         for (block in method) {
             val sf = frames.getValue(block)
-            val predFrames = block.predecessors.map { frames.getValue(it) }
+            val predFrames = when (block) {
+                is CatchBlock -> block.allPredecessors.map { frames.getValue(it) }
+                else -> block.predecessors.map { frames.getValue(it) }
+            }
 
             for ((index, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.map { it.bb to it.stack[index] }.toMap()
@@ -1081,7 +1006,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             else ++localIndex
             method.slottracker.addValue(arg)
         }
-        lastFrame = FrameState(locals.mapValues { it.value.type }.toSortedMap(), stack.map { it.type })
+        lastFrame = FrameState.parse(types, method, locals, stack)
 
         buildCFG()  // build basic blocks graph
 
