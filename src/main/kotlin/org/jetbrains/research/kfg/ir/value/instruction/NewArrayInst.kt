@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
+import com.abdullin.kthelper.assert.ktassert
 import org.jetbrains.research.kfg.ir.value.Name
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.ArrayType
@@ -17,7 +18,7 @@ class NewArrayInst(name: Name, type: Type, dimensions: Array<Value>): Instructio
     init {
         var current = type
         repeat(numDimensions) {
-            assert(current is ArrayType)
+            ktassert(current is ArrayType)
             current = (current as ArrayType).component
         }
         this.component = current

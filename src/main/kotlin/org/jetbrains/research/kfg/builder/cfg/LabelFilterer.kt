@@ -5,7 +5,7 @@ import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
 
-class LabelFilterer(val mn: MethodNode) {
+internal class LabelFilterer(val mn: MethodNode) {
 
     fun build(): MethodNode {
         val insts = mn.instructions()

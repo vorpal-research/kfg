@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir
 
 import com.abdullin.kthelper.algorithm.Graph
 import com.abdullin.kthelper.assert.asserted
+import com.abdullin.kthelper.assert.ktassert
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -163,11 +164,11 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
             removePredecessor(from.get()) -> addPredecessor(to.get())
             removeSuccessor(from.get()) -> addSuccessor(to.get())
             handlers.contains(from.get()) -> {
-                assert(from.get() is CatchBlock)
+                ktassert(from.get() is CatchBlock)
                 val fromCatch = from.get() as CatchBlock
                 removeHandler(fromCatch)
 
-                assert(to.get() is CatchBlock)
+                ktassert(to.get() is CatchBlock)
                 val toCatch = to.get() as CatchBlock
                 toCatch.addThrowers(listOf(this))
             }
@@ -179,11 +180,11 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
         when {
             removeSuccessor(from.get()) -> addSuccessor(to.get())
             handlers.contains(from.get()) -> {
-                assert(from.get() is CatchBlock)
+                ktassert(from.get() is CatchBlock)
                 val fromCatch = from.get() as CatchBlock
                 removeHandler(fromCatch)
 
-                assert(to.get() is CatchBlock)
+                ktassert(to.get() is CatchBlock)
                 val toCatch = to.get() as CatchBlock
                 toCatch.addThrowers(listOf(this))
             }
