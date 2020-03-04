@@ -909,7 +909,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 else -> throw InvalidOpcodeError("Unknown insn: ${insn.print()}")
             }
         }
-
+        finishState(previousNodeBlock)
         buildCyclePhis()
     }
 

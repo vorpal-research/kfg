@@ -93,6 +93,16 @@ private fun List<*>?.parseLocals(types: TypeFactory): SortedMap<Int, Type> {
     return result.toSortedMap()
 }
 
+private fun List<*>?.parseStack(types: TypeFactory): SortedMap<Int, Type> {
+    if (this == null) return sortedMapOf()
+    val result = mutableMapOf<Int, Type>()
+    for ((index, any) in this.withIndex()) {
+        val type = parseType(types, any!!)
+        result[index] = type
+    }
+    return result.toSortedMap()
+}
+
 internal data class FrameState(
         val types: TypeFactory,
         val method: Method,
@@ -114,7 +124,7 @@ internal data class FrameState(
                 types,
                 method,
                 inst.local.parseLocals(types),
-                inst.stack.parseLocals(types)
+                inst.stack.parseStack(types)
         )
 
         fun parse(types: TypeFactory, method: Method, locals: Map<Int, Value>, stack: List<Value>) = FrameState(
@@ -126,11 +136,17 @@ internal data class FrameState(
     }
 
     fun appendFrame(inst: FrameNode): FrameState {
-        val maxIndex = (this.innerLocal.keys.max() ?: -1) + 1
+        val maxKey = this.innerLocal.keys.max() ?: -1
+        val lastType = innerLocal[maxKey]
+        val insertKey = when {
+            lastType == null -> 0
+            lastType.isDWord -> maxKey + 2
+            else -> maxKey + 1
+        }
         val appendedLocals = inst.local.parseLocals(types)
         val newLocals = this.innerLocal.toMutableMap()
         for ((index, type) in appendedLocals) {
-            newLocals[maxIndex + index] = type
+            newLocals[insertKey + index] = type
         }
         return copy(innerLocal = newLocals.toSortedMap(), innerStack = sortedMapOf())
     }
@@ -142,5 +158,5 @@ internal data class FrameState(
 
     fun copy(): FrameState = this.copy(innerStack = sortedMapOf())
 
-    fun copy1(inst: FrameNode): FrameState = this.copy(innerStack = inst.stack.parseLocals(types))
+    fun copy1(inst: FrameNode): FrameState = this.copy(innerStack = inst.stack.parseStack(types))
 }
