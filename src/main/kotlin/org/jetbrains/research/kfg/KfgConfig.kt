@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg
 
+import com.abdullin.kthelper.assert.ktassert
+import com.abdullin.kthelper.logging.log
 import org.apache.commons.cli.*
 import org.jetbrains.research.kfg.util.Flags
 import java.io.PrintWriter
@@ -9,7 +11,12 @@ import kotlin.system.exitProcess
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
         val failOnError: Boolean = true
-)
+) {
+
+    init {
+        ktassert(flags < Flags.readSkipFrames) { log.error("Can't create config with 'skipFrames' option") }
+    }
+}
 
 class KfgConfigBuilder private constructor(private val current: KfgConfig) {
     constructor() : this(KfgConfig())

@@ -23,7 +23,7 @@ val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().t
 
 class ClassReadError(msg: String) : KfgException(msg)
 
-data class Flags(val value: Int) {
+data class Flags(val value: Int) : Comparable<Flags> {
     companion object {
         val readAll = Flags(0)
         val readSkipDebug = Flags(ClassReader.SKIP_DEBUG)
@@ -38,6 +38,8 @@ data class Flags(val value: Int) {
 
     fun merge(other: Flags) = Flags(this.value or other.value)
     operator fun plus(other: Flags) = this.merge(other)
+
+    override fun compareTo(other: Flags) = value.compareTo(other.value)
 }
 
 class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
