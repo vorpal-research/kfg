@@ -1,4 +1,4 @@
-package org.jetbrains.research.kfg.builder.cfg
+package org.jetbrains.research.kfg.builder.cfg.impl
 
 import com.abdullin.kthelper.assert.unreachable
 import com.abdullin.kthelper.logging.log
