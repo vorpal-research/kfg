@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.builder.cfg
 
 import com.abdullin.kthelper.`try`
 import com.abdullin.kthelper.assert.unreachable
+import com.abdullin.kthelper.collection.queueOf
 import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.InvalidOpcodeError
@@ -851,6 +852,48 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
+    private fun optimizePhis() {
+        val queue = queueOf(method.flatten().filterIsInstance<PhiInst>())
+        loop@ while (queue.isNotEmpty()) {
+            val top = queue.poll()
+            val incomings = top.incomingValues
+            val incomingsSet = incomings.toSet()
+            val instUsers = top.users.mapNotNull { it as? Instruction }
+            val operands = top.operands
+
+            when {
+                incomingsSet.size == 1 -> {
+                    val first = incomingsSet.first()
+                    top.replaceAllUsesWith(first)
+                    operands.forEach { it.removeUser(top) }
+                    if (first is PhiInst) queue.add(first)
+                    top.parentUnsafe?.remove(top) ?: continue@loop
+                    operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
+                }
+                incomingsSet.size == 2 && top in incomingsSet -> {
+                    top.replaceAllUsesWith(when (top) {
+                        incomingsSet.first() -> incomingsSet.last()
+                        else -> incomingsSet.first()
+                    })
+                    operands.forEach { it.removeUser(top) }
+                    instUsers.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
+                }
+                instUsers.isEmpty() -> {
+                    operands.forEach { it.removeUser(top) }
+                    top.parentUnsafe?.remove(top) ?: continue@loop
+                    operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
+                }
+                instUsers.size == 1 && instUsers.first() == top -> {
+                    operands.forEach { it.removeUser(top) }
+                    top.parentUnsafe?.remove(top)
+                    operands.mapNotNull { it as? PhiInst }
+                            .mapNotNull { if (it == top) null else it }.toList()
+                            .forEach { queue.add(it) }
+                }
+            }
+        }
+    }
+
     private fun finishState(block: BasicBlock) {
         if (block in visitedBlocks) return
         if (block !in method) return
@@ -917,6 +960,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
         finishState(previousNodeBlock)
         buildCyclePhis()
+        optimizePhis()
     }
 
     fun build(): Method {
