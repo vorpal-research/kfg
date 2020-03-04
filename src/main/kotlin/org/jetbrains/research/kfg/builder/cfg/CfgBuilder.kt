@@ -852,10 +852,16 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     private fun finishState(block: BasicBlock) {
+        if (block in visitedBlocks) return
+        if (block !in method) return
+
         val last = block.instructions.lastOrNull()
         if (last == null || !last.isTerminate) {
-            require(block.successors.size == 1)
-            addInstruction(block, instructions.getJump(block.successors.first()))
+            when (block.successors.size) {
+                1 -> addInstruction(block, instructions.getJump(block.successors.first()))
+                0 -> {}
+                else -> unreachable { log.error("Unexpected block in finish") }
+            }
         }
         reserveState(block)
         visitedBlocks += block
