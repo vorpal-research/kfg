@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.ir
 import com.abdullin.kthelper.algorithm.Graph
 import com.abdullin.kthelper.algorithm.GraphView
 import com.abdullin.kthelper.algorithm.Viewable
+import com.abdullin.kthelper.assert.ktassert
 import com.abdullin.kthelper.collection.queueOf
 import com.abdullin.kthelper.defaultHashCode
 import com.abdullin.kthelper.logging.log
@@ -124,7 +125,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun add(bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             basicBlocks.add(bb)
             slottracker.addBlock(bb)
             bb.addUser(this)
@@ -134,9 +135,9 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(before)
-            assert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
+            ktassert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
 
             basicBlocks.add(index, bb)
             slottracker.addBlock(bb)
@@ -147,9 +148,9 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun addAfter(after: BasicBlock, bb: BasicBlock) {
         if (!basicBlocks.contains(bb)) {
-            assert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(after)
-            assert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
+            ktassert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
 
             basicBlocks.add(index + 1, bb)
             slottracker.addBlock(bb)
@@ -160,7 +161,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun remove(block: BasicBlock) {
         if (basicBlocks.contains(block)) {
-            assert(block.parentUnsafe == this) { log.error("Block ${block.name} don't belong to $this") }
+            ktassert(block.parentUnsafe == this) { log.error("Block ${block.name} don't belong to $this") }
             basicBlocks.remove(block)
 
             if (block in catchEntries) {

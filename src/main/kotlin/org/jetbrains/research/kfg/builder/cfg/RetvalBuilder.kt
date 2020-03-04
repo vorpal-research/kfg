@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.builder.cfg
 
+import com.abdullin.kthelper.assert.ktassert
 import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
@@ -58,7 +59,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
                     method.returnType -> retval
                     is Integral -> {
                         val methodRetType = method.returnType
-                        assert(methodRetType is Integral) { log.error("Return value type is integral and method return type is ${method.returnType}") }
+                        ktassert(methodRetType is Integral) { log.error("Return value type is integral and method return type is ${method.returnType}") }
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine

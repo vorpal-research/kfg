@@ -18,7 +18,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
     constructor(path: String, `package`: Package) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
-    val name get() = file.name
+    val name: String get() = file.name
     val classLoader get() = file.classLoader
 
     init {
@@ -58,7 +58,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
             if (entry.isManifest) continue
 
             if (entry.isClass) {
-                val `class` = cm.get(entry.name.removeSuffix(".class"))
+                val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
                     `package`.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
@@ -90,7 +90,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
             if (entry.isManifest) continue
 
             if (entry.isClass && `package`.isParent(entry.name)) {
-                val `class` = cm.get(entry.name.removeSuffix(".class"))
+                val `class` = cm[entry.name.removeSuffix(".class")]
 
                 if (`class` is ConcreteClass) {
                     val localPath = "${`class`.fullname}.class"
