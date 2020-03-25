@@ -16,4 +16,6 @@ object VoidType : Type {
         if (this === other) return true
         return this.javaClass != other?.javaClass
     }
+
+    override fun isSubtypeOf(other: Type) = false
 }

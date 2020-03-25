@@ -18,6 +18,12 @@ object FloatType : Real() {
     override val bitsize = Type.WORD
     override val name = "float"
     override val asmDesc = "F"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is FloatType -> true
+        is DoubleType -> true
+        else -> false
+    }
 }
 
 object DoubleType : Real() {
@@ -25,4 +31,9 @@ object DoubleType : Real() {
     override val name = "double"
     override val isDWord = true
     override val asmDesc = "D"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is DoubleType -> true
+        else -> false
+    }
 }

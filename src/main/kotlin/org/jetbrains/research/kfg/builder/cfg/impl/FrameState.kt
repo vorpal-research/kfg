@@ -22,6 +22,8 @@ private object TopType : Type {
         get() = false
     override val bitsize: Int
         get() = Type.WORD
+
+    override fun isSubtypeOf(other: Type) = false
 }
 
 private object UninitializedThisType : Type {
@@ -33,6 +35,8 @@ private object UninitializedThisType : Type {
         get() = false
     override val bitsize: Int
         get() = Type.WORD
+
+    override fun isSubtypeOf(other: Type) = false
 }
 
 private fun parsePrimitiveType(tf: TypeFactory, opcode: Int) = when (opcode) {

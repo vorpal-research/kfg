@@ -25,6 +25,11 @@ open class ClassType(val `class`: Class) : Reference {
         other as ClassType
         return this.`class` == other.`class`
     }
+
+    override fun isSubtypeOf(other: Type): Boolean = when (other) {
+        is ClassType -> this.`class`.isInheritorOf(other.`class`)
+        else -> false
+    }
 }
 
 open class ArrayType(val component: Type) : Reference {
@@ -39,6 +44,20 @@ open class ArrayType(val component: Type) : Reference {
         other as ArrayType
         return this.component == other.component
     }
+
+    override fun isSubtypeOf(other: Type): Boolean = when (other) {
+        is ArrayType -> when {
+            this.component.isReference && other.component.isReference -> this.component.isSubtypeOf(other.component)
+            else -> false
+        }
+        is ClassType -> when (other.`class`.fullname) {
+            "java/lang/Object" -> true
+            "java/lang/Cloneable" -> true
+            "java/io/Serializable" -> true
+            else -> false
+        }
+        else -> false
+    }
 }
 
 object NullType : Reference {
@@ -49,4 +68,6 @@ object NullType : Reference {
 
     override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean = this === other
+
+    override fun isSubtypeOf(other: Type) = true
 }

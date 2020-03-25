@@ -31,4 +31,7 @@ interface Type {
         get() = asmDesc.replace('/', '.')
 
     val bitsize: Int
+
+    fun isSubtypeOf(other: Type): Boolean
+    fun isSupertypeOf(other: Type): Boolean = other.isSubtypeOf(this)
 }

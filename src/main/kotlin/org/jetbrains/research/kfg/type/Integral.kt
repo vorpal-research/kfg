@@ -27,6 +27,8 @@ object BoolType : Integral() {
     override val width = 32
     override val signed = false
     override val asmDesc = "Z"
+
+    override fun isSubtypeOf(other: Type) = false
 }
 
 object ByteType : Integral() {
@@ -35,6 +37,12 @@ object ByteType : Integral() {
     override val signed = true
     override val isByte = true
     override val asmDesc = "B"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is ByteType -> true
+        is ShortType, is IntType, is LongType, is Real -> true
+        else -> false
+    }
 }
 
 object ShortType : Integral() {
@@ -43,6 +51,12 @@ object ShortType : Integral() {
     override val signed = true
     override val isShort = true
     override val asmDesc = "S"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is ShortType -> true
+        is IntType, is LongType, is Real -> true
+        else -> false
+    }
 }
 
 object IntType : Integral() {
@@ -51,6 +65,12 @@ object IntType : Integral() {
     override val signed = true
     override val isInt = true
     override val asmDesc = "I"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is IntType -> true
+        is LongType, is Real -> true
+        else -> false
+    }
 }
 
 object LongType : Integral() {
@@ -61,6 +81,12 @@ object LongType : Integral() {
     override val isLong = true
     override val isDWord = true
     override val asmDesc = "J"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is LongType -> true
+        is Real -> true
+        else -> false
+    }
 }
 
 object CharType : Integral() {
@@ -69,4 +95,10 @@ object CharType : Integral() {
     override val signed = false
     override val isChar = true
     override val asmDesc = "C"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is CharType -> true
+        is IntType, is LongType, is Real -> true
+        else -> false
+    }
 }
