@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.0.9</version>
+    <version>0.0.9-1</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
