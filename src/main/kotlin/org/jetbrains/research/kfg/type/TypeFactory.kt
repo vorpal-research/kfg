@@ -24,29 +24,32 @@ class TypeFactory(val cm: ClassManager) {
     val voidType: Type
         get() = VoidType
 
-    val boolType: Type
+    val boolType: PrimaryType
         get() = BoolType
 
-    val byteType: Type
+    val byteType: PrimaryType
         get() = ByteType
 
-    val shortType: Type
+    val shortType: PrimaryType
         get() = ShortType
 
-    val intType: Type
+    val intType: PrimaryType
         get() = IntType
 
-    val longType: Type
+    val longType: PrimaryType
         get() = LongType
 
-    val charType: Type
+    val charType: PrimaryType
         get() = CharType
 
-    val floatType: Type
+    val floatType: PrimaryType
         get() = FloatType
 
-    val doubleType: Type
+    val doubleType: PrimaryType
         get() = DoubleType
+
+    val primaryTypes: Set<PrimaryType>
+        get() = setOf(boolType, byteType, shortType, intType, longType, charType, floatType, doubleType)
 
     val nullType: Type
         get() = NullType
@@ -115,5 +118,12 @@ class TypeFactory(val cm: ClassManager) {
         }
         klass.isArray -> getArrayType(get(klass.componentType))
         else -> getRefType(cm.get(klass.name.replace('.', '/')))
+    }
+
+    fun getAllSubtypesOf(type: Type): Set<Type> = when (type) {
+        is PrimaryType -> primaryTypes.filter { it.isSubtypeOf(type) }.toSet()
+        is ClassType -> cm.getAllSubtypesOf(type.`class`).map { getRefType(it) }.toSet()
+        is ArrayType -> getAllSubtypesOf(type.component).map { getArrayType(it) }.toSet()
+        else -> setOf(type)
     }
 }
