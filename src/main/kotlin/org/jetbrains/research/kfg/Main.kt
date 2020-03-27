@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
 
     val jar = Jar(cfg.getStringValue("jar"), cfg.getStringValue("package", "*"))
 
-    val classManager = ClassManager(KfgConfig(Flags.readSkipDebug, false))
+    val classManager = ClassManager(KfgConfig(Flags.readAll, true))
     classManager.initialize(jar)
     val target = File("instrumented/")
     jar.unpack(classManager, target.toPath(), true)

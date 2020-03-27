@@ -125,4 +125,20 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     }
 
     fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.`package`) }
+
+    fun getSubtypesOf(klass: Class): Set<Class> = concreteClasses.filter { it.isInheritorOf(klass) && it != klass }.toSet()
+
+    fun getAllSubtypesOf(klass: Class): Set<Class> {
+        val result = mutableSetOf(klass)
+        var current = getSubtypesOf(klass)
+        do {
+            val newCurrent = mutableSetOf<Class>()
+            for (it in current) {
+                result += it
+                newCurrent.addAll(getSubtypesOf(it))
+            }
+            current = newCurrent
+        } while (current.isNotEmpty())
+        return result
+    }
 }
