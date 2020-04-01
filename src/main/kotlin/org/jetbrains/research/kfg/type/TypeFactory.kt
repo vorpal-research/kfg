@@ -120,10 +120,4 @@ class TypeFactory(val cm: ClassManager) {
         else -> getRefType(cm[klass.name.replace('.', '/')])
     }
 
-    fun getAllSubtypesOf(type: Type): Set<Type> = when (type) {
-        is PrimaryType -> primaryTypes.filter { it.isSubtypeOf(type) }.toSet()
-        is ClassType -> cm.getAllSubtypesOf(type.`class`).map { getRefType(it) }.toSet()
-        is ArrayType -> getAllSubtypesOf(type.component).map { getArrayType(it) }.toSet()
-        else -> setOf(type)
-    }
 }
