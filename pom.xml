@@ -22,7 +22,7 @@
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
         <kt-helper.version>0.0.6</kt-helper.version>
-        <asm.version>5.2</asm.version>
+        <asm.version>6.0_BETA</asm.version>
         <commons-cli.version>1.4</commons-cli.version>
         <jdot.version>1.0</jdot.version>
         <slf4j.version>1.7.25</slf4j.version>
