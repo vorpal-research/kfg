@@ -33,7 +33,7 @@ data class Flags(val value: Int) : Comparable<Flags> {
         val writeComputeNone = Flags(0)
         val writeComputeFrames = Flags(ClassWriter.COMPUTE_FRAMES)
         val writeComputeMaxs = Flags(ClassWriter.COMPUTE_MAXS)
-        val writeComputeAll = writeComputeFrames + writeComputeMaxs
+        val writeComputeAll = writeComputeFrames
     }
 
     fun merge(other: Flags) = Flags(this.value or other.value)
@@ -119,21 +119,34 @@ internal fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): Cl
     return classNode
 }
 
-internal fun ClassNode.write(loader: ClassLoader,
-                            filename: String,
-                            flags: Flags = Flags.writeComputeAll): File {
+internal fun ClassNode.recomputeFrames(loader: ClassLoader): ClassNode {
+    val ba = this.toByteArray(loader)
+    return ba.toClassNode()
+}
+
+private fun ByteArray.toClassNode(): ClassNode {
+    val classReader = ClassReader(this.inputStream())
+    val classNode = ClassNode()
+    classReader.accept(classNode, Flags.readAll.value)
+    return classNode
+}
+
+private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writeComputeAll): ByteArray {
     val cw = KfgClassWriter(loader, flags)
     val cca = CheckClassAdapter(cw)
     this.accept(cca)
-
-    return File(filename).apply {
-        parentFile?.mkdirs()
-    }.also {
-        FileOutputStream(it).use { fos ->
-            fos.write(cw.toByteArray())
-        }
-    }
+    return cw.toByteArray()
 }
+
+internal fun ClassNode.write(loader: ClassLoader,
+                             filename: String,
+                             flags: Flags = Flags.writeComputeAll): File =
+        File(filename).apply {
+            parentFile?.mkdirs()
+            FileOutputStream(this).use { fos ->
+                fos.write(this@write.toByteArray(loader, flags))
+            }
+        }
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
                 filename: String = "$fullname.class",

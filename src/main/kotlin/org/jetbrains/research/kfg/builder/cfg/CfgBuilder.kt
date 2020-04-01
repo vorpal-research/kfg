@@ -667,7 +667,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         locals.clear()
 
         lastFrame = when (insn.type) {
-            F_NEW -> unreachable { log.error("Unknown frame node type F_NEW") }
+            F_NEW -> FrameState.parse(types, method, insn)
             F_FULL -> FrameState.parse(types, method, insn)
             F_APPEND -> lastFrame.appendFrame(insn)
             F_CHOP -> lastFrame.dropFrame(insn)

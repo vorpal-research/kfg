@@ -40,7 +40,9 @@ data class Jar(private val file: JarFile, val `package`: Package) {
 
             if (entry.isClass && `package`.isParent(entry.className)) {
                 val classNode = readClassNode(file.getInputStream(entry), flags)
-                classes[classNode.name] = classNode
+
+                // need to recompute frames because sometimes original Jar classes don't contain frame info
+                classes[classNode.name] = classNode.recomputeFrames(classLoader)
             }
 
         }

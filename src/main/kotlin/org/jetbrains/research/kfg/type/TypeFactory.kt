@@ -117,7 +117,7 @@ class TypeFactory(val cm: ClassManager) {
             else -> throw UnknownTypeException("Unknown primitive type $klass")
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm.get(klass.name.replace('.', '/')))
+        else -> getRefType(cm[klass.name.replace('.', '/')])
     }
 
     fun getAllSubtypesOf(type: Type): Set<Type> = when (type) {
