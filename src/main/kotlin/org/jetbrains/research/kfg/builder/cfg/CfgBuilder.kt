@@ -19,20 +19,11 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
+import org.jetbrains.research.kfg.util.instructions
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 import java.util.*
-
-fun MethodNode.instructions(): List<AbstractInsnNode> {
-    val list = mutableListOf<AbstractInsnNode>()
-    var current: AbstractInsnNode? = instructions.first
-    while (current != null) {
-        list += current
-        current = current.next
-    }
-    return list
-}
 
 fun MethodNode.tryCatchBlocks() = this.tryCatchBlocks.mapNotNull { it as? TryCatchBlockNode }
 

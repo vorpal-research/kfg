@@ -4,6 +4,7 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
+import org.jetbrains.research.kfg.util.instructions
 
 internal class LabelFilterer(val mn: MethodNode) {
 

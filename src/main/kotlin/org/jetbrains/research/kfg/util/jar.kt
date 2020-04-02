@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
 import java.net.URLClassLoader
@@ -20,6 +21,14 @@ val JarEntry.className get() = this.name.removeSuffix(".class")
 val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
+
+val ClassNode.hasFrameInfo: Boolean get() {
+    var hasInfo = false
+    for (mn in this.methods()) {
+        hasInfo = hasInfo || mn.instructions().any { it is FrameNode }
+    }
+    return hasInfo
+}
 
 class ClassReadError(msg: String) : KfgException(msg)
 

@@ -42,7 +42,10 @@ data class Jar(private val file: JarFile, val `package`: Package) {
                 val classNode = readClassNode(file.getInputStream(entry), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
-                classes[classNode.name] = classNode.recomputeFrames(classLoader)
+                classes[classNode.name] = when {
+                    classNode.hasFrameInfo -> classNode
+                    else -> classNode.recomputeFrames(classLoader)
+                }
             }
 
         }
