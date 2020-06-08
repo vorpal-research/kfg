@@ -46,6 +46,7 @@ open class ArrayType(val component: Type) : Reference {
     }
 
     override fun isSubtypeOf(other: Type): Boolean = when (other) {
+        this -> true
         is ArrayType -> when {
             this.component.isReference && other.component.isReference -> this.component.isSubtypeOf(other.component)
             else -> false

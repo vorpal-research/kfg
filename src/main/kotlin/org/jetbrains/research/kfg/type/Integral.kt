@@ -28,7 +28,7 @@ object BoolType : Integral() {
     override val signed = false
     override val asmDesc = "Z"
 
-    override fun isSubtypeOf(other: Type) = false
+    override fun isSubtypeOf(other: Type) = other is BoolType
 }
 
 object ByteType : Integral() {
