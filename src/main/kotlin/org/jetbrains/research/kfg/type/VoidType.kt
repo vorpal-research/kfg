@@ -12,10 +12,7 @@ object VoidType : Type {
     override val asmDesc get() = "V"
 
     override fun hashCode() = defaultHashCode(name)
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return this.javaClass != other?.javaClass
-    }
+    override fun equals(other: Any?) = this === other
 
     override fun isSubtypeOf(other: Type) = false
 }
