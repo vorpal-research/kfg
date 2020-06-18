@@ -73,6 +73,7 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     abstract fun getFieldConcrete(name: String, type: Type): Field?
     abstract fun getMethodConcrete(name: String, desc: MethodDesc): Method?
 
+    fun getFields(name: String) = fields.filter { it.name == name }.toSet()
     abstract fun getField(name: String, type: Type): Field
 
     fun getMethods(name: String) = methods.filter { it.name == name }.toSet()

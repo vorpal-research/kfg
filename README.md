@@ -40,21 +40,24 @@ Include:
 Simple example of how to scan Jar file
 ```kotlin
 /**
- * @jar -- jar file to scan
+ * @path -- path to the jar file to analyze
  * @package -- package to scan in the jar
  */
-fun example(jar: JarFile, `package`: Package) {
-    // create ClassManager and scan the jar file
-    val cm = ClassManager(jar, `package`, Flags.readAll)
+fun example(path: Path, `package`: Package) {
+    // create Jar file instance
+    val jar = Jar(path, `package`)
+    // create ClassManager and initialize it with the jar
+    val cm = ClassManager(KfgConfig(Flags.readAll, failOnError = true))
+    cm.initialize(jar)
     // iterate over all found classes
     for (klass in cm.concreteClasses) {
         for (method in klass.allMethods) {
             // view each method as graph
-            method.viewCfg("/usr/bin/dot", "/usr/bin/browser")
+            method.view("/usr/bin/dot", "/usr/bin/browser")
         }
     }
     // save all changes to methods back to jar
-    jar.update(cm, `package`)
+    jar.update(cm)
 }
 ```
 
