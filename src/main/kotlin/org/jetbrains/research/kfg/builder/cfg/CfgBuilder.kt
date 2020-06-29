@@ -548,11 +548,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             is Long -> push(values.getLongConstant(cst))
             is String -> push(values.getStringConstant(cst))
             is org.objectweb.asm.Type -> {
-                val klass = when (val temp = parseDesc(types, cst.descriptor)) {
-                    is ClassType -> temp.`class`
-                    else -> cm["$temp"]
-                }
-                push(values.getClassConstant(klass))
+                val type = parseDesc(types, cst.descriptor)
+                push(values.getClassConstant(type))
             }
             is org.objectweb.asm.Handle -> {
                 val `class` = cm[cst.owner]
