@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.type
 import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.InvalidCallError
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kfg.ir.ConcreteClass
 
 interface Reference : Type {
     override val bitsize: Int
@@ -26,6 +27,8 @@ open class ClassType(val `class`: Class) : Reference {
         return this.`class` == other.`class`
     }
 
+    override val isConcrete: Boolean
+        get() = `class` is ConcreteClass
     override fun isSubtypeOf(other: Type): Boolean = when (other) {
         is ClassType -> this.`class`.isInheritorOf(other.`class`)
         else -> false
@@ -44,6 +47,9 @@ open class ArrayType(val component: Type) : Reference {
         other as ArrayType
         return this.component == other.component
     }
+
+    override val isConcrete: Boolean
+        get() = component.isConcrete
 
     override fun isSubtypeOf(other: Type): Boolean = when (other) {
         this -> true
@@ -70,5 +76,7 @@ object NullType : Reference {
     override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean = this === other
 
+    override val isConcrete: Boolean
+        get() = true
     override fun isSubtypeOf(other: Type) = true
 }

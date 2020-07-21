@@ -32,6 +32,7 @@ interface Type {
 
     val bitsize: Int
 
+    val isConcrete: Boolean
     fun isSubtypeOf(other: Type): Boolean
     fun isSupertypeOf(other: Type): Boolean = other.isSubtypeOf(this)
 }

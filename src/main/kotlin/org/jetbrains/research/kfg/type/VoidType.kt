@@ -14,5 +14,6 @@ object VoidType : Type {
     override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?) = this === other
 
+    override val isConcrete get() = true
     override fun isSubtypeOf(other: Type) = false
 }
