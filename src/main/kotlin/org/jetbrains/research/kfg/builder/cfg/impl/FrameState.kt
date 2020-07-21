@@ -23,6 +23,8 @@ private object TopType : Type {
     override val bitsize: Int
         get() = Type.WORD
 
+    override val isConcrete: Boolean
+        get() = true
     override fun isSubtypeOf(other: Type) = false
 }
 
@@ -36,6 +38,8 @@ private object UninitializedThisType : Type {
     override val bitsize: Int
         get() = Type.WORD
 
+    override val isConcrete: Boolean
+        get() = true
     override fun isSubtypeOf(other: Type) = false
 }
 
