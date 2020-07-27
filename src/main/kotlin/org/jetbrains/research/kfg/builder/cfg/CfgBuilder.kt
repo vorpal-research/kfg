@@ -790,7 +790,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 cur = cur.next
             }
 
-            if (throwers.isEmpty()) {
+            if (thrower !in throwers) {
                 throwers.add(thrower)
                 thrower.addHandler(handle)
             }
