@@ -92,6 +92,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         if (latches.size == 1) return
 
         val latch = BodyBlock("loop.latch")
+        val catchWithEntry = current.catchEntries.filter { it.entries.containsAll(latches) }
         latches.forEach {
             remapBlocks(it, header, latch)
             it.handlers.forEach { catch -> mapToCatch(it, latch, catch) }
@@ -100,6 +101,10 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         header.addPredecessor(latch)
 
         remapPhis(header, latches, latch)
+        for (catch in catchWithEntry) {
+            remapPhis(catch, latches, latch)
+        }
+
         latch += instructions.getJump(header)
         current.addAfter(latches.first(), latch)
         loop.addBlock(latch)
