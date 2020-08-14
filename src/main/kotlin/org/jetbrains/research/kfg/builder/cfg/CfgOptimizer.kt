@@ -53,7 +53,6 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
             predecessor.addSuccessor(successor)
             successor.addPredecessor(predecessor)
             block.replaceAllUsesWith(successor)
-
         }
     }
 }

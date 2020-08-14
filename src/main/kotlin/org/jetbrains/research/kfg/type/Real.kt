@@ -6,8 +6,8 @@ sealed class Real : PrimaryType {
     override val isPrimary get() = true
     override val isReal get() = true
 
-    override fun toString() = FloatType.name
-    override fun hashCode() = defaultHashCode(FloatType.name)
+    override fun toString() = name
+    override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass == other?.javaClass

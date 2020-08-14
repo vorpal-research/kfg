@@ -30,7 +30,7 @@ abstract class Instruction(name: Name, type: Type, protected val ops: Array<Valu
     override fun iterator(): Iterator<Value> = ops.iterator()
 
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
-        (0..ops.lastIndex)
+        ops.indices
                 .filter { ops[it] == from }
                 .forEach {
                     ops[it].removeUser(this)
@@ -61,7 +61,7 @@ abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, pro
     }
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        (0..succs.lastIndex)
+        succs.indices
                 .filter { succs[it] == from }
                 .forEach {
                     succs[it].removeUser(this)

@@ -4,16 +4,14 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
-import org.jetbrains.research.kfg.util.instructions
 
 internal class LabelFilterer(val mn: MethodNode) {
 
     fun build(): MethodNode {
-        val insts = mn.instructions()
+        val insts = mn.instructions.toList()
         val replacement = mutableMapOf<LabelNode, LabelNode>()
 
-        val new = MethodNode(mn.access, mn.name, mn.desc, mn.signature,
-                mn.exceptions?.mapNotNull { it as? String }?.toTypedArray())
+        val new = MethodNode(mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.toTypedArray())
         var prev: LabelNode? = null
         for (inst in insts) {
             if (prev != null && inst is LabelNode) {
@@ -41,7 +39,7 @@ internal class LabelFilterer(val mn: MethodNode) {
                 }
             }
         }
-        val tryCatches = mn.tryCatchBlocks().map {
+        val tryCatches = mn.tryCatchBlocks.map {
             val tcb = TryCatchBlockNode(
                     newReplacement.getValue(it.start), newReplacement.getValue(it.end),
                     newReplacement.getValue(it.handler), it.type

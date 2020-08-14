@@ -46,43 +46,45 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
             bb += jump
         }
 
-        val insts = arrayListOf<Instruction>()
+        val instructions = arrayListOf<Instruction>()
         val `return` = when {
-            method.returnType.isVoid -> instructions.getReturn()
+            method.returnType.isVoid -> this.instructions.getReturn()
             else -> {
                 val type = mergeTypes(types, incomings.values.map { it.type }.toSet()) ?: method.returnType
 
-                val retval = instructions.getPhi("retval", type, incomings)
-                insts.add(retval)
+                val retval = this.instructions.getPhi("retval", type, incomings)
+                instructions.add(retval)
 
                 val returnValue = when (type) {
                     method.returnType -> retval
                     is Integral -> {
                         val methodRetType = method.returnType
-                        ktassert(methodRetType is Integral) { log.error("Return value type is integral and method return type is ${method.returnType}") }
+                        ktassert(methodRetType is Integral) {
+                            log.error("Return value type is integral and method return type is ${method.returnType}")
+                        }
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine
                         if (abs(type.bitsize - methodRetType.bitsize) >= Type.WORD) {
-                            val retvalCasted = instructions.getCast("retval.casted", method.returnType, retval)
-                            insts.add(retvalCasted)
+                            val retvalCasted = this.instructions.getCast("retval.casted", method.returnType, retval)
+                            instructions.add(retvalCasted)
                             retvalCasted
                         } else {
                             retval
                         }
                     }
                     else -> {
-                        val retvalCasted = instructions.getCast("retval.casted", method.returnType, retval)
-                        insts.add(retvalCasted)
+                        val retvalCasted = this.instructions.getCast("retval.casted", method.returnType, retval)
+                        instructions.add(retvalCasted)
                         retvalCasted
                     }
                 }
 
-                instructions.getReturn(returnValue)
+                this.instructions.getReturn(returnValue)
             }
         }
-        insts.add(`return`)
-        returnBlock.addAll(*insts.toTypedArray())
+        instructions.add(`return`)
+        returnBlock.addAll(*instructions.toTypedArray())
         method.add(returnBlock)
     }
 }

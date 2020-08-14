@@ -11,16 +11,12 @@ abstract class Node(val cm: ClassManager, val name: String, val modifiers: Int) 
 
     abstract val asmDesc: String
 
-    fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>?) {
-        if (visibleAnnotations != null) {
-            this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
-        }
+    fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>) {
+        this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
     }
 
-    fun addInvisibleAnnotations(invisibleAnnotations: List<AnnotationNode>?) {
-        if (invisibleAnnotations != null) {
-            this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
-        }
+    fun addInvisibleAnnotations(invisibleAnnotations: List<AnnotationNode>) {
+        this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
     }
 
     val isPublic: Boolean

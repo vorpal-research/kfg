@@ -24,8 +24,8 @@ val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().t
 
 val ClassNode.hasFrameInfo: Boolean get() {
     var hasInfo = false
-    for (mn in this.methods()) {
-        hasInfo = hasInfo || mn.instructions().any { it is FrameNode }
+    for (mn in methods) {
+        hasInfo = hasInfo || mn.instructions.any { it is FrameNode }
     }
     return hasInfo
 }

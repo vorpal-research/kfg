@@ -5,7 +5,6 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 
 abstract class Value(val name: Name, val type: Type) : UsableValue() {
-
     val isNameDefined: Boolean
         get() = name !is UndefinedName
 

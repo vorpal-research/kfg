@@ -42,7 +42,7 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
         get() = instructions.size
 
     private fun addValueToParent(value: Value) {
-        parentUnsafe?.slottracker?.addValue(value)
+        parentUnsafe?.slotTracker?.addValue(value)
     }
 
     fun addSuccessor(bb: BasicBlock) {
@@ -208,7 +208,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
             val entries = hashSetOf<BasicBlock>()
             for (it in throwers) {
                 for (pred in it.predecessors)
-                    if (!throwers.contains(pred)) entries.add(pred)
+                    if (pred !in throwers) entries.add(pred)
             }
             return entries
         }

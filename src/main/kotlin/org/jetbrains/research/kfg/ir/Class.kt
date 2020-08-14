@@ -33,33 +33,31 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         get() = fullname.replace('/', '.')
 
     val superClass
-        get() = if (cn.superName != null) cm.get(cn.superName) else null
+        get() = cn.superName?.let { cm[it] }
 
     val interfaces
-        get() = if (cn.interfaces != null) cn.interfaces.map { cm.get(it as String) } else listOf()
+        get() = cn.interfaces.map { cm[it] }
 
     val outerClass
-        get() = if (cn.outerClass != null) cm.get(cn.outerClass) else null
+        get() = cn.outerClass?.let { cm[it] }
 
     val outerMethod
-        get() = if (cn.outerMethod != null) outerClass?.getMethod(cn.outerMethod, cn.outerMethodDesc) else null
+        get() = cn.outerMethod?.let { outerClass?.getMethod(it, cn.outerMethodDesc!!) }
 
     val innerClasses
-        get() = if (cn.innerClasses != null) cn.innerClasses.map { cm.get((it as InnerClassNode).name) } else listOf()
+        get() = cn.innerClasses?.map { cm[it.name] } ?: listOf()
 
     override val asmDesc
         get() = "L$fullname;"
 
     fun init() {
-        addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.visibleAnnotations as List<AnnotationNode>?))
-        addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (cn.invisibleAnnotations as List<AnnotationNode>?))
+        cn.visibleAnnotations?.apply { addVisibleAnnotations(this) }
+        cn.invisibleAnnotations?.apply { addInvisibleAnnotations(this) }
         cn.fields.forEach {
-            it as FieldNode
             val field = Field(cm, it, this)
             innerFields[FieldKey(field.name, field.type)] = field
         }
         cn.methods.forEach {
-            it as MethodNode
             innerMethods[MethodKey(cm.type, it.name, it.desc)] = Method(cm, it, this)
         }
         cn.methods = this.allMethods.map { it.mn }
@@ -95,52 +93,55 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
             innerFields.getOrElse(FieldKey(name, type)) { superClass?.getFieldConcrete(name, type) }
 
     override fun getMethodConcrete(name: String, desc: MethodDesc): Method? = innerMethods.getOrElse(MethodKey(name, desc)) {
-        val uppers = listOf(superClass).asSequence().plus(interfaces).filterNotNull().toList()
-        val res: Method? = uppers
-                .mapNotNull { it as? ConcreteClass }
-                .map { it.getMethodConcrete(name, desc) }
-                .firstOrNull() ?: uppers
-                .mapNotNull { it as? OuterClass }
-                .firstOrNull()
-                ?.getMethodConcrete(name, desc)
+        val concreteMethod = allAncestors.mapNotNull { it as? ConcreteClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
+        val res: Method? = concreteMethod
+                ?: allAncestors.mapNotNull { it as? OuterClass }
+                        .firstOrNull()
+                        ?.getMethodConcrete(name, desc)
         res
     }
 
     override fun getField(name: String, type: Type) = innerFields.getOrElse(FieldKey(name, type)) {
-        var parents = (listOf(superClass) + interfaces).filterNotNull()
+        var parents = allAncestors.toList()
 
-        var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-        while (parents.isNotEmpty()) {
-            if (result != null) break
-            parents = parents
-                    .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
-                    .flatten()
-
+        var result: Field?
+        do {
             result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-        }
+            parents = parents.flatMap { it.allAncestors }
+        } while (result == null && parents.isNotEmpty())
+//        var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+//        while (parents.isNotEmpty()) {
+//            if (result != null) break
+//            parents = parents.flatMap { it.allAncestors }
+//
+//            result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+//        }
 
         result
-                ?: (listOf(superClass) + interfaces).filterNotNull().mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
+                ?: allAncestors.mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
                 ?: throw UnknownInstance("No field \"$name\" in class $this")
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
         val methodDesc = MethodKey(name, desc)
         return innerMethods.getOrElse(methodDesc) {
-            var parents = (listOf(superClass) + interfaces).filterNotNull()
+            var parents = allAncestors.toList()
 
-            var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-            while (parents.isNotEmpty()) {
-                if (result != null) break
-                parents = parents
-                        .map { (listOf(it.superClass) + it.interfaces).filterNotNull() }
-                        .flatten()
-
+            var result: Method?
+            do {
                 result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-            }
+                parents = parents.flatMap { it.allAncestors }
+            } while (result == null && parents.isNotEmpty())
+//            var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+//            while (parents.isNotEmpty()) {
+//                if (result != null) break
+//                parents = parents.flatMap { it.allAncestors }
+//
+//                result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
+//            }
 
             result
-                    ?: (listOf(superClass) + interfaces).filterNotNull().mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
+                    ?: allAncestors.mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()
                     ?: throw UnknownInstance("No method \"$methodDesc\" in $this")
         }
     }

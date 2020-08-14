@@ -4,7 +4,6 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
-import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.FieldNode
 
 class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, fn.name, fn.access) {
@@ -15,8 +14,8 @@ class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, 
         get() = type.asmDesc
 
     init {
-        @Suppress("UNCHECKED_CAST") addVisibleAnnotations(fn.visibleAnnotations as List<AnnotationNode>?)
-        @Suppress("UNCHECKED_CAST") addInvisibleAnnotations(fn.invisibleAnnotations as List<AnnotationNode>?)
+        fn.visibleAnnotations?.apply { addVisibleAnnotations(this) }
+        fn.invisibleAnnotations?.apply { addInvisibleAnnotations(this) }
     }
 
     override fun equals(other: Any?): Boolean {

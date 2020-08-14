@@ -16,12 +16,16 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.objectweb.asm.commons.JSRInlinerAdapter
-import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
-import org.objectweb.asm.tree.ParameterNode
+
+private val MethodNode.simplified: MethodNode
+    get() {
+        val temp = JSRInlinerAdapter(this, access, name, desc, signature, exceptions?.toTypedArray())
+        this.accept(temp)
+        return LabelFilterer(temp).build()
+    }
 
 data class MethodDesc(val args: Array<Type>, val retval: Type) {
-
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDesc {
             val (args, retval) = parseMethodDesc(tf, desc)
@@ -51,31 +55,21 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         private val STATIC_INIT_NAMES = arrayOf("<clinit>")
     }
 
-    val mn: MethodNode
+    val mn = node.simplified
     val desc = MethodDesc.fromDesc(cm.type, node.desc)
     val argTypes get() = desc.args
     val returnType get() = desc.retval
-    val parameters = arrayListOf<Parameter>()
-    val exceptions = hashSetOf<Class>()
+    val parameters = mn.parameters?.withIndex()?.map { (index, param) ->
+        Parameter(cm, index, param.name, desc.args[index], param.access)
+    } ?: listOf()
+    val exceptions = mn.exceptions.map { cm[it] }.toSet()
     val basicBlocks = arrayListOf<BasicBlock>()
     val catchEntries = hashSetOf<CatchBlock>()
-    val slottracker = SlotTracker(this)
+    val slotTracker = SlotTracker(this)
 
     init {
-        val temp = JSRInlinerAdapter(node, node.access, node.name,
-                node.desc, node.signature,
-                node.exceptions?.mapNotNull { it as? String }?.toTypedArray())
-        node.accept(temp)
-        mn = LabelFilterer(temp).build()
-        mn.parameters?.withIndex()?.forEach { (indx, param) ->
-            param as ParameterNode
-            parameters.add(Parameter(cm, indx, param.name, desc.args[indx], param.access))
-        }
-
-        mn.exceptions?.forEach { exceptions.add(cm.get(it as String)) }
-
-        addVisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.visibleAnnotations as List<AnnotationNode>?))
-        addInvisibleAnnotations(@Suppress("UNCHECKED_CAST") (mn.invisibleAnnotations as List<AnnotationNode>?))
+        mn.visibleAnnotations?.apply { addVisibleAnnotations(this) }
+        mn.invisibleAnnotations?.apply { addInvisibleAnnotations(this) }
     }
 
     override val entry: BasicBlock
@@ -127,7 +121,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         if (!basicBlocks.contains(bb)) {
             ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             basicBlocks.add(bb)
-            slottracker.addBlock(bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
         }
@@ -140,7 +134,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             ktassert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
 
             basicBlocks.add(index, bb)
-            slottracker.addBlock(bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
         }
@@ -153,7 +147,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             ktassert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
 
             basicBlocks.add(index + 1, bb)
-            slottracker.addBlock(bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
         }
@@ -239,5 +233,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             return nodes.values.toList()
         }
 
-    fun view(dot: String, viewer: String) = view(name, dot, viewer)
+    fun view(dot: String, viewer: String) {
+        view(name, dot, viewer)
+    }
 }

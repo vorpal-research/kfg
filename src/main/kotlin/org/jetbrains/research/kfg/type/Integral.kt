@@ -17,8 +17,8 @@ sealed class Integral : PrimaryType {
     open val isLong get() = false
     open val isChar get() = false
 
-    override fun toString() = this.name
-    override fun hashCode() = defaultHashCode(BoolType.width, BoolType.signed)
+    override fun toString() = name
+    override fun hashCode() = defaultHashCode(width, signed)
     override fun equals(other: Any?) = this === other
 }
 

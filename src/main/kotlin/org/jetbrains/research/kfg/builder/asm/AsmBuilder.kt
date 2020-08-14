@@ -494,8 +494,8 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val insnList = InsnList()
         for (bb in method.basicBlocks) {
             insnList.add(getLabel(bb))
-            getInsnList(bb).forEach { insnList.add(it) }//insnList.register(getInsnList(bb))
-            getTerminateInsnList(bb).forEach { insnList.add(it) }//insnList.register(getTerminateInsnList(bb))
+            getInsnList(bb).forEach { insnList.add(it) }
+            getTerminateInsnList(bb).forEach { insnList.add(it) }
         }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()

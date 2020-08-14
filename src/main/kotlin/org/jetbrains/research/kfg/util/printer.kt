@@ -13,22 +13,19 @@ private val printer = Textifier()
 private val mp = TraceMethodVisitor(printer)
 
 fun ClassNode.print() = buildString {
-    appendln("Class ${this@print.name}")
-    val methods = @Suppress("UNCHECKED_CAST") (this@print.methods as Iterable<MethodNode>)
+    appendln("Class $name")
     for (mn in methods) {
         appendln(mn.print())
     }
 }
 
 fun MethodNode.print() = buildString {
-    appendln(this@print.name)
-    for (insn in this@print.instructions) {
-        val ain = insn as AbstractInsnNode
-        append(ain.print())
+    appendln(name)
+    for (insn in instructions) {
+        append(insn.print())
     }
-    for (insn in this@print.tryCatchBlocks) {
-        val ain = insn as TryCatchBlockNode
-        append(ain.print())
+    for (insn in tryCatchBlocks) {
+        append(insn.print())
     }
 }
 

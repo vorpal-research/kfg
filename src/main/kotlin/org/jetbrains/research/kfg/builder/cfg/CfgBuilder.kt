@@ -19,13 +19,10 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
-import org.jetbrains.research.kfg.util.instructions
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 import java.util.*
-
-fun MethodNode.tryCatchBlocks() = this.tryCatchBlocks.mapNotNull { it as? TryCatchBlockNode }
 
 private val AbstractInsnNode.isDebugNode
     get() = when (this) {
@@ -678,10 +675,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun buildCFG() {
-        val tryCatchBlocks = method.mn.tryCatchBlocks as MutableList<TryCatchBlockNode>
-        for (insn in tryCatchBlocks) {
+        for (insn in method.mn.tryCatchBlocks) {
             val type = when {
                 insn.type != null -> types.getRefType(insn.type)
                 else -> types.getRefType(CatchBlock.defaultException)
@@ -720,7 +715,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     }
                 }
             } else {
-                bb = nodeToBlock.getOrPut(insn as AbstractInsnNode) { bb }
+                bb = nodeToBlock.getOrPut(insn) { bb }
                 insnList = blockToNode.getOrPut(bb, ::arrayListOf)
 
                 when (insn) {
@@ -730,8 +725,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                             bb.addSuccessor(falseSuccessor)
                             falseSuccessor.addPredecessor(bb)
                         }
-                        val trueSuccName = if (insn.opcode == GOTO) "goto" else "if.then"
-                        val trueSuccessor = nodeToBlock.getOrPut(insn.label) { BodyBlock(trueSuccName) }
+                        val trueSuccessorName = if (insn.opcode == GOTO) "goto" else "if.then"
+                        val trueSuccessor = nodeToBlock.getOrPut(insn.label) { BodyBlock(trueSuccessorName) }
                         bb.addSuccessor(trueSuccessor)
                         trueSuccessor.addPredecessor(bb)
                     }
@@ -740,7 +735,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                         bb.addSuccessors(default)
                         default.addPredecessor(bb)
 
-                        val labels = insn.labels as MutableList<LabelNode>
+                        val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("tableswitch") }
                             bb.addSuccessors(lblBB)
@@ -752,7 +747,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                         bb.addSuccessors(default)
                         default.addPredecessor(bb)
 
-                        val labels = insn.labels as MutableList<LabelNode>
+                        val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("switch") }
                             bb.addSuccessors(lblBB)
@@ -770,13 +765,13 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     }
                 }
             }
-            insnList.add(insn as AbstractInsnNode)
+            insnList.add(insn)
             method.add(bb)
         }
-        for (insn in tryCatchBlocks) {
+        for (insn in method.mn.tryCatchBlocks) {
             val handle = nodeToBlock.getValue(insn.handler) as CatchBlock
             nodeToBlock[insn.handler] = handle
-            var cur = insn.start as AbstractInsnNode
+            var cur: AbstractInsnNode = insn.start
 
             var thrower = nodeToBlock.getValue(cur)
             val throwers = arrayListOf<BasicBlock>()
@@ -903,14 +898,14 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         if (!method.isStatic) {
             val `this` = values.getThis(types.getRefType(method.`class`))
             locals[localIndex++] = `this`
-            method.slottracker.addValue(`this`)
+            method.slotTracker.addValue(`this`)
         }
         for ((index, type) in method.argTypes.withIndex()) {
             val arg = values.getArgument(index, method, type)
             locals[localIndex] = arg
             if (type.isDWord) localIndex += 2
             else ++localIndex
-            method.slottracker.addValue(arg)
+            method.slotTracker.addValue(arg)
         }
         lastFrame = FrameState.parse(types, method, locals, stack)
     }
@@ -918,7 +913,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun buildInstructions() {
         var previousNodeBlock = method.entry
         lateinit var currentBlock: BasicBlock
-        for (insn in method.mn.instructions()) {
+        for (insn in method.mn.instructions) {
             currentBlock = nodeToBlock[insn] ?: break
 
             if (currentBlock != previousNodeBlock) {
@@ -964,7 +959,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         CfgOptimizer(cm).visit(method)
         NullTypeAdapter(cm).visit(method)
 
-        method.slottracker.rerun()
+        method.slotTracker.rerun()
         IRVerifier(cm).visit(method)
 
         return method
