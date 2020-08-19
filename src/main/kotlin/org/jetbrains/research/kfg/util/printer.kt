@@ -13,14 +13,14 @@ private val printer = Textifier()
 private val mp = TraceMethodVisitor(printer)
 
 fun ClassNode.print() = buildString {
-    appendln("Class $name")
+    appendLine("Class $name")
     for (mn in methods) {
-        appendln(mn.print())
+        appendLine(mn.print())
     }
 }
 
 fun MethodNode.print() = buildString {
-    appendln(name)
+    appendLine(name)
     for (insn in instructions) {
         append(insn.print())
     }
@@ -41,5 +41,5 @@ fun TryCatchBlockNode.print() = buildString {
     append("${start.print().dropLast(1)} ")
     append("${end.print().dropLast(1)} ")
     append("${handler.print().dropLast(1)} ")
-    appendln(type ?: "java/lang/Throwable")
+    appendLine(type ?: "java/lang/Throwable")
 }

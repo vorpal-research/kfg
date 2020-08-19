@@ -23,7 +23,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         }
     }
     types.size == 1 -> types.first()
-    types.all { it is Integral } -> types.map { it as Integral }.maxBy { it.width }
+    types.all { it is Integral } -> types.map { it as Integral }.maxByOrNull { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
         var result = tf.objectType

@@ -144,7 +144,7 @@ internal data class FrameState(
     }
 
     fun appendFrame(inst: FrameNode): FrameState {
-        val maxKey = this.innerLocal.keys.max() ?: -1
+        val maxKey = this.innerLocal.keys.maxOrNull() ?: -1
         val lastType = innerLocal[maxKey]
         val insertKey = when {
             lastType == null -> 0

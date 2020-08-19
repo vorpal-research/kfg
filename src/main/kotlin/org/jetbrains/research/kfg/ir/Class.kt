@@ -109,13 +109,6 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
             result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
             parents = parents.flatMap { it.allAncestors }
         } while (result == null && parents.isNotEmpty())
-//        var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-//        while (parents.isNotEmpty()) {
-//            if (result != null) break
-//            parents = parents.flatMap { it.allAncestors }
-//
-//            result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
-//        }
 
         result
                 ?: allAncestors.mapNotNull { it as? OuterClass }.map { it.getFieldConcrete(name, type) }.firstOrNull()
@@ -132,13 +125,6 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
                 result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
                 parents = parents.flatMap { it.allAncestors }
             } while (result == null && parents.isNotEmpty())
-//            var result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-//            while (parents.isNotEmpty()) {
-//                if (result != null) break
-//                parents = parents.flatMap { it.allAncestors }
-//
-//                result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }.firstOrNull()
-//            }
 
             result
                     ?: allAncestors.mapNotNull { it as? OuterClass }.map { it.getMethodConcrete(name, desc) }.firstOrNull()

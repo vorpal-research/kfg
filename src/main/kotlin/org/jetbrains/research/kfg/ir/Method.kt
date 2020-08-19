@@ -181,7 +181,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     fun getBlockByName(name: String) = basicBlocks.find { it.name.toString() == name }
 
     fun print() = buildString {
-        appendln(prototype)
+        appendLine(prototype)
         append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
     }
 
