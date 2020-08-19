@@ -9,7 +9,7 @@
     <version>0.0.10-1</version>
 
     <properties>
-        <jvm.version>11</jvm.version>
+        <jvm.version>1.8</jvm.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- necessary for intellij to function -->
