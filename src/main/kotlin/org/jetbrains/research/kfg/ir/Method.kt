@@ -66,7 +66,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     } ?: listOf()
     val exceptions = mn.exceptions.map { cm[it] }.toSet()
     val basicBlocks: List<BasicBlock> get() = innerBlocks
-    val catchEntries: Set<CatchBlock> = innerCatches
+    val catchEntries: Set<CatchBlock> get() = innerCatches
     val slotTracker = SlotTracker(this)
 
     init {
