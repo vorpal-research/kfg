@@ -25,8 +25,8 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
             return Package.parse("$commonSubstring*")
         }
 
-    constructor(path: Path, pkg: Package) : this(path.toFile(), pkg)
-    constructor(path: String, pkg: Package) : this(Paths.get(path), pkg)
+    constructor(path: Path, pkg: Package?) : this(path.toFile(), pkg)
+    constructor(path: String, pkg: Package?) : this(Paths.get(path), pkg)
     constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
     private val File.fullClassName: String get() = this.relativeTo(file).path

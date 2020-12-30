@@ -23,7 +23,7 @@ interface Container {
     fun update(cm: ClassManager, target: Path): Container
 }
 
-fun File.asContainer(pkg: Package): Container? = when {
+fun File.asContainer(pkg: Package? = null): Container? = when {
     this.isJar -> JarContainer(this.toPath(), pkg)
     this.isDirectory -> DirectoryContainer(this, pkg)
     else -> null
