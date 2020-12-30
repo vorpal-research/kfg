@@ -18,6 +18,7 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
 
     constructor(path: Path, pkg: Package) : this(path.toFile(), pkg)
     constructor(path: String, pkg: Package) : this(Paths.get(path), pkg)
+    constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
     override fun parse(flags: Flags): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
