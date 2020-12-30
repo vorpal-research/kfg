@@ -22,7 +22,6 @@ interface Container {
 }
 
 fun File.asContainer(pkg: Package): Container? = when {
-    this.isClass -> FileContainer(this, pkg)
     this.isJar -> JarContainer(this.toPath(), pkg)
     this.isDirectory -> DirectoryContainer(this, pkg)
     else -> null
