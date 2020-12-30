@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg
 
+import org.jetbrains.research.kfg.container.DirectoryContainer
+import org.jetbrains.research.kfg.container.JarContainer
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.ClassVisitor
@@ -8,6 +10,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 import kotlin.test.*
 
@@ -33,7 +36,7 @@ class KfgIntegrationTest {
     private val err = ByteArrayOutputStream()
 
     val `package` = Package("org/jetbrains/research/kfg/*")
-    lateinit var jar: Jar
+    lateinit var jar: JarContainer
     lateinit var cm: ClassManager
 
     @BeforeTest
@@ -45,7 +48,7 @@ class KfgIntegrationTest {
         val jarPath = "target/kfg-$version-jar-with-dependencies.jar"
         val `package` = Package("org/jetbrains/research/kfg/*")
 
-        jar = Jar(jarPath, `package`)
+        jar = JarContainer(jarPath, `package`)
         cm = ClassManager(KfgConfigBuilder().build())
         cm.initialize(jar)
     }
@@ -60,6 +63,24 @@ class KfgIntegrationTest {
     fun run() {
         val target = Files.createTempDirectory("kfg")
         jar.update(cm, target)
+
+        assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
+        assertTrue(out.toString().isBlank(), out.toString())
+        assertTrue(err.toString().isBlank(), err.toString())
+    }
+
+    @Test
+    fun directoryContainerTest() {
+        val targetDirPath = Paths.get("./target/classes")
+        val `package` = Package("org/jetbrains/research/kfg/*")
+
+        val container = DirectoryContainer(targetDirPath, `package`)
+        val cm = ClassManager(KfgConfigBuilder().build())
+        cm.initialize(container)
+
+
+        val target = Files.createTempDirectory("kfg")
+        container.update(cm, target)
 
         assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())

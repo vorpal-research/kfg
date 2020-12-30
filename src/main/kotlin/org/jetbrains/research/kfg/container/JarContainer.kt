@@ -1,25 +1,26 @@
-package org.jetbrains.research.kfg
+package org.jetbrains.research.kfg.container
 
+import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.objectweb.asm.tree.ClassNode
 import java.io.FileInputStream
-import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 
-data class Jar(private val file: JarFile, val `package`: Package) {
+data class JarContainer(private val file: JarFile, override val pkg: Package) : Container {
     private val manifest = Manifest()
 
     constructor(path: Path, `package`: Package) : this(JarFile(path.toFile()), `package`)
     constructor(path: String, `package`: Package) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
-    val name: String get() = file.name
-    val classLoader get() = file.classLoader
+    override val name: String get() = file.name
+    override val classLoader get() = file.classLoader
 
     init {
         if (file.manifest != null) {
@@ -32,13 +33,13 @@ data class Jar(private val file: JarFile, val `package`: Package) {
         }
     }
 
-    fun parse(flags: Flags): Map<String, ClassNode> {
+    override fun parse(flags: Flags): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         val enumeration = file.entries()
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
 
-            if (entry.isClass && `package`.isParent(entry.className)) {
+            if (entry.isClass && pkg.isParent(entry.className)) {
                 val classNode = readClassNode(file.getInputStream(entry), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
@@ -52,7 +53,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
         return classes
     }
 
-    fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean = false) {
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean) {
         val loader = file.classLoader
 
         val absolutePath = target.toAbsolutePath()
@@ -65,7 +66,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
             if (entry.isClass) {
                 val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
-                    `package`.isParent(entry.name) && `class` is ConcreteClass -> {
+                    pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
                         val path = "$absolutePath/$localPath"
                         `class`.write(cm, loader, path, Flags.writeComputeFrames)
@@ -80,9 +81,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
         }
     }
 
-    fun update(cm: ClassManager) = update(cm, Files.createTempDirectory("kfg"))
-
-    fun update(cm: ClassManager, target: Path): Jar {
+    override fun update(cm: ClassManager, target: Path): JarContainer {
         val absolutePath = target.toAbsolutePath()
         val jarName = file.name.substringAfterLast('/').removeSuffix(".jar")
         val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)
@@ -94,7 +93,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
             val entry = enumeration.nextElement() as JarEntry
             if (entry.isManifest) continue
 
-            if (entry.isClass && `package`.isParent(entry.name)) {
+            if (entry.isClass && pkg.isParent(entry.name)) {
                 val `class` = cm[entry.name.removeSuffix(".class")]
 
                 if (`class` is ConcreteClass) {
@@ -111,7 +110,7 @@ data class Jar(private val file: JarFile, val `package`: Package) {
             }
         }
         builder.close()
-        return Jar(builder.name, `package`)
+        return JarContainer(builder.name, pkg)
     }
 
 }

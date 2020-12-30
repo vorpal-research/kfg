@@ -20,7 +20,7 @@ val JarEntry.isClass get() = this.name.endsWith(".class")
 val JarEntry.className get() = this.name.removeSuffix(".class")
 val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
-val JarFile.classLoader get() = URLClassLoader(arrayOf(File(this.name).toURI().toURL()))
+val JarFile.classLoader get() = File(this.name).classLoader
 
 val ClassNode.hasFrameInfo: Boolean get() {
     var hasInfo = false

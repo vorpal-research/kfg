@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg
 import com.abdullin.kthelper.KtException
 import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
+import org.jetbrains.research.kfg.container.Container
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
@@ -57,19 +58,19 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val failOnError: Boolean get() = config.failOnError
 
     private val classes = hashMapOf<String, Class>()
-    private val class2jar = hashMapOf<Class, Jar>()
-    private val jar2class = hashMapOf<Jar, MutableSet<Class>>()
+    private val class2container = hashMapOf<Class, Container>()
+    private val container2class = hashMapOf<Container, MutableSet<Class>>()
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
-    fun initialize(vararg jars: Jar) {
-        val jar2ClassNode = jars.map { it to it.parse(flags) }.toMap()
+    fun initialize(vararg containers: Container) {
+        val jar2ClassNode = containers.map { it to it.parse(flags) }.toMap()
         for ((jar, classNodes) in jar2ClassNode) {
             classNodes.forEach { (name, cn) ->
                 val klass = ConcreteClass(this, cn)
                 classes[name] = klass
-                class2jar[klass] = jar
-                jar2class.getOrPut(jar, ::mutableSetOf).add(klass)
+                class2container[klass] = jar
+                container2class.getOrPut(jar, ::mutableSetOf).add(klass)
             }
         }
         classes.values.forEach { it.init() }
@@ -93,18 +94,18 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         // rebuild all the methods so they will not use invalid instance of ConcreteClass for failing class
         if (!failOnError && failedClasses.isNotEmpty()) {
             val oldClasses = classes.toMap()
-            val oldClass2Jar = class2jar.toMap()
+            val oldClass2Jar = class2container.toMap()
             classes.clear()
-            class2jar.clear()
-            jar2class.clear()
+            class2container.clear()
+            container2class.clear()
             for ((name, klass) in oldClasses) {
                 when (name) {
                     !in failedClasses -> {
                         val newKlass = ConcreteClass(this, klass.cn)
                         classes[name] = newKlass
                         val jar = oldClass2Jar.getValue(klass)
-                        class2jar[newKlass] = jar
-                        jar2class.getOrPut(jar, ::mutableSetOf).add(klass)
+                        class2container[newKlass] = jar
+                        container2class.getOrPut(jar, ::mutableSetOf).add(klass)
                     }
                 }
             }
