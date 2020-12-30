@@ -12,15 +12,32 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 
-data class JarContainer(private val file: JarFile, override val pkg: Package) : Container {
+class JarContainer(private val file: JarFile, pkg: Package? = null) : Container {
     private val manifest = Manifest()
 
     constructor(path: Path, `package`: Package) : this(JarFile(path.toFile()), `package`)
     constructor(path: String, `package`: Package) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
+    override val pkg: Package = pkg ?: commonPackage
     override val name: String get() = file.name
     override val classLoader get() = file.classLoader
+
+    override val commonPackage: Package
+        get() {
+            val klasses = mutableListOf<String>()
+            val enumeration = file.entries()
+            while (enumeration.hasMoreElements()) {
+                val entry = enumeration.nextElement() as JarEntry
+
+                if (entry.isClass) {
+                    klasses += entry.name
+                }
+
+            }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            return Package.parse("$commonSubstring*")
+        }
 
     init {
         if (file.manifest != null) {

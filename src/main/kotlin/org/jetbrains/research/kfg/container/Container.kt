@@ -15,6 +15,8 @@ interface Container {
     val pkg: Package
     val classLoader: ClassLoader
 
+    val commonPackage: Package
+
     fun parse(flags: Flags): Map<String, ClassNode>
     fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean = false)
     fun update(cm: ClassManager) = update(cm, Files.createTempDirectory("kfg"))

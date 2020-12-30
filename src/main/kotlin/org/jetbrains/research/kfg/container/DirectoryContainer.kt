@@ -9,12 +9,21 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class DirectoryContainer(private val file: File, override val pkg: Package) : Container {
+class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
+    override val pkg: Package = pkg ?: commonPackage
+
     override val name: String
         get() = file.absolutePath
 
     override val classLoader: ClassLoader
         get() = file.classLoader
+
+    override val commonPackage: Package
+        get() {
+            val klasses = file.allEntries.filter { it.isClass }.map { it.fullClassName }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            return Package.parse("$commonSubstring*")
+        }
 
     constructor(path: Path, pkg: Package) : this(path.toFile(), pkg)
     constructor(path: String, pkg: Package) : this(Paths.get(path), pkg)
