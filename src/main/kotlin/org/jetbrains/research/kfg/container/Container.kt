@@ -27,3 +27,5 @@ fun File.asContainer(pkg: Package): Container? = when {
     this.isDirectory -> DirectoryContainer(this, pkg)
     else -> null
 }
+
+fun Path.asContainer(pkg: Package) = this.toFile().asContainer(pkg)

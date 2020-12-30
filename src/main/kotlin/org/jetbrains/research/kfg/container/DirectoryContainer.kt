@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.util.*
 import org.objectweb.asm.tree.ClassNode
 import java.io.File
 import java.nio.file.Path
+import java.nio.file.Paths
 
 class DirectoryContainer(private val file: File, override val pkg: Package) : Container {
     override val name: String
@@ -16,6 +17,7 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
         get() = file.classLoader
 
     constructor(path: Path, pkg: Package) : this(path.toFile(), pkg)
+    constructor(path: String, pkg: Package) : this(Paths.get(path), pkg)
 
     override fun parse(flags: Flags): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
