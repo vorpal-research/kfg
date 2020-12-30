@@ -20,10 +20,12 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
     constructor(path: String, pkg: Package) : this(Paths.get(path), pkg)
     constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
+    private val File.fullClassName: String get() = this.relativeTo(file).path
+
     override fun parse(flags: Flags): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         for (entry in file.allEntries) {
-            if (entry.isClass && pkg.isParent(entry.className)) {
+            if (entry.isClass && pkg.isParent(entry.fullClassName)) {
                 val classNode = readClassNode(entry.inputStream(), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
@@ -43,7 +45,7 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
         val absolutePath = target.toAbsolutePath()
         for (entry in file.allEntries) {
             if (entry.isClass) {
-                val `class` = cm[entry.className]
+                val `class` = cm[entry.fullClassName]
                 when {
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
@@ -51,7 +53,7 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
                         `class`.write(cm, loader, path, Flags.writeComputeFrames)
                     }
                     unpackAllClasses -> {
-                        val path = "$absolutePath/${entry.name}"
+                        val path = "$absolutePath/${entry.fullClassName}"
                         val classNode = readClassNode(entry.inputStream())
                         classNode.write(loader, path, Flags.writeComputeNone)
                     }
@@ -65,8 +67,8 @@ class DirectoryContainer(private val file: File, override val pkg: Package) : Co
         unpack(cm, target)
 
         for (entry in file.allEntries) {
-            if (entry.isClass && pkg.isParent(entry.name)) {
-                val `class` = cm[entry.className]
+            if (entry.isClass && pkg.isParent(entry.fullClassName)) {
+                val `class` = cm[entry.fullClassName]
 
                 if (`class` is ConcreteClass) {
                     val localName = "${`class`.fullname}.class"
