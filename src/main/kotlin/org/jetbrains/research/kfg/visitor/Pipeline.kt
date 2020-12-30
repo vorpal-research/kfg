@@ -66,6 +66,17 @@ class PackagePipeline(cm: ClassManager, val target: Package, pipeline: List<Node
     }
 }
 
+class MultiplePackagePipeline(cm: ClassManager, val targets: List<Package>, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
+    override fun run() {
+        val classes = targets.flatMap { cm.getByPackage(it) }
+        for (pass in pipeline) {
+            for (`class` in classes) {
+                pass.visit(`class`)
+            }
+        }
+    }
+}
+
 class ClassPipeline(cm: ClassManager, target: Class, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
     private val targets = mutableSetOf<Class>()
 
@@ -143,6 +154,10 @@ fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit):
     it.init()
 }
 
+fun buildPipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit): Pipeline = MultiplePackagePipeline(cm, targets).also {
+    it.init()
+}
+
 fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline = ClassPipeline(cm, target).also {
     it.init()
 }
@@ -153,6 +168,9 @@ fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.
 
 fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
         buildPipeline(cm, target, init).run()
+
+fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
+        buildPipeline(cm, targets, init).run()
 
 fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
         buildPipeline(cm, target, init).run()
