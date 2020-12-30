@@ -100,7 +100,7 @@ class SlotTracker(val method: Method) {
 
     fun getValue(name: Name) = nameToValue[name]
 
-    fun rerun() {
+    internal fun rerun() {
         strings.clear()
         slots.clear()
         blocks.clear()

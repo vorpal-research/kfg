@@ -21,10 +21,15 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     val hasParent get() = parentUnsafe != null
     val parent get() = asserted(hasParent) { parentUnsafe!! }
 
-    override val predecessors = linkedSetOf<BasicBlock>()
-    override val successors = linkedSetOf<BasicBlock>()
-    val instructions = arrayListOf<Instruction>()
-    val handlers = arrayListOf<CatchBlock>()
+    private val innerPredecessors = linkedSetOf<BasicBlock>()
+    private val innerSuccessors = linkedSetOf<BasicBlock>()
+    private val innerInstructions = arrayListOf<Instruction>()
+    private val innerHandlers = arrayListOf<CatchBlock>()
+
+    override val predecessors: Set<BasicBlock> get() = innerPredecessors
+    override val successors: Set<BasicBlock> get() = innerSuccessors
+    val instructions: List<Instruction> get() = innerInstructions
+    val handlers: List<CatchBlock> get() = innerHandlers
 
     val terminator: TerminateInst
         get() = last() as TerminateInst
@@ -46,26 +51,26 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     }
 
     fun addSuccessor(bb: BasicBlock) {
-        successors.add(bb)
+        innerSuccessors.add(bb)
         bb.addUser(this)
     }
 
     fun addSuccessors(vararg bbs: BasicBlock) = bbs.forEach { addSuccessor(it) }
     fun addSuccessors(bbs: List<BasicBlock>) = bbs.forEach { addSuccessor(it) }
     fun addPredecessor(bb: BasicBlock) {
-        predecessors.add(bb)
+        innerPredecessors.add(bb)
         bb.addUser(this)
     }
 
     fun addPredecessors(vararg bbs: BasicBlock) = bbs.forEach { addPredecessor(it) }
     fun addPredecessors(bbs: List<BasicBlock>) = bbs.forEach { addPredecessor(it) }
     fun addHandler(handle: CatchBlock) {
-        handlers.add(handle)
+        innerHandlers.add(handle)
         handle.addUser(this)
     }
 
     fun removeSuccessor(bb: BasicBlock) = when {
-        successors.remove(bb) -> {
+        innerSuccessors.remove(bb) -> {
             bb.removeUser(this)
             bb.removePredecessor(this)
             true
@@ -74,7 +79,7 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     }
 
     fun removePredecessor(bb: BasicBlock): Boolean = when {
-        predecessors.remove(bb) -> {
+        innerPredecessors.remove(bb) -> {
             bb.removeUser(this)
             bb.removeSuccessor(this)
             true
@@ -83,7 +88,7 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     }
 
     fun removeHandler(handle: CatchBlock) = when {
-        handlers.remove(handle) -> {
+        innerHandlers.remove(handle) -> {
             handle.removeUser(this)
             handle.removeThrower(this)
             true
@@ -92,7 +97,7 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     }
 
     fun add(inst: Instruction) {
-        instructions.add(inst)
+        innerInstructions.add(inst)
         inst.parentUnsafe = this
         addValueToParent(inst)
     }
@@ -113,18 +118,18 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     }
 
     fun insertBefore(before: Instruction, vararg insts: Instruction) {
-        var index = instructions.indexOf(before)
+        var index = innerInstructions.indexOf(before)
         for (inst in insts) {
-            instructions.add(index++, inst)
+            innerInstructions.add(index++, inst)
             inst.parentUnsafe = this
             addValueToParent(inst)
         }
     }
 
     fun insertAfter(after: Instruction, vararg insts: Instruction) {
-        var index = instructions.indexOf(after) + 1
+        var index = innerInstructions.indexOf(after) + 1
         for (inst in insts) {
-            instructions.add(index++, inst)
+            innerInstructions.add(index++, inst)
             inst.parentUnsafe = this
             addValueToParent(inst)
         }
@@ -132,7 +137,7 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
 
     fun remove(inst: Instruction) {
         if (inst.parentUnsafe == this) {
-            instructions.remove(inst)
+            innerInstructions.remove(inst)
             inst.parentUnsafe = null
         }
     }
@@ -145,8 +150,8 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
     operator fun minusAssign(inst: Instruction) = remove(inst)
 
     fun replace(from: Instruction, to: Instruction) {
-        (0..instructions.lastIndex).filter { instructions[it] == from }.forEach {
-            instructions[it] = to
+        (0..innerInstructions.lastIndex).filter { innerInstructions[it] == from }.forEach {
+            innerInstructions[it] = to
             to.parentUnsafe = this
             addValueToParent(to)
         }
@@ -201,7 +206,8 @@ class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
 }
 
 class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)) {
-    val throwers = hashSetOf<BasicBlock>()
+    private val innerThrowers = hashSetOf<BasicBlock>()
+    val throwers: Set<BasicBlock> get() = innerThrowers
 
     val entries: Set<BasicBlock>
         get() {
@@ -214,7 +220,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         }
 
     fun addThrower(thrower: BasicBlock) {
-        throwers.add(thrower)
+        innerThrowers.add(thrower)
         thrower.addUser(this)
     }
 
@@ -222,7 +228,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         throwers.forEach { addThrower(it) }
     }
 
-    fun removeThrower(bb: BasicBlock) = this.throwers.remove(bb)
+    fun removeThrower(bb: BasicBlock) = innerThrowers.remove(bb)
     val allPredecessors get() = throwers + entries
 
     override fun print() = buildString {
@@ -237,9 +243,9 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
         super.replaceUsesOf(from, to)
-        if (throwers.remove(from)) {
+        if (innerThrowers.remove(from)) {
             from.removeUser(this)
-            throwers.add(to.get())
+            innerThrowers.add(to.get())
             to.addUser(this)
         }
     }

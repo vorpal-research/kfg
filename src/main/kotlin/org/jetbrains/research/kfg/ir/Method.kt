@@ -59,12 +59,14 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     val desc = MethodDesc.fromDesc(cm.type, node.desc)
     val argTypes get() = desc.args
     val returnType get() = desc.retval
+    private val innerBlocks = arrayListOf<BasicBlock>()
+    private val innerCatches = hashSetOf<CatchBlock>()
     val parameters = mn.parameters?.withIndex()?.map { (index, param) ->
         Parameter(cm, index, param.name, desc.args[index], param.access)
     } ?: listOf()
     val exceptions = mn.exceptions.map { cm[it] }.toSet()
-    val basicBlocks = arrayListOf<BasicBlock>()
-    val catchEntries = hashSetOf<CatchBlock>()
+    val basicBlocks: List<BasicBlock> get() = innerBlocks
+    val catchEntries: Set<CatchBlock> get() = innerCatches
     val slotTracker = SlotTracker(this)
 
     init {
@@ -73,7 +75,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     override val entry: BasicBlock
-        get() = basicBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
+        get() = innerBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
 
     val prototype: String
         get() = "$`class`::$name$desc"
@@ -87,7 +89,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     val bodyBlocks: List<BasicBlock>
         get() {
             val catches = catchBlocks
-            return basicBlocks.filter { it !in catches }.toList()
+            return innerBlocks.filter { it !in catches }.toList()
         }
 
     val catchBlocks: List<BasicBlock>
@@ -112,15 +114,15 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         get() = desc.asmDesc
 
     override val nodes: Set<BasicBlock>
-        get() = basicBlocks.toSet()
+        get() = innerBlocks.toSet()
 
-    fun isEmpty() = basicBlocks.isEmpty()
+    fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
 
     fun add(bb: BasicBlock) {
-        if (!basicBlocks.contains(bb)) {
+        if (!innerBlocks.contains(bb)) {
             ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
-            basicBlocks.add(bb)
+            innerBlocks.add(bb)
             slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
@@ -128,12 +130,12 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
-        if (!basicBlocks.contains(bb)) {
+        if (!innerBlocks.contains(bb)) {
             ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(before)
             ktassert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
 
-            basicBlocks.add(index, bb)
+            innerBlocks.add(index, bb)
             slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
@@ -141,12 +143,12 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun addAfter(after: BasicBlock, bb: BasicBlock) {
-        if (!basicBlocks.contains(bb)) {
+        if (!innerBlocks.contains(bb)) {
             ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
             val index = basicBlocks.indexOf(after)
             ktassert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
 
-            basicBlocks.add(index + 1, bb)
+            innerBlocks.add(index + 1, bb)
             slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
@@ -154,12 +156,12 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun remove(block: BasicBlock) {
-        if (basicBlocks.contains(block)) {
+        if (innerBlocks.contains(block)) {
             ktassert(block.parentUnsafe == this) { log.error("Block ${block.name} don't belong to $this") }
-            basicBlocks.remove(block)
+            innerBlocks.remove(block)
 
-            if (block in catchEntries) {
-                catchEntries.remove(block)
+            if (block in innerCatches) {
+                innerCatches.remove(block)
             }
 
             block.removeUser(this)
@@ -168,17 +170,17 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun addCatchBlock(bb: CatchBlock) {
-        require(bb in basicBlocks)
-        catchEntries.add(bb)
+        require(bb in innerBlocks)
+        innerCatches.add(bb)
     }
 
     fun getNext(from: BasicBlock): BasicBlock {
-        val start = basicBlocks.indexOf(from)
-        return basicBlocks[start + 1]
+        val start = innerBlocks.indexOf(from)
+        return innerBlocks[start + 1]
     }
 
-    fun getBlockByLocation(location: Location) = basicBlocks.find { it.location == location }
-    fun getBlockByName(name: String) = basicBlocks.find { it.name.toString() == name }
+    fun getBlockByLocation(location: Location) = innerBlocks.find { it.location == location }
+    fun getBlockByName(name: String) = innerBlocks.find { it.name.toString() == name }
 
     fun print() = buildString {
         appendLine(prototype)
@@ -186,7 +188,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     override fun toString() = prototype
-    override fun iterator() = basicBlocks.iterator()
+    override fun iterator() = innerBlocks.iterator()
 
     override fun hashCode() = defaultHashCode(name, `class`, desc)
     override fun equals(other: Any?): Boolean {
@@ -197,11 +199,11 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        (0 until basicBlocks.size)
+        (0 until innerBlocks.size)
                 .filter { basicBlocks[it] == from }
                 .forEach {
-                    basicBlocks[it].removeUser(this)
-                    basicBlocks[it] = to.get()
+                    innerBlocks[it].removeUser(this)
+                    innerBlocks[it] = to.get()
                     to.addUser(this)
                 }
     }
