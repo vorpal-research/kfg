@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.container
 
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.ConcreteClass
@@ -31,7 +32,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
     private val File.fullClassName: String get() = this.relativeTo(file).path
 
-    override fun parse(flags: Flags): Map<String, ClassNode> {
+    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         for (entry in file.allEntries) {
             if (entry.isClass && pkg.isParent(entry.fullClassName)) {
@@ -40,7 +41,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
                 classes[classNode.name] = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> classNode.recomputeFrames(classLoader)
+                    else -> classNode.recomputeFrames(loader)
                 }
             }
 
@@ -48,9 +49,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean) {
-        val loader = file.classLoader
-
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
         for (entry in file.allEntries) {
             if (entry.isClass) {
@@ -71,7 +70,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
         }
     }
 
-    override fun update(cm: ClassManager, target: Path): Container {
+    override fun update(cm: ClassManager, target: Path, loader: ClassLoader): Container {
         val absolutePath = target.toAbsolutePath()
         unpack(cm, target)
 

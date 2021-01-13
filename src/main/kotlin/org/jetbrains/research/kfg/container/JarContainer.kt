@@ -50,7 +50,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         }
     }
 
-    override fun parse(flags: Flags): Map<String, ClassNode> {
+    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         val enumeration = file.entries()
         while (enumeration.hasMoreElements()) {
@@ -62,7 +62,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
                 classes[classNode.name] = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> classNode.recomputeFrames(classLoader)
+                    else -> classNode.recomputeFrames(loader)
                 }
             }
 
@@ -70,9 +70,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean) {
-        val loader = file.classLoader
-
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
         val enumeration = file.entries()
 
@@ -98,7 +96,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         }
     }
 
-    override fun update(cm: ClassManager, target: Path): JarContainer {
+    override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
         val absolutePath = target.toAbsolutePath()
         val jarName = file.name.substringAfterLast('/').removeSuffix(".jar")
         val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)

@@ -12,7 +12,7 @@ import java.io.File
 fun main(args: Array<String>) {
     val cfg = KfgConfigParser(args)
 
-    val jar = File(cfg.getStringValue("jar")).asContainer(Package.parse(cfg.getStringValue("package", "*")))!!
+    val jar = File(cfg.getStringValue("jar")).asContainer()!!
 
     val classManager = ClassManager(KfgConfig(Flags.readAll, false))
     classManager.initialize(jar)
@@ -23,5 +23,5 @@ fun main(args: Array<String>) {
         +LoopAnalysis(classManager)
         +LoopSimplifier(classManager)
     }
-    jar.update(classManager)
+//    jar.update(classManager)
 }

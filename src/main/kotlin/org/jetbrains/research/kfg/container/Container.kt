@@ -17,10 +17,10 @@ interface Container {
 
     val commonPackage: Package
 
-    fun parse(flags: Flags): Map<String, ClassNode>
-    fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean = false)
-    fun update(cm: ClassManager) = update(cm, Files.createTempDirectory("kfg"))
-    fun update(cm: ClassManager, target: Path): Container
+    fun parse(flags: Flags, loader: ClassLoader = classLoader): Map<String, ClassNode>
+    fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean = false, loader: ClassLoader = classLoader)
+    fun update(cm: ClassManager, loader: ClassLoader = classLoader) = update(cm, Files.createTempDirectory("kfg"))
+    fun update(cm: ClassManager, target: Path, loader: ClassLoader = classLoader): Container
 }
 
 fun File.asContainer(pkg: Package? = null): Container? = when {
@@ -29,4 +29,4 @@ fun File.asContainer(pkg: Package? = null): Container? = when {
     else -> null
 }
 
-fun Path.asContainer(pkg: Package) = this.toFile().asContainer(pkg)
+fun Path.asContainer(pkg: Package? = null) = this.toFile().asContainer(pkg)

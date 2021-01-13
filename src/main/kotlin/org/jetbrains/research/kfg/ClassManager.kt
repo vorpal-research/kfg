@@ -63,14 +63,23 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
+    fun initialize(loader: ClassLoader, vararg containers: Container) {
+        val container2ClassNode = containers.map { it to it.parse(flags, loader) }.toMap()
+        initialize(container2ClassNode)
+    }
+
     fun initialize(vararg containers: Container) {
-        val jar2ClassNode = containers.map { it to it.parse(flags) }.toMap()
-        for ((jar, classNodes) in jar2ClassNode) {
+        val container2ClassNode = containers.map { it to it.parse(flags) }.toMap()
+        initialize(container2ClassNode)
+    }
+
+    private fun initialize(container2ClassNode: Map<Container, Map<String, ClassNode>>) {
+        for ((container, classNodes) in container2ClassNode) {
             classNodes.forEach { (name, cn) ->
                 val klass = ConcreteClass(this, cn)
                 classes[name] = klass
-                class2container[klass] = jar
-                container2class.getOrPut(jar, ::mutableSetOf).add(klass)
+                class2container[klass] = container
+                container2class.getOrPut(container, ::mutableSetOf).add(klass)
             }
         }
         classes.values.forEach { it.init() }
