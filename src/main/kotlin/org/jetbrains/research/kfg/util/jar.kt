@@ -55,7 +55,7 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
 
     private fun readClass(type: String) = try {
         java.lang.Class.forName(type.replace('/', '.'), false, loader)
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         throw ClassReadError(e.toString())
     }
 
