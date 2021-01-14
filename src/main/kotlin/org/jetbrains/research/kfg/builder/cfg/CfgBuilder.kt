@@ -84,6 +84,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             val incomings = predStacks.map { it.key to it.value[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
+                incomingValues.isEmpty() -> throw InvalidStateError("Empty incoming values map")
                 incomingValues.size > 1 -> {
                     val newPhi = instructions.getPhi(type, incomings)
                     addInstruction(bb, newPhi)
