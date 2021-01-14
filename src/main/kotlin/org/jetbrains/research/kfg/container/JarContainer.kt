@@ -1,7 +1,6 @@
 package org.jetbrains.research.kfg.container
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
@@ -51,7 +50,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         }
     }
 
-    override fun parse(flags: Flags, loader: ClassLoader, ignoreNotFoundClasses: Boolean): Map<String, ClassNode> {
+    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         val enumeration = file.entries()
         while (enumeration.hasMoreElements()) {
@@ -61,23 +60,17 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val classNode = readClassNode(file.getInputStream(entry), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
-
-                val framedClassNode = when {
+                classes[classNode.name] = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> try {
-                        classNode.recomputeFrames(loader, ignoreNotFoundClasses)
-                    } catch (e: KfgException) {
-                        continue
-                    }
+                    else -> classNode.recomputeFrames(loader)
                 }
-                classes[framedClassNode.name] = framedClassNode
             }
 
         }
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader, ignoreNotFoundClasses: Boolean) {
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
         val enumeration = file.entries()
 
@@ -91,12 +84,12 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
                         val path = "$absolutePath/$localPath"
-                        `class`.write(cm, loader, ignoreNotFoundClasses, path, Flags.writeComputeFrames)
+                        `class`.write(cm, loader, path, Flags.writeComputeFrames)
                     }
                     unpackAllClasses -> {
                         val path = "$absolutePath/${entry.name}"
                         val classNode = readClassNode(file.getInputStream(entry))
-                        classNode.write(loader, ignoreNotFoundClasses, path, Flags.writeComputeNone)
+                        classNode.write(loader, path, Flags.writeComputeNone)
                     }
                 }
             }

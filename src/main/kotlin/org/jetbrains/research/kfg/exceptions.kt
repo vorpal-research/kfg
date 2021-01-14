@@ -25,8 +25,6 @@ class InvalidInstructionError(inst: Instruction) : KfgException(inst.print())
 
 class UnknownInstance(msg: String) : KfgException(msg)
 
-class UnknownClassError(klass: String) : KfgException(klass)
-
 class UnsupportedOperation(msg: String) : KfgException(msg)
 
 class UnsupportedCfgException(msg: String): KfgException(msg)
