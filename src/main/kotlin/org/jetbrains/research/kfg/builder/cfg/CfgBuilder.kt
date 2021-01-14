@@ -4,10 +4,7 @@ import com.abdullin.kthelper.`try`
 import com.abdullin.kthelper.assert.unreachable
 import com.abdullin.kthelper.collection.queueOf
 import com.abdullin.kthelper.logging.log
-import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.InvalidOpcodeError
-import org.jetbrains.research.kfg.InvalidOperandError
-import org.jetbrains.research.kfg.UnsupportedOperation
+import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.analysis.NullTypeAdapter
 import org.jetbrains.research.kfg.builder.cfg.impl.FrameStack
@@ -22,6 +19,7 @@ import org.jetbrains.research.kfg.util.print
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
+import java.lang.IllegalStateException
 import java.util.*
 
 private val AbstractInsnNode.isDebugNode
@@ -621,7 +619,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                         push(predFrame.stack[it])
                     }
                     this.local.keys.forEach { i ->
-                        locals[i] = predFrame.locals.getValue(i)
+                        locals[i] = predFrame.locals[i] ?: throw InvalidStateError("Invalid local frame info")
                     }
                 }
                 !isCycle -> {

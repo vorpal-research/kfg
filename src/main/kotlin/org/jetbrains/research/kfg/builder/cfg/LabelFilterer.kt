@@ -55,6 +55,9 @@ internal class LabelFilterer(val mn: MethodNode) {
             new.tryCatchBlocks.add(it)
         }
 
+        new.maxStack = mn.maxStack
+        new.maxLocals = mn.maxLocals
+
         return new
     }
 }

@@ -3,14 +3,16 @@ package org.jetbrains.research.kfg.util
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
+import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.Class
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.commons.JSRInlinerAdapter
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FrameNode
+import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
-import java.net.URLClassLoader
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
@@ -29,6 +31,17 @@ val ClassNode.hasFrameInfo: Boolean get() {
     }
     return hasInfo
 }
+
+internal fun ClassNode.inlineJsrs() {
+    this.methods = methods.map { it.jsrInlined }
+}
+
+internal val MethodNode.jsrInlined: MethodNode
+    get() {
+        val temp = JSRInlinerAdapter(this, access, name, desc, signature, exceptions?.toTypedArray())
+        this.accept(temp)
+        return LabelFilterer(temp).build()
+    }
 
 class ClassReadError(msg: String) : KfgException(msg)
 
@@ -141,6 +154,7 @@ private fun ByteArray.toClassNode(): ClassNode {
 }
 
 private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writeComputeAll): ByteArray {
+    this.inlineJsrs()
     val cw = KfgClassWriter(loader, flags)
     val cca = CheckClassAdapter(cw)
     this.accept(cca)

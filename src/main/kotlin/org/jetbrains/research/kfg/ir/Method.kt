@@ -8,22 +8,14 @@ import com.abdullin.kthelper.collection.queueOf
 import com.abdullin.kthelper.defaultHashCode
 import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
-import org.objectweb.asm.commons.JSRInlinerAdapter
+import org.jetbrains.research.kfg.util.jsrInlined
 import org.objectweb.asm.tree.MethodNode
-
-private val MethodNode.simplified: MethodNode
-    get() {
-        val temp = JSRInlinerAdapter(this, access, name, desc, signature, exceptions?.toTypedArray())
-        this.accept(temp)
-        return LabelFilterer(temp).build()
-    }
 
 data class MethodDesc(val args: Array<Type>, val retval: Type) {
     companion object {
@@ -55,7 +47,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
         private val STATIC_INIT_NAMES = arrayOf("<clinit>")
     }
 
-    val mn = node.simplified
+    val mn = node.jsrInlined
     val desc = MethodDesc.fromDesc(cm.type, node.desc)
     val argTypes get() = desc.args
     val returnType get() = desc.retval
