@@ -56,6 +56,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     val flags: Flags get() = config.flags
     val failOnError: Boolean get() = config.failOnError
+    val ignoreNotFoundClasses: Boolean get() = config.ignoreNotFoundClasses
 
     private val classes = hashMapOf<String, Class>()
     private val class2container = hashMapOf<Class, Container>()
@@ -64,12 +65,12 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
-        val container2ClassNode = containers.map { it to it.parse(flags, loader) }.toMap()
+        val container2ClassNode = containers.map { it to it.parse(flags, loader, ignoreNotFoundClasses) }.toMap()
         initialize(container2ClassNode)
     }
 
     fun initialize(vararg containers: Container) {
-        val container2ClassNode = containers.map { it to it.parse(flags) }.toMap()
+        val container2ClassNode = containers.map { it to it.parse(flags, ignoreNotFoundClasses = ignoreNotFoundClasses) }.toMap()
         initialize(container2ClassNode)
     }
 

@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
+import org.jetbrains.research.kfg.UnknownClassError
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.Class
@@ -64,12 +65,18 @@ data class Flags(val value: Int) : Comparable<Flags> {
     override fun compareTo(other: Flags) = value.compareTo(other.value)
 }
 
-class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
+class KfgClassWriter(
+        private val loader: ClassLoader,
+        private val ignoreNotFoundClasses: Boolean,
+        flags: Flags) : ClassWriter(flags.value) {
 
     private fun readClass(type: String) = try {
         java.lang.Class.forName(type.replace('/', '.'), false, loader)
     } catch (e: Throwable) {
-        throw ClassReadError(e.toString())
+        throw when {
+            ignoreNotFoundClasses -> UnknownClassError(type)
+            else -> ClassReadError(e.toString())
+        }
     }
 
     override fun getCommonSuperClass(type1: String, type2: String): String {
@@ -141,8 +148,8 @@ internal fun readClassNode(input: InputStream, flags: Flags = Flags.readAll): Cl
     return classNode
 }
 
-internal fun ClassNode.recomputeFrames(loader: ClassLoader): ClassNode {
-    val ba = this.toByteArray(loader)
+internal fun ClassNode.recomputeFrames(loader: ClassLoader, ignoreNotFoundClasses: Boolean): ClassNode {
+    val ba = this.toByteArray(loader, ignoreNotFoundClasses)
     return ba.toClassNode()
 }
 
@@ -153,25 +160,29 @@ private fun ByteArray.toClassNode(): ClassNode {
     return classNode
 }
 
-private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writeComputeAll): ByteArray {
+private fun ClassNode.toByteArray(
+        loader: ClassLoader,
+        ignoreNotFoundClasses: Boolean,
+        flags: Flags = Flags.writeComputeAll): ByteArray {
     this.inlineJsrs()
-    val cw = KfgClassWriter(loader, flags)
+    val cw = KfgClassWriter(loader, ignoreNotFoundClasses, flags)
     val cca = CheckClassAdapter(cw)
     this.accept(cca)
     return cw.toByteArray()
 }
 
 internal fun ClassNode.write(loader: ClassLoader,
+                             ignoreNotFoundClasses: Boolean,
                              filename: String,
                              flags: Flags = Flags.writeComputeAll): File =
         File(filename).apply {
             parentFile?.mkdirs()
             FileOutputStream(this).use { fos ->
-                fos.write(this@write.toByteArray(loader, flags))
+                fos.write(this@write.toByteArray(loader, ignoreNotFoundClasses, flags))
             }
         }
 
-fun Class.write(cm: ClassManager, loader: ClassLoader,
+fun Class.write(cm: ClassManager, loader: ClassLoader, ignoreNotFoundClasses: Boolean,
                 filename: String = "$fullname.class",
                 flags: Flags = Flags.writeComputeFrames): File =
-        ClassBuilder(cm, this).build().write(loader, filename, flags)
+        ClassBuilder(cm, this).build().write(loader, ignoreNotFoundClasses, filename, flags)

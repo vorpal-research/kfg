@@ -10,7 +10,8 @@ import kotlin.system.exitProcess
 
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
-        val failOnError: Boolean = true
+        val failOnError: Boolean = true,
+        val ignoreNotFoundClasses: Boolean = true
 ) {
 
     init {

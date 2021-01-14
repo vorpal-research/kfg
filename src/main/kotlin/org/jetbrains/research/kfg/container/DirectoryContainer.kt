@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.container
 
 import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
@@ -32,24 +33,29 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
     private val File.fullClassName: String get() = this.relativeTo(file).path
 
-    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
+    override fun parse(flags: Flags, loader: ClassLoader, ignoreNotFoundClasses: Boolean): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         for (entry in file.allEntries) {
             if (entry.isClass && pkg.isParent(entry.fullClassName)) {
                 val classNode = readClassNode(entry.inputStream(), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
-                classes[classNode.name] = when {
+                val framedClassNode = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> classNode.recomputeFrames(loader)
+                    else -> try {
+                        classNode.recomputeFrames(loader, ignoreNotFoundClasses)
+                    } catch (e: KfgException) {
+                        continue
+                    }
                 }
+                classes[framedClassNode.name] = framedClassNode
             }
 
         }
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader, ignoreNotFoundClasses: Boolean) {
         val absolutePath = target.toAbsolutePath()
         for (entry in file.allEntries) {
             if (entry.isClass) {
@@ -58,12 +64,12 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
                         val path = "$absolutePath/$localPath"
-                        `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                        `class`.write(cm, loader, ignoreNotFoundClasses, path, Flags.writeComputeFrames)
                     }
                     unpackAllClasses -> {
                         val path = "$absolutePath/${entry.fullClassName}"
                         val classNode = readClassNode(entry.inputStream())
-                        classNode.write(loader, path, Flags.writeComputeNone)
+                        classNode.write(loader, ignoreNotFoundClasses, path, Flags.writeComputeNone)
                     }
                 }
             }
