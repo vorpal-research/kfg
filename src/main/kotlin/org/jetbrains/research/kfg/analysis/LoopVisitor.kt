@@ -7,6 +7,7 @@ import com.abdullin.kthelper.algorithm.Viewable
 import com.abdullin.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
+import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
@@ -34,6 +35,14 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<Loo
 
     val method: Method?
         get() = header.parentUnsafe
+
+    val allEntries: Set<BasicBlock>
+        get() = body.filterNot {
+            when (it) {
+                is CatchBlock -> body.containsAll(it.allPredecessors)
+                else -> body.containsAll(it.predecessors)
+            }
+        }.toSet()
 
     val exitingBlocks: Set<BasicBlock>
         get() = body.filterNot { body.containsAll(it.successors) }.toSet()

@@ -1,5 +1,6 @@
 package org.jetbrains.research.kfg.analysis
 
+import com.abdullin.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
@@ -22,6 +23,10 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(loop: Loop) {
         super.visit(loop)
+        if (loop.allEntries.size != 1) {
+            log.error("Can't simplify loop with multiple entries")
+            return
+        }
         buildPreheader(loop)
         buildLatch(loop)
     }
