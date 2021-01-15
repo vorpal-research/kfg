@@ -102,7 +102,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)
         val enumeration = file.entries()
 
-        unpack(cm, target)
+        unpack(cm, target, false, loader)
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
