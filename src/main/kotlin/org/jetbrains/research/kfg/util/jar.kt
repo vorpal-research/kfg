@@ -72,11 +72,11 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
         throw ClassReadError(e.toString())
     }
 
-    override fun getCommonSuperClass(type1: String, type2: String): String {
+    override fun getCommonSuperClass(type1: String, type2: String): String = try {
         var class1 = readClass(type1)
         val class2 = readClass(type2)
 
-        return when {
+        when {
             class1.isAssignableFrom(class2) -> type1
             class2.isAssignableFrom(class1) -> type2
             class1.isInterface || class2.isInterface -> "java/lang/Object"
@@ -87,6 +87,8 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
                 class1.name.replace('.', '/')
             }
         }
+    } catch (e: Throwable) {
+        "java/lang/Object"
     }
 }
 
