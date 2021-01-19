@@ -52,6 +52,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
         val stackPhis = arrayListOf<PhiInst>()
         val localPhis = hashMapOf<Int, PhiInst>()
+
+        val isEmpty get() = locals.isEmpty() && stack.isEmpty()
+        val isNotEmpty get() = !isEmpty
     }
 
     private val visitedBlocks = mutableSetOf<BasicBlock>()
@@ -60,6 +63,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private val blockToNode = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val frames = hashMapOf<BasicBlock, BlockFrame>()
     private val stack = ArrayList<Value>()
+    private val unmappedBlocks = hashMapOf<BasicBlock, BlockFrame>()
     private var currentLocation = Location()
     private lateinit var lastFrame: FrameState
 
@@ -602,6 +606,17 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         currentLocation = Location(`package`, file, line)
     }
 
+    private fun BlockFrame.getMappingFrame(frameState: FrameState): BlockFrame = unmappedBlocks.getOrPut(bb) {
+        val newFrame = BlockFrame(bb)
+        for ((index, type) in frameState.local) {
+            newFrame.locals[index] = instructions.getPhi(type, mapOf())
+        }
+        for ((_, type) in frameState.stack) {
+            newFrame.stack.add(instructions.getPhi(type, mapOf()))
+        }
+        newFrame
+    }
+
     @Suppress("UNUSED_PARAMETER")
     private fun convertFrame(insn: FrameNode) {
         val block = nodeToBlock.getValue(insn)
@@ -616,11 +631,16 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             when {
                 predFrames.size == 1 -> {
                     val predFrame = predFrames.first()
+                    val mappedFrame = when {
+                        predFrame.isEmpty -> predFrame.getMappingFrame(this)
+                        else -> predFrame
+                    }
                     this.stack.keys.forEach {
-                        push(predFrame.stack[it])
+                        push(mappedFrame.stack[it])
                     }
                     this.local.keys.forEach { i ->
-                        locals[i] = predFrame.locals[i] ?: throw InvalidStateError("Invalid local frame info")
+                        locals[i] = mappedFrame.locals[i]
+                                ?: throw InvalidStateError("Invalid local frame info")
                     }
                 }
                 !isCycle -> {
@@ -638,8 +658,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             when {
                 predFrames.size == 1 -> {
                     val predFrame = predFrames.first()
+                    val mappedFrame = when {
+                        predFrame.isEmpty -> predFrame.getMappingFrame(this)
+                        else -> predFrame
+                    }
                     this.local.filterValues { it !is VoidType }.keys.forEach { i ->
-                        locals[i] = predFrame.locals.getValue(i)
+                        locals[i] = mappedFrame.locals.getValue(i)
                     }
                 }
                 !isCycle -> createLocalPhis(block, predFrames, this.local)
@@ -876,9 +900,25 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         }
     }
 
+    private fun copyBlockMappings(block: BasicBlock) {
+        val mappedFrame = unmappedBlocks.getValue(block)
+        for ((index, value) in mappedFrame.locals) {
+            val actualValue = locals[index]
+                    ?: unreachable { log.error("Block ${block.name} does not define required local $index") }
+            value.replaceAllUsesWith(actualValue)
+        }
+        for ((index, value) in mappedFrame.stack.withIndex()) {
+            val actualValue = stack[index]
+            value.replaceAllUsesWith(actualValue)
+        }
+        unmappedBlocks.remove(block)
+    }
+
     private fun finishState(block: BasicBlock) {
         if (block in visitedBlocks) return
         if (block !in method) return
+
+        if (block in unmappedBlocks) copyBlockMappings(block)
 
         val last = block.instructions.lastOrNull()
         if (last == null || !last.isTerminate) {
