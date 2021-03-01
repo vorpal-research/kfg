@@ -87,16 +87,18 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     val catchBlocks: List<BasicBlock>
         get() {
             val catchMap = hashMapOf<BasicBlock, Boolean>()
+            val visited = hashSetOf<BasicBlock>()
             val result = arrayListOf<BasicBlock>()
             val queue = queueOf<BasicBlock>()
             queue.addAll(catchEntries)
             while (queue.isNotEmpty()) {
                 val top = queue.poll()
                 val isCatch = top.predecessors.fold(true) { acc, bb -> acc && catchMap.getOrPut(bb) { false } }
-                if (isCatch) {
+                if (isCatch && top !in visited) {
                     result.add(top)
                     queue.addAll(top.successors)
                     catchMap[top] = true
+                    visited += top
                 }
             }
             return result
