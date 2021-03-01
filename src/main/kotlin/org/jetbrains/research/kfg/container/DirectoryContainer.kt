@@ -1,8 +1,10 @@
 package org.jetbrains.research.kfg.container
 
-import com.abdullin.kthelper.logging.log
+import com.abdullin.kthelper.`try`
+import com.abdullin.kthelper.tryOrNull
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
+import org.jetbrains.research.kfg.UnsupportedCfgException
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.objectweb.asm.tree.ClassNode
@@ -32,24 +34,32 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
     private val File.fullClassName: String get() = this.relativeTo(file).path
 
-    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
+    private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
+        action()
+    }.getOrElse {
+        if (failOnError) throw UnsupportedCfgException("")
+        else null
+    }
+
+    override fun parse(flags: Flags, failOnError: Boolean, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         for (entry in file.allEntries) {
             if (entry.isClass && pkg.isParent(entry.fullClassName)) {
                 val classNode = readClassNode(entry.inputStream(), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
-                classes[classNode.name] = when {
+                val newClassNode = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> classNode.recomputeFrames(loader)
-                }
+                    else -> failSafeAction(failOnError) { classNode.recomputeFrames(loader) }
+                } ?: continue
+                classes[classNode.name] = newClassNode
             }
 
         }
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, failOnError: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
         for (entry in file.allEntries) {
             if (entry.isClass) {
@@ -58,12 +68,12 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
                         val path = "$absolutePath/$localPath"
-                        `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                        failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
                         val path = "$absolutePath/${entry.fullClassName}"
                         val classNode = readClassNode(entry.inputStream())
-                        classNode.write(loader, path, Flags.writeComputeNone)
+                        failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
                 }
             }

@@ -1,7 +1,10 @@
 package org.jetbrains.research.kfg.container
 
+import com.abdullin.kthelper.`try`
+import com.abdullin.kthelper.tryOrNull
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
+import org.jetbrains.research.kfg.UnsupportedCfgException
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.objectweb.asm.tree.ClassNode
@@ -50,7 +53,14 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         }
     }
 
-    override fun parse(flags: Flags, loader: ClassLoader): Map<String, ClassNode> {
+    private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
+        action()
+    }.getOrElse {
+        if (failOnError) throw UnsupportedCfgException("")
+        else null
+    }
+
+    override fun parse(flags: Flags, failOnError: Boolean, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         val enumeration = file.entries()
         while (enumeration.hasMoreElements()) {
@@ -60,17 +70,18 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val classNode = readClassNode(file.getInputStream(entry), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
-                classes[classNode.name] = when {
+                val newClassNode = when {
                     classNode.hasFrameInfo -> classNode
-                    else -> classNode.recomputeFrames(loader)
-                }
+                    else -> failSafeAction(failOnError) { classNode.recomputeFrames(loader) }
+                } ?: continue
+                classes[classNode.name] = newClassNode
             }
 
         }
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, loader: ClassLoader) {
+    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, failOnError: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
         val enumeration = file.entries()
 
@@ -84,12 +95,12 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
                         val localPath = "${`class`.fullname}.class"
                         val path = "$absolutePath/$localPath"
-                        `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                        failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
                         val path = "$absolutePath/${entry.name}"
                         val classNode = readClassNode(file.getInputStream(entry))
-                        classNode.write(loader, path, Flags.writeComputeNone)
+                        failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
                 }
             }
@@ -102,7 +113,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
         val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)
         val enumeration = file.entries()
 
-        unpack(cm, target, false, loader)
+        unpack(cm, target, false, false, loader)
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry

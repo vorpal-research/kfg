@@ -64,7 +64,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
-        val container2ClassNode = containers.map { it to it.parse(flags, loader) }.toMap()
+        val container2ClassNode = containers.map { it to it.parse(flags, config.failOnError, loader) }.toMap()
         initialize(container2ClassNode)
     }
 

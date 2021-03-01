@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
     classManager.initialize(jar)
     val target = File("instrumented/")
     println(jar.commonPackage)
-    jar.unpack(classManager, target.toPath(), true)
+    jar.unpack(classManager, target.toPath(), true, classManager.failOnError)
     executePipeline(classManager, jar.pkg) {
         +LoopAnalysis(classManager)
         +LoopSimplifier(classManager)
