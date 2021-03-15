@@ -15,6 +15,6 @@ jobs:
           java-version: 1.8
       - name: Build with Maven
         run: mvn verify --file pom.xml -s .github/github-settings.xml
-          env:
-            GITHUB_ACTOR: vorpal-reseacher
-            GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
+        env:
+          GITHUB_ACTOR: vorpal-reseacher
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
