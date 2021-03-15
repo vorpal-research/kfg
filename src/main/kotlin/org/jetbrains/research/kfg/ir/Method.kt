@@ -1,12 +1,12 @@
 package org.jetbrains.research.kfg.ir
 
-import com.abdullin.kthelper.algorithm.Graph
-import com.abdullin.kthelper.algorithm.GraphView
-import com.abdullin.kthelper.algorithm.Viewable
-import com.abdullin.kthelper.assert.ktassert
-import com.abdullin.kthelper.collection.queueOf
-import com.abdullin.kthelper.defaultHashCode
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.algorithm.GraphView
+import org.jetbrains.research.kthelper.algorithm.Viewable
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.collection.queueOf
+import org.jetbrains.research.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker

@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.0.11-4</version>
+    <version>0.0.11-5</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -16,12 +16,12 @@
         <maven.compiler.source>${jvm.version}</maven.compiler.source>
         <maven.compiler.target>${jvm.version}</maven.compiler.target>
 
-        <kotlin.version>1.4.0</kotlin.version>
+        <kotlin.version>1.4.31</kotlin.version>
         <compiler-plugin.version>3.5.1</compiler-plugin.version>
 
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.0.6</kt-helper.version>
+        <kt-helper.version>0.0.8</kt-helper.version>
         <asm.version>7.3.1</asm.version>
         <commons-cli.version>1.4</commons-cli.version>
         <jdot.version>1.0</jdot.version>
@@ -202,16 +202,16 @@
 
     <repositories>
         <repository>
-            <id>bintray-abdullin-maven</id>
-            <url>https://dl.bintray.com/abdullin/maven</url>
+            <id>github-abdullinam-maven-packages</id>
+            <url>https://maven.pkg.github.com/AbdullinAM/maven-packages</url>
         </repository>
     </repositories>
 
     <distributionManagement>
         <repository>
-            <id>bintray-vorpal-research-kotlin-maven</id>
+            <id>github-vorpal-research-kotlin-maven</id>
             <name>vorpal-research-kotlin-maven</name>
-            <url>https://api.bintray.com/maven/vorpal-research/kotlin-maven/kfg/;publish=1</url>
+            <url>https://maven.pkg.github.com/vorpal-research/kotlin-maven</url>
         </repository>
     </distributionManagement>
 

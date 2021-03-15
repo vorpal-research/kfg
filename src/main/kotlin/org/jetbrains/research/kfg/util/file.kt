@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.util
 
-import com.abdullin.kthelper.collection.queueOf
+import org.jetbrains.research.kthelper.collection.queueOf
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream

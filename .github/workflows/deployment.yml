@@ -19,10 +19,10 @@ jobs:
         id: deploy-to-bintray
         run: |
           mvn versions:set -DnewVersion=${{ github.event.release.tag_name }}
-          mvn deploy -s .github/bintray-settings.xml || echo "deploy failed" >&2
+          mvn deploy -s .github/github-settings.xml || echo "deploy failed" >&2
         env:
-          BINTRAY_USERNAME: ${{ secrets.bintray_username }}
-          BINTRAY_PASSWORD: ${{ secrets.bintray_password }}
+          GITHUB_ACTOR: vorpal-reseacher
+          GITHUB_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
 
       - name: Move sources jar file
         run: mv target/*-sources.jar sources.jar

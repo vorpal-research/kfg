@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.container
 
-import com.abdullin.kthelper.`try`
-import com.abdullin.kthelper.tryOrNull
+import org.jetbrains.research.kthelper.`try`
+import org.jetbrains.research.kthelper.tryOrNull
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnsupportedCfgException

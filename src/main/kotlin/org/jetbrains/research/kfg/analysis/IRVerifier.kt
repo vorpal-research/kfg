@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.analysis
 
-import com.abdullin.kthelper.assert.AssertionException
-import com.abdullin.kthelper.assert.ktassert
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.assert.AssertionException
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.ir.BasicBlock

@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg
 
-import com.abdullin.kthelper.assert.ktassert
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.logging.log
 import org.apache.commons.cli.*
 import org.jetbrains.research.kfg.util.Flags
 import java.io.PrintWriter

@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg.type
 
-import com.abdullin.kthelper.assert.unreachable
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.logging.log
 
 interface TypeVisitor {
     val types: TypeFactory

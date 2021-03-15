@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.analysis
 
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock

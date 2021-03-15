@@ -1,10 +1,10 @@
 package org.jetbrains.research.kfg.analysis
 
-import com.abdullin.kthelper.algorithm.Graph
-import com.abdullin.kthelper.algorithm.GraphView
-import com.abdullin.kthelper.algorithm.LoopDetector
-import com.abdullin.kthelper.algorithm.Viewable
-import com.abdullin.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.algorithm.GraphView
+import org.jetbrains.research.kthelper.algorithm.LoopDetector
+import org.jetbrains.research.kthelper.algorithm.Viewable
+import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.CatchBlock

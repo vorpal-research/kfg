@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value
 
-import com.abdullin.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 

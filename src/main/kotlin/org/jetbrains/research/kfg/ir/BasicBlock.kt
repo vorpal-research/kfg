@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.ir
 
-import com.abdullin.kthelper.algorithm.Graph
-import com.abdullin.kthelper.assert.asserted
-import com.abdullin.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock

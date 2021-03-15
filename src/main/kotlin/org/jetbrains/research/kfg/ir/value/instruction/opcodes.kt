@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import com.abdullin.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.InvalidOpcodeError
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.objectweb.asm.Opcodes

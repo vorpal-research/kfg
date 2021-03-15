@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import com.abdullin.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Location
 import org.jetbrains.research.kfg.ir.value.*

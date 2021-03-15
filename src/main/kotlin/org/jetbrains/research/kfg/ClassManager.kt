@@ -1,7 +1,7 @@
 package org.jetbrains.research.kfg
 
-import com.abdullin.kthelper.KtException
-import com.abdullin.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.KtException
+import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
 import org.jetbrains.research.kfg.builder.cfg.InnerClassNormalizer
 import org.jetbrains.research.kfg.container.Container

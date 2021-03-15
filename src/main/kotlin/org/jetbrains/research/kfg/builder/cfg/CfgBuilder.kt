@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import com.abdullin.kthelper.`try`
-import com.abdullin.kthelper.assert.unreachable
-import com.abdullin.kthelper.collection.queueOf
-import com.abdullin.kthelper.logging.log
+import org.jetbrains.research.kthelper.`try`
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.collection.queueOf
+import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.analysis.NullTypeAdapter
