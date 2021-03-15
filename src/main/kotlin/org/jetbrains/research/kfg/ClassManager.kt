@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg
 import com.abdullin.kthelper.KtException
 import com.abdullin.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.builder.cfg.CfgBuilder
+import org.jetbrains.research.kfg.builder.cfg.InnerClassNormalizer
 import org.jetbrains.research.kfg.container.Container
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
@@ -81,6 +82,9 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
                 class2container[klass] = container
                 container2class.getOrPut(container, ::mutableSetOf).add(klass)
             }
+        }
+        classes.values.forEach {
+            InnerClassNormalizer(this).visit(it)
         }
         classes.values.forEach { it.init() }
 
