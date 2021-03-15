@@ -17,11 +17,11 @@ mvn clean verify
 
 # Download
 
-The latest release of the KFG is available at vorpal-research bintray repository:
+The latest release of the KFG is available at vorpal-research maven repository:
 ```xml
 <repository>
-    <id>bintray-vorpal-research-kotlin-maven</id>
-    <url>https://dl.bintray.com/vorpal-research/kotlin-maven</url>
+    <id>github-vorpal-research-kotlin-maven</id>
+    <url>https://maven.pkg.github.com/vorpal-research/kotlin-maven</url>
 </repository>
 ```
 
