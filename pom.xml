@@ -202,8 +202,8 @@
 
     <repositories>
         <repository>
-            <id>github-abdullinam-maven-packages</id>
-            <url>https://maven.pkg.github.com/AbdullinAM/maven-packages</url>
+            <id>github-vorpal-research-kotlin-maven</id>
+            <url>https://maven.pkg.github.com/vorpal-research/kotlin-maven</url>
         </repository>
     </repositories>
 
