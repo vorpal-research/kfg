@@ -2,8 +2,6 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.analysis.LoopAnalysis
 import org.jetbrains.research.kfg.analysis.LoopSimplifier
-import org.jetbrains.research.kfg.container.DirectoryContainer
-import org.jetbrains.research.kfg.container.JarContainer
 import org.jetbrains.research.kfg.container.asContainer
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.visitor.executePipeline

@@ -1,9 +1,5 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import org.jetbrains.research.kthelper.`try`
-import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.collection.queueOf
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.analysis.IRVerifier
 import org.jetbrains.research.kfg.analysis.NullTypeAdapter
@@ -16,10 +12,13 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
+import org.jetbrains.research.kthelper.`try`
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.collection.queueOf
+import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
-import java.lang.IllegalStateException
 import java.util.*
 
 private val AbstractInsnNode.isDebugNode
@@ -55,6 +54,13 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
         val isEmpty get() = locals.isEmpty() && stack.isEmpty()
         val isNotEmpty get() = !isEmpty
+
+        fun clear() {
+            locals.clear()
+            stack.clear()
+            localPhis.clear()
+            stackPhis.clear()
+        }
     }
 
     private val visitedBlocks = mutableSetOf<BasicBlock>()
@@ -985,6 +991,17 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         optimizePhis()
     }
 
+    fun clear() {
+        visitedBlocks.clear()
+        locals.clear()
+        nodeToBlock.clear()
+        blockToNode.clear()
+        frames.forEach { (_, frame) ->
+            frame.clear()
+        }
+        unmappedBlocks.clear()
+    }
+
     fun build(): Method {
         initFrame()
         buildCFG()
@@ -1001,6 +1018,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         method.slotTracker.rerun()
         IRVerifier(cm).visit(method)
 
+        clear()
         return method
     }
 }
