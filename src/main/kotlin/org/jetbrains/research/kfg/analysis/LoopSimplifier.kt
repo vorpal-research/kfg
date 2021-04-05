@@ -16,7 +16,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     override fun cleanup() {}
 
     override fun visit(method: Method) {
-        if (method.isEmpty()) return
+        if (!method.hasBody) return
         current = method
         super.visit(method)
         IRVerifier(cm).visit(method)

@@ -110,6 +110,8 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     override val nodes: Set<BasicBlock>
         get() = innerBlocks.toSet()
 
+    val hasBody get() = this !in `class`.failingMethods && isNotEmpty()
+
     fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
 
