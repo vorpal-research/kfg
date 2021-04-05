@@ -1,12 +1,5 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kthelper.algorithm.Graph
-import org.jetbrains.research.kthelper.algorithm.GraphView
-import org.jetbrains.research.kthelper.algorithm.Viewable
-import org.jetbrains.research.kthelper.assert.ktassert
-import org.jetbrains.research.kthelper.collection.queueOf
-import org.jetbrains.research.kthelper.defaultHashCode
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker
@@ -15,6 +8,13 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.jsrInlined
+import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.algorithm.GraphView
+import org.jetbrains.research.kthelper.algorithm.Viewable
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.collection.queueOf
+import org.jetbrains.research.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.MethodNode
 
 data class MethodDesc(val args: Array<Type>, val retval: Type) {
@@ -112,6 +112,11 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
+
+    internal fun clear() {
+        innerBlocks.clear()
+        innerCatches.clear()
+    }
 
     fun add(bb: BasicBlock) {
         if (!innerBlocks.contains(bb)) {

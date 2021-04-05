@@ -1,12 +1,14 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstance
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
-import org.objectweb.asm.tree.*
+import org.jetbrains.research.kthelper.defaultHashCode
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.FieldNode
+import org.objectweb.asm.tree.MethodNode
 
 abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
     data class MethodKey(val name: String, val desc: MethodDesc) {
@@ -25,6 +27,8 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     val constructors get() = allMethods.filter { it.isConstructor }.toSet()
     val methods get() = allMethods.filterNot { it.isConstructor }.toSet()
     val fields get() = innerFields.values.toSet()
+
+    internal val failingMethods = mutableSetOf<Method>()
 
     val fullname
         get() = if (`package` == Package.emptyPackage) name else "$`package`/$name"

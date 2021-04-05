@@ -1,12 +1,12 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
+import org.jetbrains.research.kthelper.logging.log
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var current: Method
@@ -16,6 +16,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     override fun cleanup() {}
 
     override fun visit(method: Method) {
+        if (method.isEmpty()) return
         current = method
         super.visit(method)
         IRVerifier(cm).visit(method)

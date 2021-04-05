@@ -11,7 +11,8 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
     override fun cleanup() {}
 
     override fun visitMethod(method: Method) {
-        AsmBuilder(cm, method).build()
+        if (method !in `class`.failingMethods)
+            AsmBuilder(cm, method).build()
         // because sometimes ASM is not able to process kotlin-generated signatures
 //        method.mn.signature = null
     }
