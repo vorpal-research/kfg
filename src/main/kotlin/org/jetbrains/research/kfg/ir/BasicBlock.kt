@@ -1,8 +1,5 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kthelper.algorithm.Graph
-import org.jetbrains.research.kthelper.assert.asserted
-import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kfg.ir.value.BlockName
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.UsableBlock
@@ -10,6 +7,9 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.assert.ktassert
 
 sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instruction>, Graph.Vertex<BasicBlock>, BlockUser {
     internal var parentUnsafe: Method? = null
@@ -165,35 +165,41 @@ sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instructi
 
     override fun get() = this
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        when {
-            removePredecessor(from.get()) -> addPredecessor(to.get())
-            removeSuccessor(from.get()) -> addSuccessor(to.get())
-            handlers.contains(from.get()) -> {
-                ktassert(from.get() is CatchBlock)
-                val fromCatch = from.get() as CatchBlock
-                removeHandler(fromCatch)
+        if (removePredecessor(from.get())) {
+            addPredecessor(to.get())
+            to.get().addSuccessor(this)
+        }
+        if (removeSuccessor(from.get())) {
+            addSuccessor(to.get())
+            to.get().addPredecessor(this)
+        }
+        if (handlers.contains(from.get())) {
+            ktassert(from.get() is CatchBlock)
+            val fromCatch = from.get() as CatchBlock
+            removeHandler(fromCatch)
 
-                ktassert(to.get() is CatchBlock)
-                val toCatch = to.get() as CatchBlock
-                toCatch.addThrowers(listOf(this))
-            }
+            ktassert(to.get() is CatchBlock)
+            val toCatch = to.get() as CatchBlock
+            toCatch.addThrowers(listOf(this))
         }
         terminator.replaceUsesOf(from, to)
     }
 
     fun replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) {
-        when {
-            removeSuccessor(from.get()) -> addSuccessor(to.get())
-            handlers.contains(from.get()) -> {
-                ktassert(from.get() is CatchBlock)
-                val fromCatch = from.get() as CatchBlock
-                removeHandler(fromCatch)
-
-                ktassert(to.get() is CatchBlock)
-                val toCatch = to.get() as CatchBlock
-                toCatch.addThrowers(listOf(this))
-            }
+        if (removeSuccessor(from.get())) {
+            addSuccessor(to.get())
+            to.get().addPredecessor(this)
         }
+        if (handlers.contains(from.get())) {
+            ktassert(from.get() is CatchBlock)
+            val fromCatch = from.get() as CatchBlock
+            removeHandler(fromCatch)
+
+            ktassert(to.get() is CatchBlock)
+            val toCatch = to.get() as CatchBlock
+            toCatch.addThrowers(listOf(this))
+        }
+        terminator.replaceUsesOf(from, to)
     }
 }
 
