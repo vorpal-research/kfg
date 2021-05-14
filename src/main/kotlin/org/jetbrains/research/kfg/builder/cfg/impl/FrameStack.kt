@@ -4,7 +4,9 @@ import org.jetbrains.research.kfg.ir.value.UsableValue
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueUser
 
-internal class FrameStack(private val stack: MutableList<Value> = mutableListOf()) : ValueUser, MutableList<Value> by stack {
+internal class FrameStack(
+    private val stack: MutableList<Value> = mutableListOf()
+) : ValueUser, MutableList<Value> by stack {
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
         stack.replaceAll { if (it == from) to.get() else it }
     }

@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kfg.InvalidAccessError
 import org.jetbrains.research.kfg.ir.Field
-import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.Name
+import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kthelper.assert.asserted
 
 class FieldLoadInst : Instruction {
     val field: Field
@@ -13,10 +13,7 @@ class FieldLoadInst : Instruction {
         get() = !isStatic
 
     val owner: Value
-        get() = when {
-            hasOwner -> ops[0]
-            else -> throw InvalidAccessError("Trying to get owner of static field")
-        }
+        get() = asserted(isStatic) { ops[0] }
 
     constructor(name: Name, field: Field) : super(name, field.type, arrayOf()) {
         this.field = field

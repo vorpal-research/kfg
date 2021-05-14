@@ -1,8 +1,5 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kthelper.assert.AssertionException
-import org.jetbrains.research.kthelper.assert.ktassert
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
 import org.jetbrains.research.kfg.ir.BasicBlock
@@ -16,6 +13,9 @@ import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kthelper.assert.AssertionException
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.logging.log
 
 class InvalidIRException(reason: Throwable) : KfgException(reason)
 
@@ -34,9 +34,14 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
 
     private fun visitValue(value: Value) {
         if (value.name !is UndefinedName && value !is Constant) {
-            ktassert(valueNameRegex.matches(value.name.toString())) { log.error("Incorrect value name format $value") }
+            ktassert(valueNameRegex.matches("${value.name}")) {
+                log.error("Incorrect value name format $value")
+            }
             val storedVal = valueNames[value.name.toString()]
-            ktassert(storedVal == null || storedVal == value) { log.error("Same names for two different values") }
+
+            ktassert(storedVal == null || storedVal == value) {
+                log.error("Same names for two different values")
+            }
             valueNames[value.name.toString()] = value
         }
     }
@@ -47,9 +52,11 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         inst.operands.forEach { visitValue(it) }
         visitValue(inst)
 
-        inst.run {
-            ktassert(hasParent) { log.error("Instruction $inst with no parent in method") }
-            ktassert(parent in method) { log.error("Instruction parent does not belong to method") }
+        ktassert(inst.hasParent) {
+            log.error("Instruction ${inst.print()} with no parent in method")
+        }
+        ktassert(inst.parent in method) {
+            log.error("Instruction ${inst.print()} parent does not belong to method")
         }
 
         super.visitInstruction(inst)
@@ -59,19 +66,23 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         val (method, bb) = inst.parents
 
         for (predecessor in inst.predecessors) {
-            ktassert(predecessor in method) { "Phi ${inst.print()} incoming from unknown block" }
+            ktassert(predecessor in method) {
+                "Phi ${inst.print()} incoming from unknown block"
+            }
         }
+
         val predecessors = when (bb) {
             is BodyBlock -> bb.predecessors
             is CatchBlock -> bb.allPredecessors
         }
 
         ktassert(predecessors.size == inst.predecessors.size) {
-            "Phi insts predecessors are different from block predecessors: ${inst.print()}"
+            "Phi instruction predecessors are different from block predecessors: ${inst.print()}"
         }
+
         for (predecessor in inst.predecessors) {
             ktassert(predecessor in predecessors) {
-                log.error("Phi insts predecessors are different from block predecessors")
+                log.error("Phi instruction predecessors are different from block predecessors")
             }
         }
     }
@@ -83,8 +94,12 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
             "Terminate inst ${inst.print()} successors are different from block successors"
         }
         for (successor in inst.successors) {
-            ktassert(successor in method) { log.error("Terminate inst to unknown block") }
-            ktassert(successor in bb.successors) { log.error("Terminate insts successors are different from block successors") }
+            ktassert(successor in method) {
+                log.error("Terminate inst to unknown block")
+            }
+            ktassert(successor in bb.successors) {
+                log.error("Terminate instruction successors are different from block successors")
+            }
         }
         super.visitTerminateInst(inst)
     }
@@ -92,25 +107,51 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
     override fun visitBasicBlock(bb: BasicBlock) {
         val method = bb.parent
 
-        ktassert(blockNameRegex.matches(bb.name.toString())) { log.error("Incorrect value name format ${bb.name}") }
-        val storedVal = blockNames[bb.name.toString()]
-        ktassert(storedVal == null || storedVal == bb) { log.error("Same names for two different blocks") }
-        ktassert(bb.parent == method) { log.error("Block parent points to other method") }
+        ktassert(blockNameRegex.matches("${bb.name}")) {
+            log.error("Incorrect value name format ${bb.name}")
+        }
+        val storedVal = blockNames["${bb.name}"]
+
+        ktassert(storedVal == null || storedVal == bb) {
+            log.error("Same names for two different blocks")
+        }
+        ktassert(bb.parent == method) {
+            log.error("Block parent points to other method")
+        }
+
         when (bb) {
             is CatchBlock -> {
-                ktassert(bb in method.catchEntries) { "Catch block ${bb.name} does not belong to method catch entries" }
-                ktassert(bb.predecessors.isEmpty()) { "Catch block ${bb.name} should not have predecessors" }
+                ktassert(bb in method.catchEntries) {
+                    "Catch block ${bb.name} does not belong to method catch entries"
+                }
+                ktassert(bb.predecessors.isEmpty()) {
+                    "Catch block ${bb.name} should not have predecessors"
+                }
             }
-            method.entry -> ktassert(bb.predecessors.isEmpty()) { log.error("Entry block should not have predecessors") }
-            else -> bb.predecessors.forEach {
-                ktassert(it in method) { "Block ${bb.name} predecessor ${it.name} does not belong to method" }
+            method.entry -> ktassert(bb.predecessors.isEmpty()) {
+                log.error("Entry block should not have predecessors")
+            }
+            else -> {
+                for (it in bb.predecessors) {
+                    ktassert(it in method) {
+                        "Block ${bb.name} predecessor ${it.name} does not belong to method"
+                    }
+                }
             }
         }
+
         for (successor in bb.successors) {
-            ktassert(successor in method) { log.error("Block successor does not belong to method") }
+            ktassert(successor in method) {
+                log.error("Block successor does not belong to method")
+            }
         }
-        ktassert(bb.last() is TerminateInst) { log.error("Block should end with terminate inst") }
-        ktassert(bb.mapNotNull { it as? TerminateInst }.size == 1) { log.error("Block should have exactly one terminator") }
+
+        ktassert(bb.last() is TerminateInst) {
+            log.error("Block should end with terminate inst")
+        }
+        ktassert(bb.mapNotNull { it as? TerminateInst }.size == 1) {
+            log.error("Block should have exactly one terminator")
+        }
         super.visitBasicBlock(bb)
     }
 

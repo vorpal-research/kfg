@@ -8,8 +8,8 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.jsrInlined
-import org.jetbrains.research.kthelper.algorithm.Graph
 import org.jetbrains.research.kthelper.algorithm.GraphView
+import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
 import org.jetbrains.research.kthelper.algorithm.Viewable
 import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.collection.queueOf
@@ -39,8 +39,11 @@ data class MethodDesc(val args: Array<Type>, val retval: Type) {
     override fun toString() = "(${args.joinToString { it.name }}): ${retval.name}"
 }
 
-class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
-    : Node(cm, node.name, node.access), Graph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
+class Method(
+    cm: ClassManager,
+    node: MethodNode,
+    val klass: Class
+) : Node(cm, node.name, node.access), PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
 
     companion object {
         private val CONSTRUCTOR_NAMES = arrayOf("<init>")
@@ -61,16 +64,11 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     val catchEntries: Set<CatchBlock> get() = innerCatches
     val slotTracker = SlotTracker(this)
 
-    init {
-        mn.visibleAnnotations?.apply { addVisibleAnnotations(this) }
-        mn.invisibleAnnotations?.apply { addInvisibleAnnotations(this) }
-    }
-
     override val entry: BasicBlock
         get() = innerBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
 
     val prototype: String
-        get() = "$`class`::$name$desc"
+        get() = "$klass::$name$desc"
 
     val isConstructor: Boolean
         get() = name in CONSTRUCTOR_NAMES
@@ -110,7 +108,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     override val nodes: Set<BasicBlock>
         get() = innerBlocks.toSet()
 
-    val hasBody get() = this !in `class`.failingMethods && isNotEmpty()
+    val hasBody get() = this !in klass.failingMethods && isNotEmpty()
 
     fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
@@ -121,8 +119,10 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun add(bb: BasicBlock) {
-        if (!innerBlocks.contains(bb)) {
-            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+        if (bb !in innerBlocks) {
+            ktassert(!bb.hasParent) {
+                log.error("Block ${bb.name} already belongs to other method")
+            }
             innerBlocks.add(bb)
             slotTracker.addBlock(bb)
             bb.addUser(this)
@@ -131,10 +131,14 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun addBefore(before: BasicBlock, bb: BasicBlock) {
-        if (!innerBlocks.contains(bb)) {
-            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+        if (bb !in innerBlocks) {
+            ktassert(!bb.hasParent) {
+                log.error("Block ${bb.name} already belongs to other method")
+            }
             val index = basicBlocks.indexOf(before)
-            ktassert(index >= 0) { log.error("Block ${before.name} does not belong to method $this") }
+            ktassert(index >= 0) {
+                log.error("Block ${before.name} does not belong to method $this")
+            }
 
             innerBlocks.add(index, bb)
             slotTracker.addBlock(bb)
@@ -144,10 +148,14 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     }
 
     fun addAfter(after: BasicBlock, bb: BasicBlock) {
-        if (!innerBlocks.contains(bb)) {
-            ktassert(!bb.hasParent) { log.error("Block ${bb.name} already belongs to other method") }
+        if (bb !in innerBlocks) {
+            ktassert(!bb.hasParent) {
+                log.error("Block ${bb.name} already belongs to other method")
+            }
             val index = basicBlocks.indexOf(after)
-            ktassert(index >= 0) { log.error("Block ${after.name} does not belong to method $this") }
+            ktassert(index >= 0) {
+                log.error("Block ${after.name} does not belong to method $this")
+            }
 
             innerBlocks.add(index + 1, bb)
             slotTracker.addBlock(bb)
@@ -158,7 +166,9 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
 
     fun remove(block: BasicBlock) {
         if (innerBlocks.contains(block)) {
-            ktassert(block.parentUnsafe == this) { log.error("Block ${block.name} don't belong to $this") }
+            ktassert(block.parentUnsafe == this) {
+                log.error("Block ${block.name} don't belong to $this")
+            }
             innerBlocks.remove(block)
 
             if (block in innerCatches) {
@@ -191,22 +201,22 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
     override fun toString() = prototype
     override fun iterator() = innerBlocks.iterator()
 
-    override fun hashCode() = defaultHashCode(name, `class`, desc)
+    override fun hashCode() = defaultHashCode(name, klass, desc)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
         other as Method
-        return this.name == other.name && this.`class` == other.`class` && this.desc == other.desc
+        return this.name == other.name && this.klass == other.klass && this.desc == other.desc
     }
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
         (0 until innerBlocks.size)
-                .filter { basicBlocks[it] == from }
-                .forEach {
-                    innerBlocks[it].removeUser(this)
-                    innerBlocks[it] = to.get()
-                    to.addUser(this)
-                }
+            .filter { basicBlocks[it] == from }
+            .forEach {
+                innerBlocks[it].removeUser(this)
+                innerBlocks[it] = to.get()
+                to.addUser(this)
+            }
     }
 
     override val graphView: List<GraphView>
@@ -214,7 +224,7 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
             val nodes = hashMapOf<String, GraphView>()
             nodes[name] = GraphView(name, prototype)
 
-            basicBlocks.map { bb ->
+            for (bb in basicBlocks) {
                 val label = StringBuilder()
                 label.append("${bb.name}: ${bb.predecessors.joinToString(", ") { it.name.toString() }}\\l")
                 bb.instructions.forEach { label.append("    ${it.print().replace("\"", "\\\"")}\\l") }
@@ -226,10 +236,10 @@ class Method(cm: ClassManager, node: MethodNode, val `class`: Class)
                 nodes.getValue(name).addSuccessor(entryNode)
             }
 
-            basicBlocks.forEach {
+            for (it in basicBlocks) {
                 val current = nodes.getValue(it.name.toString())
-                for (succ in it.successors) {
-                    current.addSuccessor(nodes.getValue(succ.name.toString()))
+                for (successor in it.successors) {
+                    current.addSuccessor(nodes.getValue(successor.name.toString()))
                 }
             }
 

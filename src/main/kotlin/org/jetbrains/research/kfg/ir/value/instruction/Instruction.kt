@@ -1,13 +1,16 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Location
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kthelper.assert.asserted
 
-abstract class Instruction(name: Name, type: Type, protected val ops: Array<Value>)
-    : Value(name, type), ValueUser, Iterable<Value> {
+abstract class Instruction(
+    name: Name,
+    type: Type,
+    protected val ops: Array<Value>
+) : Value(name, type), ValueUser, Iterable<Value> {
 
     internal var parentUnsafe: BasicBlock? = null
     var location = Location()
@@ -31,12 +34,12 @@ abstract class Instruction(name: Name, type: Type, protected val ops: Array<Valu
 
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
         ops.indices
-                .filter { ops[it] == from }
-                .forEach {
-                    ops[it].removeUser(this)
-                    ops[it] = to.get()
-                    to.addUser(this)
-                }
+            .filter { ops[it] == from }
+            .forEach {
+                ops[it].removeUser(this)
+                ops[it] = to.get()
+                to.addUser(this)
+            }
     }
 
     abstract fun clone(): Instruction
@@ -48,8 +51,12 @@ abstract class Instruction(name: Name, type: Type, protected val ops: Array<Valu
     }
 }
 
-abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, protected val succs: Array<BasicBlock>) :
-        Instruction(name, type, operands), BlockUser {
+abstract class TerminateInst(
+    name: Name,
+    type: Type,
+    operands: Array<Value>,
+    protected val succs: Array<BasicBlock>
+) : Instruction(name, type, operands), BlockUser {
 
     val successors: List<BasicBlock>
         get() = succs.toList()
@@ -62,11 +69,11 @@ abstract class TerminateInst(name: Name, type: Type, operands: Array<Value>, pro
 
     override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
         succs.indices
-                .filter { succs[it] == from }
-                .forEach {
-                    succs[it].removeUser(this)
-                    succs[it] = to.get()
-                    to.addUser(this)
-                }
+            .filter { succs[it] == from }
+            .forEach {
+                succs[it].removeUser(this)
+                succs[it] = to.get()
+                to.addUser(this)
+            }
     }
 }

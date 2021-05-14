@@ -1,12 +1,12 @@
 package org.jetbrains.research.kfg.builder.cfg.impl
 
-import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseDesc
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.LabelNode
@@ -20,7 +20,7 @@ private object TopType : Type {
         get() = "T"
     override val isPrimary: Boolean
         get() = false
-    override val bitsize: Int
+    override val bitSize: Int
         get() = Type.WORD
 
     override val isConcrete: Boolean
@@ -35,7 +35,7 @@ private object UninitializedThisType : Type {
         get() = "U"
     override val isPrimary: Boolean
         get() = false
-    override val bitsize: Int
+    override val bitSize: Int
         get() = Type.WORD
 
     override val isConcrete: Boolean
@@ -122,7 +122,7 @@ internal data class FrameState(
     private val SortedMap<Int, Type>.filtered: SortedMap<Int, Type>
         get() = this.filterValues { it !is TopType }.mapValues {
             when (it.value) {
-                is UninitializedThisType -> types.getRefType(method.`class`)
+                is UninitializedThisType -> types.getRefType(method.klass)
                 else -> it.value
             }
         }.toSortedMap()
@@ -139,7 +139,7 @@ internal data class FrameState(
                 types,
                 method,
                 locals.mapValues { it.value.type }.toSortedMap(),
-                stack.withIndex().map { it.index to it.value.type }.toMap().toSortedMap()
+            stack.withIndex().associate { it.index to it.value.type }.toSortedMap()
         )
     }
 

@@ -5,12 +5,17 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
-class SwitchInst(key: Value, type: Type, default: BasicBlock, branches: Map<Value, BasicBlock>) :
-        TerminateInst(
-                UndefinedName,
-                type,
-                arrayOf(key, *branches.keys.toTypedArray()),
-                arrayOf(default, *branches.values.toTypedArray())) {
+class SwitchInst(
+    key: Value,
+    type: Type,
+    default: BasicBlock,
+    branches: Map<Value, BasicBlock>
+) : TerminateInst(
+    UndefinedName,
+    type,
+    arrayOf(key, *branches.keys.toTypedArray()),
+    arrayOf(default, *branches.values.toTypedArray())
+) {
 
     val key: Value
         get() = ops[0]

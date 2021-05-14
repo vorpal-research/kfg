@@ -1,12 +1,11 @@
 package org.jetbrains.research.kfg.container
 
-import org.jetbrains.research.kthelper.`try`
-import org.jetbrains.research.kthelper.tryOrNull
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnsupportedCfgException
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
+import org.jetbrains.research.kthelper.`try`
 import org.objectweb.asm.tree.ClassNode
 import java.io.FileInputStream
 import java.nio.file.Path
@@ -56,7 +55,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
     private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
         action()
     }.getOrElse {
-        if (failOnError) throw UnsupportedCfgException("")
+        if (failOnError) throw UnsupportedCfgException()
         else null
     }
 
@@ -93,7 +92,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
-                        val localPath = "${`class`.fullname}.class"
+                        val localPath = "${`class`.fullName}.class"
                         val path = "$absolutePath/$localPath"
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
@@ -123,7 +122,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val `class` = cm[entry.name.removeSuffix(".class")]
 
                 if (`class` is ConcreteClass) {
-                    val localPath = "${`class`.fullname}.class"
+                    val localPath = "${`class`.fullName}.class"
                     val path = "$absolutePath/$localPath"
 
                     val newEntry = JarEntry(localPath.replace("\\", "/"))

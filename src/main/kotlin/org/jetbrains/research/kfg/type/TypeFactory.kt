@@ -1,10 +1,9 @@
 package org.jetbrains.research.kfg.type
 
+import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.logging.log
-import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.UnknownTypeException
-import org.jetbrains.research.kfg.ir.Class
 import java.lang.Class as JClass
 
 class TypeFactory(val cm: ClassManager) {
@@ -114,7 +113,7 @@ class TypeFactory(val cm: ClassManager) {
             Long::class.javaPrimitiveType -> longType
             Float::class.javaPrimitiveType -> floatType
             Double::class.javaPrimitiveType -> doubleType
-            else -> throw UnknownTypeException("Unknown primitive type $klass")
+            else -> unreachable { log.error("Unknown primary type $klass") }
         }
         klass.isArray -> getArrayType(get(klass.componentType))
         else -> getRefType(cm[klass.name.replace('.', '/')])

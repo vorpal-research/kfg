@@ -55,7 +55,11 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     abstract fun run()
 }
 
-class PackagePipeline(cm: ClassManager, val target: Package, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
+class PackagePipeline(
+    cm: ClassManager,
+    val target: Package,
+    pipeline: List<NodeVisitor> = arrayListOf()
+) : Pipeline(cm, pipeline) {
     override fun run() {
         val classes = cm.getByPackage(target)
         for (pass in pipeline) {
@@ -66,7 +70,11 @@ class PackagePipeline(cm: ClassManager, val target: Package, pipeline: List<Node
     }
 }
 
-class MultiplePackagePipeline(cm: ClassManager, val targets: List<Package>, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
+class MultiplePackagePipeline(
+    cm: ClassManager,
+    val targets: List<Package>,
+    pipeline: List<NodeVisitor> = arrayListOf()
+) : Pipeline(cm, pipeline) {
     override fun run() {
         val classes = targets.flatMap { cm.getByPackage(it) }
         for (pass in pipeline) {
@@ -77,7 +85,11 @@ class MultiplePackagePipeline(cm: ClassManager, val targets: List<Package>, pipe
     }
 }
 
-class ClassPipeline(cm: ClassManager, target: Class, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
+class ClassPipeline(
+    cm: ClassManager,
+    target: Class,
+    pipeline: List<NodeVisitor> = arrayListOf()
+) : Pipeline(cm, pipeline) {
     private val targets = mutableSetOf<Class>()
 
     init {
@@ -98,8 +110,12 @@ class ClassPipeline(cm: ClassManager, target: Class, pipeline: List<NodeVisitor>
     }
 }
 
-class MethodPipeline(cm: ClassManager, val targets: Collection<Method>, pipeline: List<NodeVisitor> = arrayListOf()) : Pipeline(cm, pipeline) {
-    private val classTargets = targets.map { it.`class` }.toMutableSet()
+class MethodPipeline(
+    cm: ClassManager,
+    val targets: Collection<Method>,
+    pipeline: List<NodeVisitor> = arrayListOf()
+) : Pipeline(cm, pipeline) {
+    private val classTargets = targets.map { it.klass }.toMutableSet()
     override val pipeline = pipeline.map { it.methodWrap() }.toMutableList()
 
     protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
@@ -110,9 +126,9 @@ class MethodPipeline(cm: ClassManager, val targets: Collection<Method>, pipeline
                 visitor.cleanup()
             }
 
-            override fun visit(`class`: Class) {
-                super.visit(`class`)
-                visitor.visit(`class`)
+            override fun visit(klass: Class) {
+                super.visit(klass)
+                visitor.visit(klass)
             }
 
             override fun visitMethod(method: Method) {
@@ -150,30 +166,34 @@ class MethodPipeline(cm: ClassManager, val targets: Collection<Method>, pipeline
     }
 }
 
-fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline = PackagePipeline(cm, target).also {
-    it.init()
-}
+fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline =
+    PackagePipeline(cm, target).also {
+        it.init()
+    }
 
-fun buildPipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit): Pipeline = MultiplePackagePipeline(cm, targets).also {
-    it.init()
-}
+fun buildPipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit): Pipeline =
+    MultiplePackagePipeline(cm, targets).also {
+        it.init()
+    }
 
-fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline = ClassPipeline(cm, target).also {
-    it.init()
-}
+fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline =
+    ClassPipeline(cm, target).also {
+        it.init()
+    }
 
-fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline = MethodPipeline(cm, targets).also {
-    it.init()
-}
+fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline =
+    MethodPipeline(cm, targets).also {
+        it.init()
+    }
 
 fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
-        buildPipeline(cm, target, init).run()
+    buildPipeline(cm, target, init).run()
 
 fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
-        buildPipeline(cm, targets, init).run()
+    buildPipeline(cm, targets, init).run()
 
 fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
-        buildPipeline(cm, target, init).run()
+    buildPipeline(cm, target, init).run()
 
 fun executePipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
-        buildPipeline(cm, targets, init).run()
+    buildPipeline(cm, targets, init).run()

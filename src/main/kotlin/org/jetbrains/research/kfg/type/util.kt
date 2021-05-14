@@ -1,17 +1,17 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kfg.InvalidOpcodeError
-import org.jetbrains.research.kfg.InvalidStateError
-import org.jetbrains.research.kfg.InvalidTypeDescError
+import org.jetbrains.research.kfg.InvalidOpcodeException
+import org.jetbrains.research.kfg.InvalidStateException
+import org.jetbrains.research.kfg.InvalidTypeException
 import org.objectweb.asm.Opcodes
 import java.util.regex.Pattern
 
 val Type.internalDesc: String
     get() = when {
         this.isPrimary -> this.asmDesc
-        this is ClassType -> this.`class`.fullname
+        this is ClassType -> this.klass.fullName
         this is ArrayType -> "[${(component as? ClassType)?.asmDesc ?: component.internalDesc}"
-        else -> throw InvalidStateError("Unknown type ${this.name}")
+        else -> throw InvalidStateException("Unknown type ${this.name}")
     }
 
 fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
@@ -28,8 +28,8 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         val classes = types.map { it as ClassType }
         var result = tf.objectType
         for (i in 0..classes.lastIndex) {
-            val isAncestor = classes.fold(true) { acc, `class` ->
-                acc && classes[i].`class`.isAncestorOf(`class`.`class`)
+            val isAncestor = classes.fold(true) { acc, klass ->
+                acc && classes[i].klass.isAncestorOf(klass.klass)
             }
 
             if (isAncestor) {
@@ -64,11 +64,11 @@ fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
     'F' -> tf.floatType
     'D' -> tf.doubleType
     'L' -> {
-        if (desc.last() != ';') throw InvalidTypeDescError(desc)
+        if (desc.last() != ';') throw InvalidTypeException(desc)
         tf.getRefType(desc.drop(1).dropLast(1))
     }
     '[' -> tf.getArrayType(parseDesc(tf, desc.drop(1)))
-    else -> throw InvalidTypeDescError(desc)
+    else -> throw InvalidTypeException(desc)
 }
 
 fun parsePrimaryType(tf: TypeFactory, opcode: Int): Type = when (opcode) {
@@ -80,7 +80,7 @@ fun parsePrimaryType(tf: TypeFactory, opcode: Int): Type = when (opcode) {
     Opcodes.T_INT -> tf.intType
     Opcodes.T_LONG -> tf.longType
     Opcodes.T_SHORT -> tf.shortType
-    else -> throw InvalidOpcodeError("PrimaryType opcode $opcode")
+    else -> throw InvalidOpcodeException("PrimaryType opcode $opcode")
 }
 
 fun primaryTypeToInt(type: Type): Int = when (type) {
@@ -92,7 +92,7 @@ fun primaryTypeToInt(type: Type): Int = when (type) {
     is IntType -> Opcodes.T_INT
     is LongType -> Opcodes.T_LONG
     is ShortType -> Opcodes.T_SHORT
-    else -> throw InvalidOpcodeError("${type.name} is not primary type")
+    else -> throw InvalidOpcodeException("${type.name} is not primary type")
 }
 
 fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
@@ -133,8 +133,8 @@ fun parseStringToType(tf: TypeFactory, name: String): Type {
     return subtype
 }
 
-val Type.expandedBitsize
+val Type.expandedBitSize
     get() = when (this) {
-        is ClassType -> `class`.fields.fold(0) { acc, field -> acc + field.type.bitsize }
-        else -> bitsize
+        is ClassType -> klass.fields.fold(0) { acc, field -> acc + field.type.bitSize }
+        else -> bitSize
     }

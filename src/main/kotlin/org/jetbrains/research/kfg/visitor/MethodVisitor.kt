@@ -1,10 +1,11 @@
 package org.jetbrains.research.kfg.visitor
 
-import org.jetbrains.research.kfg.InvalidInstructionError
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Parameter
 import org.jetbrains.research.kfg.ir.value.instruction.*
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.logging.log
 
 interface MethodVisitor : NodeVisitor {
 
@@ -40,7 +41,7 @@ interface MethodVisitor : NodeVisitor {
             is PhiInst -> visitPhiInst(inst)
             is UnaryInst -> visitUnaryInst(inst)
             is TerminateInst -> visitTerminateInst(inst)
-            else -> throw InvalidInstructionError(inst)
+            else -> unreachable { log.error("Unknown instruction ${inst.print()}") }
         }
     }
 
@@ -53,7 +54,7 @@ interface MethodVisitor : NodeVisitor {
             is TableSwitchInst -> visitTableSwitchInst(inst)
             is ThrowInst -> visitThrowInst(inst)
             is UnreachableInst -> visitUnreachableInst(inst)
-            else -> throw InvalidInstructionError(inst)
+            else -> unreachable { log.error("Unknown instruction ${inst.print()}") }
         }
     }
 

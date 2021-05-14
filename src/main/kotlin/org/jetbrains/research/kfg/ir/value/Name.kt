@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.InvalidStateError
+import org.jetbrains.research.kfg.InvalidStateException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 
@@ -50,7 +50,7 @@ data class ConstantName(val name: String) : Name() {
 
 object UndefinedName : Name() {
     override fun clone() = this
-    override fun toString(): String = throw InvalidStateError("Trying to print undefined name")
+    override fun toString(): String = throw InvalidStateException("Trying to print undefined name")
 }
 
 class SlotTracker(val method: Method) {

@@ -1,11 +1,11 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
+import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kthelper.logging.log
 
 class ValueFactory(val cm: ClassManager) {
     val types get() = cm.type
@@ -57,7 +57,7 @@ class ValueFactory(val cm: ClassManager) {
         is ShortConstant -> constant.value.toInt()
         is IntConstant -> constant.value
         is LongConstant -> constant.value
-        is CharConstant -> constant.value.toInt()
+        is CharConstant -> constant.value.code
         is FloatConstant -> constant.value
         is DoubleConstant -> constant.value
         is StringConstant -> constant.value

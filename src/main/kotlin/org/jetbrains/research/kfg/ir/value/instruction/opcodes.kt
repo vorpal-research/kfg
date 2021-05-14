@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
-import org.jetbrains.research.kthelper.defaultHashCode
-import org.jetbrains.research.kfg.InvalidOpcodeError
+import org.jetbrains.research.kfg.InvalidOpcodeException
 import org.jetbrains.research.kfg.type.TypeFactory
+import org.jetbrains.research.kthelper.defaultHashCode
 import org.objectweb.asm.Opcodes
 
 fun toBinaryOpcode(opcode: Int) = when (opcode) {
@@ -17,7 +17,7 @@ fun toBinaryOpcode(opcode: Int) = when (opcode) {
     in Opcodes.IAND..Opcodes.LAND -> BinaryOpcode.And()
     in Opcodes.IOR..Opcodes.LOR -> BinaryOpcode.Or()
     in Opcodes.IXOR..Opcodes.LXOR -> BinaryOpcode.Xor()
-    else -> throw InvalidOpcodeError("Binary opcode $opcode")
+    else -> throw InvalidOpcodeException("Binary opcode $opcode")
 }
 
 sealed class BinaryOpcode {
@@ -99,7 +99,7 @@ fun toCmpOpcode(opcode: Int) = when (opcode) {
     Opcodes.FCMPG -> CmpOpcode.Cmpg()
     Opcodes.DCMPL -> CmpOpcode.Cmpl()
     Opcodes.DCMPG -> CmpOpcode.Cmpg()
-    else -> throw InvalidOpcodeError("Cmp opcode $opcode")
+    else -> throw InvalidOpcodeException("Cmp opcode $opcode")
 }
 
 fun getCmpResultType(tf: TypeFactory, opcode: CmpOpcode) = when (opcode) {
@@ -157,7 +157,7 @@ fun toCallOpcode(opcode: Int): CallOpcode = when (opcode) {
     Opcodes.INVOKESTATIC -> CallOpcode.Static()
     Opcodes.INVOKESPECIAL -> CallOpcode.Special()
     Opcodes.INVOKEVIRTUAL -> CallOpcode.Virtual()
-    else -> throw InvalidOpcodeError("Call opcode $opcode")
+    else -> throw InvalidOpcodeException("Call opcode $opcode")
 }
 
 sealed class CallOpcode {
@@ -212,5 +212,5 @@ fun isExceptionThrowing(opcode: Int) = when (opcode) {
     Opcodes.INSTANCEOF -> false
     in Opcodes.MONITORENTER..Opcodes.MULTIANEWARRAY -> true
     in Opcodes.IFNULL..Opcodes.IFNONNULL -> false
-    else -> throw InvalidOpcodeError("Unknown instruction opcode $opcode")
+    else -> throw InvalidOpcodeException("Unknown instruction opcode $opcode")
 }

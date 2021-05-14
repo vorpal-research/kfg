@@ -1,23 +1,11 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.type.parseDesc
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.tree.AnnotationNode
 
 abstract class Node(val cm: ClassManager, val name: String, val modifiers: Int) {
-    val visibleAnnotations = mutableListOf<Annotation>()
-    val invisibleAnnotations = mutableListOf<Annotation>()
 
     abstract val asmDesc: String
-
-    fun addVisibleAnnotations(visibleAnnotations: List<AnnotationNode>) {
-        this.visibleAnnotations.addAll(visibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
-    }
-
-    fun addInvisibleAnnotations(invisibleAnnotations: List<AnnotationNode>) {
-        this.invisibleAnnotations.addAll(invisibleAnnotations.map { Annotation(parseDesc(cm.type, it.desc)) })
-    }
 
     val isPublic: Boolean
         get() = (modifiers and Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC

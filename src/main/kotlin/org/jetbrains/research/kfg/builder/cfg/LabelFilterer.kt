@@ -20,9 +20,9 @@ internal class LabelFilterer(val mn: MethodNode) {
             prev = inst as? LabelNode
         }
 
-        val clonedLabels = insts.mapNotNull { it as? LabelNode }.map {
-            it to LabelNode(Label())
-        }.toMap()
+        val clonedLabels = insts
+            .mapNotNull { it as? LabelNode }
+            .associateWith { LabelNode(Label()) }
         val newReplacement = clonedLabels.map { (key, value) ->
             key to when (key) {
                 in replacement -> clonedLabels.getValue(replacement.getValue(key))
@@ -48,10 +48,10 @@ internal class LabelFilterer(val mn: MethodNode) {
             tcb.invisibleTypeAnnotations = it.invisibleTypeAnnotations?.toList()
             tcb
         }
-        newInsts.forEach {
+        for (it in newInsts) {
             new.instructions.add(it)
         }
-        tryCatches.forEach {
+        for (it in tryCatches) {
             new.tryCatchBlocks.add(it)
         }
 

@@ -13,11 +13,6 @@ class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, 
     override val asmDesc
         get() = type.asmDesc
 
-    init {
-        fn.visibleAnnotations?.apply { addVisibleAnnotations(this) }
-        fn.invisibleAnnotations?.apply { addInvisibleAnnotations(this) }
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -40,5 +35,5 @@ class Field(cm: ClassManager, val fn: FieldNode, val `class`: Class) : Node(cm, 
         return result
     }
 
-    override fun toString() = "${`class`.fullname}.$name: $type"
+    override fun toString() = "${`class`.fullName}.$name: $type"
 }

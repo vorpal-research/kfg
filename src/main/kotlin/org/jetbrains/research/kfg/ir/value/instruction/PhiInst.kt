@@ -21,12 +21,13 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     val incomings: Map<BasicBlock, Value>
         get() = predecessors.zip(ops).toMap()
 
-    override fun print(): String {
-        val sb = StringBuilder()
-        sb.append("$name = phi {")
-        sb.append(incomings.toList().joinToString(separator = "; ") { "${it.first.name} -> ${it.second}" })
-        sb.append("}")
-        return sb.toString()
+    override fun print() = buildString {
+        append("$name = phi {")
+        append(incomings.toList()
+            .joinToString(separator = "; ") {
+                "${it.first.name} -> ${it.second}"
+            })
+        append("}")
     }
 
     override fun clone(): Instruction = PhiInst(name.clone(), type, incomings)
@@ -44,7 +45,7 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
     override fun replaceAllUsesWith(to: UsableValue) {
         super.replaceAllUsesWith(to)
         if (to is BlockUser) {
-            preds.forEach {
+            for (it in preds) {
                 it.removeUser(this)
                 it.addUser(to)
             }

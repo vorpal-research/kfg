@@ -36,10 +36,16 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
                 val oldIncomings = phi.incomings
                 val incomings = when (parent) {
                     is CatchBlock -> when (block) {
-                        in parent.entries -> oldIncomings.map { (if (it.key == block) predecessor else it.key) to it.value }.toMap()
-                        else -> oldIncomings.mapNotNull { if (it.key == block) null else it.key to it.value }.toMap()
+                        in parent.entries -> oldIncomings.map {
+                            (if (it.key == block) predecessor else it.key) to it.value
+                        }.toMap()
+                        else -> oldIncomings.mapNotNull {
+                            if (it.key == block) null else it.key to it.value
+                        }.toMap()
                     }
-                    else -> oldIncomings.map { (if (it.key == block) predecessor else it.key) to it.value }.toMap()
+                    else -> oldIncomings.map {
+                        (if (it.key == block) predecessor else it.key) to it.value
+                    }.toMap()
                 }
                 val newPhi = cm.instruction.getPhi(phi.type, incomings)
 

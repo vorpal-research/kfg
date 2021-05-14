@@ -83,13 +83,13 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
                 container2class.getOrPut(container, ::mutableSetOf).add(klass)
             }
         }
-        classes.values.forEach {
-            InnerClassNormalizer(this).visit(it)
+        for (klass in classes.values) {
+            InnerClassNormalizer(this).visit(klass)
         }
         classes.values.forEach { it.init() }
 
-        classes.forEach { (_, klass) ->
-            klass.allMethods.forEach { method ->
+        for (klass in classes.values) {
+            for (method in klass.allMethods) {
                 try {
                     if (!method.isAbstract) CfgBuilder(this, method).build()
                 } catch (e: KfgException) {
@@ -111,7 +111,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         OuterClass(this, cn)
     }
 
-    fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.`package`) }
+    fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
 
     fun getSubtypesOf(klass: Class): Set<Class> =
         concreteClasses.filter { it.isInheritorOf(klass) && it != klass }.toSet()

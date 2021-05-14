@@ -35,7 +35,7 @@ class KfgIntegrationTest {
     private val out = ByteArrayOutputStream()
     private val err = ByteArrayOutputStream()
 
-    val `package` = Package("org/jetbrains/research/kfg/*")
+    val pkg = Package("org/jetbrains/research/kfg/*")
     lateinit var jar: JarContainer
     lateinit var cm: ClassManager
 
@@ -49,7 +49,11 @@ class KfgIntegrationTest {
         val `package` = Package("org/jetbrains/research/kfg/*")
 
         jar = JarContainer(jarPath, `package`)
-        cm = ClassManager(KfgConfigBuilder().build())
+        cm = ClassManager(
+            KfgConfigBuilder()
+                .failOnError(false)
+                .build()
+        )
         cm.initialize(jar)
     }
 
@@ -75,7 +79,11 @@ class KfgIntegrationTest {
         val `package` = Package("org/jetbrains/research/kfg/*")
 
         val container = DirectoryContainer(targetDirPath, `package`)
-        val cm = ClassManager(KfgConfigBuilder().build())
+        val cm = ClassManager(
+            KfgConfigBuilder()
+                .failOnError(false)
+                .build()
+        )
         cm.initialize(container)
 
 
@@ -90,16 +98,16 @@ class KfgIntegrationTest {
     @Test
     fun packagePipelineTest() {
         val visitedClasses = mutableSetOf<Class>()
-        executePipeline(cm, `package`) {
+        executePipeline(cm, pkg) {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
 
                 override fun cleanup() {}
 
-                override fun visit(`class`: Class) {
-                    super.visit(`class`)
-                    visitedClasses += `class`
+                override fun visit(klass: Class) {
+                    super.visit(klass)
+                    visitedClasses += klass
                 }
             }
         }
@@ -130,9 +138,9 @@ class KfgIntegrationTest {
 
                 override fun cleanup() {}
 
-                override fun visit(`class`: Class) {
-                    super.visit(`class`)
-                    visitedClasses += `class`
+                override fun visit(klass: Class) {
+                    super.visit(klass)
+                    visitedClasses += klass
                 }
             }
         }

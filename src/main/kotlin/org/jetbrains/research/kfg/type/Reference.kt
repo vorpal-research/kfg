@@ -1,36 +1,36 @@
 package org.jetbrains.research.kfg.type
 
-import org.jetbrains.research.kthelper.defaultHashCode
-import org.jetbrains.research.kfg.InvalidCallError
+import org.jetbrains.research.kfg.UnsupportedOperationException
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
+import org.jetbrains.research.kthelper.defaultHashCode
 
 interface Reference : Type {
-    override val bitsize: Int
+    override val bitSize: Int
         get() = Type.WORD
 
     override val isPrimary get() = false
     override val isReference get() = true
 }
 
-open class ClassType(val `class`: Class) : Reference {
-    override val name = `class`.fullname
+open class ClassType(val klass: Class) : Reference {
+    override val name = klass.fullName
 
     override fun toString() = name
-    override val asmDesc get() = "L${`class`.fullname};"
+    override val asmDesc get() = "L${klass.fullName};"
 
-    override fun hashCode() = defaultHashCode(`class`)
+    override fun hashCode() = defaultHashCode(klass)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
         other as ClassType
-        return this.`class` == other.`class`
+        return this.klass == other.klass
     }
 
     override val isConcrete: Boolean
-        get() = `class` is ConcreteClass
+        get() = klass is ConcreteClass
     override fun isSubtypeOf(other: Type): Boolean = when (other) {
-        is ClassType -> this.`class`.isInheritorOf(other.`class`)
+        is ClassType -> this.klass.isInheritorOf(other.klass)
         else -> false
     }
 }
@@ -57,7 +57,7 @@ open class ArrayType(val component: Type) : Reference {
             this.component.isReference && other.component.isReference -> this.component.isSubtypeOf(other.component)
             else -> false
         }
-        is ClassType -> when (other.`class`.fullname) {
+        is ClassType -> when (other.klass.fullName) {
             "java/lang/Object" -> true
             "java/lang/Cloneable" -> true
             "java/io/Serializable" -> true
@@ -71,7 +71,7 @@ object NullType : Reference {
     override val name = "null"
 
     override fun toString() = name
-    override val asmDesc get() = throw InvalidCallError("Called getAsmDesc on NullType")
+    override val asmDesc get() = throw UnsupportedOperationException("Called getAsmDesc on NullType")
 
     override fun hashCode() = defaultHashCode(name)
     override fun equals(other: Any?): Boolean = this === other

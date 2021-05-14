@@ -1,17 +1,17 @@
 package org.jetbrains.research.kfg.analysis
 
-import org.jetbrains.research.kthelper.algorithm.Graph
-import org.jetbrains.research.kthelper.algorithm.GraphView
-import org.jetbrains.research.kthelper.algorithm.LoopDetector
-import org.jetbrains.research.kthelper.algorithm.Viewable
-import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kthelper.algorithm.GraphView
+import org.jetbrains.research.kthelper.algorithm.LoopDetector
+import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
+import org.jetbrains.research.kthelper.algorithm.Viewable
+import org.jetbrains.research.kthelper.assert.asserted
 
-data class LoopNode(val parent: Loop, val block: BasicBlock) : Graph.Vertex<LoopNode> {
+data class LoopNode(val parent: Loop, val block: BasicBlock) : PredecessorGraph.PredecessorVertex<LoopNode> {
     override val predecessors: Set<LoopNode>
         get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 
@@ -19,7 +19,7 @@ data class LoopNode(val parent: Loop, val block: BasicBlock) : Graph.Vertex<Loop
         get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
 }
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Graph<LoopNode>, Iterable<LoopNode>, Viewable {
+class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : PredecessorGraph<LoopNode>, Iterable<LoopNode>, Viewable {
     internal var parentUnsafe: Loop? = null
 
     val parent get() = asserted(hasParent) { parentUnsafe!! }

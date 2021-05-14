@@ -5,15 +5,14 @@ import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.Method
 
 interface ClassVisitor : NodeVisitor {
-    fun visit(`class`: Class) {
-        super.visit(`class`)
-        `class`.run {
+    fun visit(klass: Class) {
+        super.visit(klass)
+        klass.run {
             fields.forEach { visitField(it) }
             allMethods.forEach { visitMethod(it) }
         }
     }
 
-    fun visitInterface(`interface`: Class) {}
     fun visitField(field: Field) {}
     fun visitMethod(method: Method) {}
 }

@@ -7,11 +7,13 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kthelper.algorithm.Graph
+import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.assert.ktassert
 
-sealed class BasicBlock(val name: BlockName) : UsableBlock(), Iterable<Instruction>, Graph.Vertex<BasicBlock>, BlockUser {
+sealed class BasicBlock(
+    val name: BlockName
+) : UsableBlock(), Iterable<Instruction>, PredecessorGraph.PredecessorVertex<BasicBlock>, BlockUser {
     internal var parentUnsafe: Method? = null
         internal set(value) {
             field = value

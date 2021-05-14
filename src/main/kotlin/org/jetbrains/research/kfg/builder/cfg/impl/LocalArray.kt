@@ -4,8 +4,9 @@ import org.jetbrains.research.kfg.ir.value.UsableValue
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.ValueUser
 
-internal class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf())
-    : ValueUser, MutableMap<Int, Value> by locals {
+internal class LocalArray(
+    private val locals: MutableMap<Int, Value> = hashMapOf()
+) : ValueUser, MutableMap<Int, Value> by locals {
     override fun clear() {
         values.forEach { it.removeUser(this) }
         locals.clear()
@@ -19,8 +20,8 @@ internal class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf
     }
 
     override fun putAll(from: Map<out Int, Value>) {
-        from.forEach {
-            put(it.key, it.value)
+        for ((key, value) in from) {
+            put(key, value)
         }
     }
 
@@ -31,7 +32,7 @@ internal class LocalArray(private val locals: MutableMap<Int, Value> = hashMapOf
     }
 
     override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
-        entries.forEach { (key, value) ->
+        for ((key, value) in entries) {
             if (value == from) {
                 value.removeUser(this)
                 locals[key] = to.get()

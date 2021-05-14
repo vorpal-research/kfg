@@ -30,7 +30,7 @@ interface Type {
     val canonicalDesc
         get() = asmDesc.replace('/', '.')
 
-    val bitsize: Int
+    val bitSize: Int
 
     val isConcrete: Boolean
     fun isSubtypeOf(other: Type): Boolean

@@ -88,13 +88,17 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         sf.locals.putAll(locals)
     }
 
-    private fun createStackPhis(bb: BasicBlock, predFrames: List<BlockFrame>, stackState: SortedMap<Int, Type>) {
-        val predStacks = predFrames.map { it.bb to it.stack.takeLast(stackState.size) }.toMap()
+    private fun createStackPhis(
+        bb: BasicBlock,
+        predFrames: List<BlockFrame>,
+        stackState: SortedMap<Int, Type>
+    ) {
+        val predStacks = predFrames.associate { it.bb to it.stack.takeLast(stackState.size) }
         for ((index, type) in stackState) {
             val incomings = predStacks.map { it.key to it.value[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
-                incomingValues.isEmpty() -> throw InvalidStateError("Empty incoming values map")
+                incomingValues.isEmpty() -> throw InvalidStateException("Empty incoming values map")
                 incomingValues.size > 1 -> {
                     val newPhi = instructions.getPhi(type, incomings)
                     addInstruction(bb, newPhi)
@@ -117,10 +121,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
     private fun createLocalPhis(bb: BasicBlock, predFrames: List<BlockFrame>, definedLocals: Map<Int, Type>) {
         for ((local, type) in definedLocals) {
-            val incomings = predFrames.map {
+            val incomings = predFrames.associate {
                 it.bb to (it.locals[local]
-                        ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
-            }.toMap()
+                    ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
+            }
 
             val incomingValues = incomings.values.toSet()
             when {
@@ -145,15 +149,15 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     private fun convertConst(insn: InsnNode) = push(
-            when (val opcode = insn.opcode) {
-                ACONST_NULL -> values.getNullConstant()
-                ICONST_M1 -> values.getIntConstant(-1)
-                in ICONST_0..ICONST_5 -> values.getIntConstant(opcode - ICONST_0)
-                in LCONST_0..LCONST_1 -> values.getLongConstant((opcode - LCONST_0).toLong())
-                in FCONST_0..FCONST_2 -> values.getFloatConstant((opcode - FCONST_0).toFloat())
-                in DCONST_0..DCONST_1 -> values.getDoubleConstant((opcode - DCONST_0).toDouble())
-                else -> throw InvalidOpcodeError("Unknown const $opcode")
-            }
+        when (val opcode = insn.opcode) {
+            ACONST_NULL -> values.getNullConstant()
+            ICONST_M1 -> values.getIntConstant(-1)
+            in ICONST_0..ICONST_5 -> values.getIntConstant(opcode - ICONST_0)
+            in LCONST_0..LCONST_1 -> values.getLongConstant((opcode - LCONST_0).toLong())
+            in FCONST_0..FCONST_2 -> values.getFloatConstant((opcode - FCONST_0).toFloat())
+            in DCONST_0..DCONST_1 -> values.getDoubleConstant((opcode - DCONST_0).toDouble())
+            else -> throw InvalidOpcodeException("Unknown const $opcode")
+        }
     )
 
     private fun convertArrayLoad(insn: InsnNode) {
@@ -180,7 +184,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 val top = pop()
                 if (!top.type.isDWord) pop()
             }
-            else -> throw InvalidOpcodeError("Pop opcode $opcode")
+            else -> throw InvalidOpcodeException("Pop opcode $opcode")
         }
     }
 
@@ -274,7 +278,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     }
                 }
             }
-            else -> throw InvalidOpcodeError("Dup opcode $opcode")
+            else -> throw InvalidOpcodeException("Dup opcode $opcode")
         }
     }
 
@@ -302,7 +306,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val op = when (insn.opcode) {
             in INEG..DNEG -> UnaryOpcode.NEG
             ARRAYLENGTH -> UnaryOpcode.LENGTH
-            else -> throw InvalidOpcodeError("Unary opcode ${insn.opcode}")
+            else -> throw InvalidOpcodeException("Unary opcode ${insn.opcode}")
         }
         val inst = instructions.getUnary(op, operand)
         addInstruction(bb, inst)
@@ -320,7 +324,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             I2B -> types.byteType
             I2C -> types.charType
             I2S -> types.shortType
-            else -> throw InvalidOpcodeError("Cast opcode ${insn.opcode}")
+            else -> throw InvalidOpcodeException("Cast opcode ${insn.opcode}")
         }
         val inst = instructions.getCast(type, op)
         addInstruction(bb, inst)
@@ -352,7 +356,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         when (insn.opcode) {
             MONITORENTER -> addInstruction(bb, instructions.getEnterMonitor(owner))
             MONITOREXIT -> addInstruction(bb, instructions.getExitMonitor(owner))
-            else -> throw InvalidOpcodeError("Monitor opcode ${insn.opcode}")
+            else -> throw InvalidOpcodeException("Monitor opcode ${insn.opcode}")
         }
     }
 
@@ -388,7 +392,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             ARRAYLENGTH -> convertUnary(insn)
             ATHROW -> convertThrow(insn)
             in MONITORENTER..MONITOREXIT -> convertMonitor(insn)
-            else -> throw InvalidOpcodeError("Insn opcode ${insn.opcode}")
+            else -> throw InvalidOpcodeException("Insn opcode ${insn.opcode}")
         }
     }
 
@@ -406,7 +410,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 addInstruction(bb, inst)
                 push(inst)
             }
-            else -> throw InvalidOpcodeError("IntInsn opcode $opcode")
+            else -> throw InvalidOpcodeException("IntInsn opcode $opcode")
         }
     }
 
@@ -414,15 +418,16 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         when (insn.opcode) {
             in ISTORE..ASTORE -> convertLocalStore(insn)
             in ILOAD..ALOAD -> convertLocalLoad(insn)
-            RET -> throw UnsupportedOperation("Opcode `RET`")
-            else -> throw InvalidOpcodeError("VarInsn opcode ${insn.opcode}")
+            RET -> throw UnsupportedOperationException("Opcode `RET`")
+            else -> throw InvalidOpcodeException("VarInsn opcode ${insn.opcode}")
         }
     }
 
     private fun convertTypeInsn(insn: TypeInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
-        val type = `try` { parseDesc(types, insn.desc) }.getOrElse { types.getRefType(insn.desc) }
+        val type = `try` { parseDesc(types, insn.desc) }
+            .getOrElse { types.getRefType(insn.desc) }
         when (opcode) {
             NEW -> {
                 val inst = instructions.getNew(type)
@@ -447,7 +452,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 addInstruction(bb, inst)
                 push(inst)
             }
-            else -> throw InvalidOpcodeError("$opcode in TypeInsn")
+            else -> throw InvalidOpcodeException("$opcode in TypeInsn")
         }
     }
 
@@ -455,21 +460,21 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val bb = nodeToBlock.getValue(insn)
         val opcode = insn.opcode
         val fieldType = parseDesc(types, insn.desc)
-        val `class` = cm[insn.owner]
+        val klass = cm[insn.owner]
         when (opcode) {
             GETSTATIC -> {
-                val field = `class`.getField(insn.name, fieldType)
+                val field = klass.getField(insn.name, fieldType)
                 val inst = instructions.getFieldLoad(field)
                 addInstruction(bb, inst)
                 push(inst)
             }
             PUTSTATIC -> {
-                val field = `class`.getField(insn.name, fieldType)
+                val field = klass.getField(insn.name, fieldType)
                 val value = pop()
                 addInstruction(bb, instructions.getFieldStore(field, value))
             }
             GETFIELD -> {
-                val field = `class`.getField(insn.name, fieldType)
+                val field = klass.getField(insn.name, fieldType)
                 val owner = pop()
                 val inst = instructions.getFieldLoad(owner, field)
                 addInstruction(bb, inst)
@@ -478,7 +483,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             PUTFIELD -> {
                 val value = pop()
                 val owner = pop()
-                val field = `class`.getField(insn.name, fieldType)
+                val field = klass.getField(insn.name, fieldType)
                 addInstruction(bb, instructions.getFieldStore(owner, field, value))
             }
         }
@@ -486,25 +491,26 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
     private fun convertMethodInsn(insn: MethodInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val `class` = when {
+        val klass = when {
             // FIXME: This is literally fucked up. If insn owner is an array, class of the CallInst should be java/lang/Object,
             //  because java array don't have their own methods
             insn.owner.startsWith("[") -> cm[TypeFactory.objectClass]
             else -> cm[insn.owner]
         }
-        val method = `class`.getMethod(insn.name, insn.desc)
-        val args = arrayListOf<Value>()
-        method.argTypes.forEach { _ -> args.add(0, pop()) }
+        val method = klass.getMethod(insn.name, insn.desc)
+//        val args = arrayListOf<Value>()
+//        method.argTypes.forEach { _ -> args.add(0, pop()) }
+        val args = method.argTypes.map { pop() }.reversed()
 
         val isNamed = !method.returnType.isVoid
         val opcode = toCallOpcode(insn.opcode)
         val call = when (insn.opcode) {
-            INVOKESTATIC -> instructions.getCall(opcode, method, `class`, args.toTypedArray(), isNamed)
-            in arrayOf(INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE) -> {
+            INVOKESTATIC -> instructions.getCall(opcode, method, klass, args.toTypedArray(), isNamed)
+            INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE -> {
                 val obj = pop()
-                instructions.getCall(opcode, method, `class`, obj, args.toTypedArray(), isNamed)
+                instructions.getCall(opcode, method, klass, obj, args.toTypedArray(), isNamed)
             }
-            else -> throw InvalidOpcodeError("Method insn opcode ${insn.opcode}")
+            else -> throw InvalidOpcodeException("Method insn opcode ${insn.opcode}")
         }
         addInstruction(bb, call)
         if (isNamed) {
@@ -513,7 +519,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode): Unit = throw UnsupportedOperation("InvokeDynamicInsn")
+    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode): Unit =
+        throw UnsupportedOperationException("InvokeDynamicInsn")
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
         val bb = nodeToBlock.getValue(insn)
@@ -534,7 +541,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     in IFEQ..IFLE -> instructions.getCmp(name, resType, opc, rhv, values.getZeroConstant(rhv.type))
                     in IF_ICMPEQ..IF_ACMPNE -> instructions.getCmp(name, resType, opc, pop(), rhv)
                     in IFNULL..IFNONNULL -> instructions.getCmp(name, resType, opc, rhv, values.getNullConstant())
-                    else -> throw InvalidOpcodeError("Jump opcode ${insn.opcode}")
+                    else -> throw InvalidOpcodeException("Jump opcode ${insn.opcode}")
                 }
                 addInstruction(bb, cond)
                 val castedCond = if (cond.type is BoolType) cond else instructions.getCast(types.boolType, cond)
@@ -558,17 +565,17 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 push(values.getClassConstant(type))
             }
             is org.objectweb.asm.Handle -> {
-                val `class` = cm[cst.owner]
-                val method = `class`.getMethod(cst.name, cst.desc)
+                val klass = cm[cst.owner]
+                val method = klass.getMethod(cst.name, cst.desc)
                 push(values.getMethodConstant(method))
             }
-            else -> throw InvalidOperandError("Unknown object $cst")
+            else -> throw InvalidOperandException("Unknown object $cst")
         }
     }
 
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val lhv = locals[insn.`var`] ?: throw InvalidOperandError("${insn.`var`} local is invalid")
+        val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
         val rhv = instructions.getBinary(BinaryOpcode.Add(), values.getIntConstant(insn.incr), lhv)
         locals[insn.`var`] = rhv
         addInstruction(bb, rhv)
@@ -580,7 +587,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val min = values.getIntConstant(insn.min)
         val max = values.getIntConstant(insn.max)
         val default = nodeToBlock.getValue(insn.dflt)
-        val branches = insn.labels.map { nodeToBlock.getValue(it as AbstractInsnNode) }.toTypedArray()
+        val branches = insn.labels.map { nodeToBlock.getValue(it) }.toTypedArray()
         addInstruction(bb, instructions.getTableSwitch(index, min, max, default, branches))
     }
 
@@ -590,7 +597,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val branches = hashMapOf<Value, BasicBlock>()
         val key = pop()
         for (i in 0..insn.keys.lastIndex) {
-            branches[values.getIntConstant(insn.keys[i] as Int)] = nodeToBlock.getValue(insn.labels[i] as LabelNode)
+            branches[values.getIntConstant(insn.keys[i])] = nodeToBlock.getValue(insn.labels[i])
         }
         addInstruction(bb, instructions.getSwitch(key, default, branches))
     }
@@ -598,7 +605,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun convertMultiANewArrayInsn(insn: MultiANewArrayInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val dimensions = arrayListOf<Value>()
-        for (it in 0 until insn.dims) dimensions.add(pop())
+        for (it in 0 until insn.dims)
+            dimensions.add(pop())
         val type = parseDesc(types, insn.desc)
         val inst = instructions.getNewArray(type, dimensions.toTypedArray())
         addInstruction(bb, inst)
@@ -606,8 +614,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     }
 
     private fun convertLineNumber(insn: LineNumberNode) {
-        val `package` = method.`class`.`package`
-        val file = method.`class`.cn.sourceFile ?: "Unknown"
+        val `package` = method.klass.pkg
+        val file = method.klass.cn.sourceFile ?: "Unknown"
         val line = insn.line
         currentLocation = Location(`package`, file, line)
     }
@@ -641,12 +649,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                         predFrame.isEmpty -> predFrame.getMappingFrame(this)
                         else -> predFrame
                     }
-                    this.stack.keys.forEach {
-                        push(mappedFrame.stack[it])
+                    for (key in this.stack.keys) {
+                        push(mappedFrame.stack[key])
                     }
-                    this.local.keys.forEach { i ->
-                        locals[i] = mappedFrame.locals[i]
-                                ?: throw InvalidStateError("Invalid local frame info")
+                    for (key in this.local.keys) {
+                        locals[key] = mappedFrame.locals[key]
+                            ?: throw InvalidStateException("Invalid local frame info")
                     }
                 }
                 !isCycle -> {
@@ -842,7 +850,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             }
 
             for ((index, phi) in sf.stackPhis.withIndex()) {
-                val incomings = predFrames.map { it.bb to it.stack[index] }.toMap()
+                val incomings = predFrames.associate { it.bb to it.stack[index] }
 
                 val newPhi = instructions.getPhi(phi.name, phi.type, incomings)
                 phi.replaceAllUsesWith(newPhi)
@@ -851,10 +859,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
             }
 
             for ((local, phi) in sf.localPhis) {
-                val incomings = predFrames.map {
+                val incomings = predFrames.associate {
                     it.bb to (it.locals[local]
-                            ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
-                }.toMap()
+                        ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
+                }
 
                 val newPhi = instructions.getPhi(phi.type, incomings)
                 phi.replaceAllUsesWith(newPhi)
@@ -883,10 +891,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
                 }
                 incomingsSet.size == 2 && top in incomingsSet -> {
-                    top.replaceAllUsesWith(when (top) {
-                        incomingsSet.first() -> incomingsSet.last()
-                        else -> incomingsSet.first()
-                    })
+                    top.replaceAllUsesWith(
+                        when (top) {
+                            incomingsSet.first() -> incomingsSet.last()
+                            else -> incomingsSet.first()
+                        }
+                    )
                     operands.forEach { it.removeUser(top) }
                     instUsers.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
                 }
@@ -899,8 +909,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                     operands.forEach { it.removeUser(top) }
                     top.parentUnsafe?.remove(top)
                     operands.mapNotNull { it as? PhiInst }
-                            .mapNotNull { if (it == top) null else it }.toList()
-                            .forEach { queue.add(it) }
+                        .mapNotNull { if (it == top) null else it }.toList()
+                        .forEach { queue.add(it) }
                 }
             }
         }
@@ -910,7 +920,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val mappedFrame = unmappedBlocks.getValue(block)
         for ((index, value) in mappedFrame.locals) {
             val actualValue = locals[index]
-                    ?: unreachable { log.error("Block ${block.name} does not define required local $index") }
+                ?: unreachable { log.error("Block ${block.name} does not define required local $index") }
             value.replaceAllUsesWith(actualValue)
         }
         for ((index, value) in mappedFrame.stack.withIndex()) {
@@ -924,7 +934,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         if (block in visitedBlocks) return
         if (block !in method) return
 
-        if (block in unmappedBlocks) copyBlockMappings(block)
+        if (block in unmappedBlocks)
+            copyBlockMappings(block)
 
         val last = block.instructions.lastOrNull()
         if (last == null || !last.isTerminate) {
@@ -941,9 +952,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun initFrame() {
         var localIndex = 0
         if (!method.isStatic) {
-            val `this` = values.getThis(types.getRefType(method.`class`))
-            locals[localIndex++] = `this`
-            method.slotTracker.addValue(`this`)
+            val instance = values.getThis(types.getRefType(method.klass))
+            locals[localIndex++] = instance
+            method.slotTracker.addValue(instance)
         }
         for ((index, type) in method.argTypes.withIndex()) {
             val arg = values.getArgument(index, method, type)
@@ -983,7 +994,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn)
                 is LineNumberNode -> convertLineNumber(insn)
                 is FrameNode -> convertFrame(insn)
-                else -> throw InvalidOpcodeError("Unknown insn: ${insn.print()}")
+                else -> throw InvalidOpcodeException("Unknown insn: ${insn.print()}")
             }
         }
         finishState(previousNodeBlock)
@@ -996,7 +1007,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         locals.clear()
         nodeToBlock.clear()
         blockToNode.clear()
-        frames.forEach { (_, frame) ->
+        for ((_, frame) in frames) {
             frame.clear()
         }
         unmappedBlocks.clear()

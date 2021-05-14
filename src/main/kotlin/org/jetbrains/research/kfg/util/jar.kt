@@ -174,6 +174,6 @@ internal fun ClassNode.write(loader: ClassLoader,
         }
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
-                filename: String = "$fullname.class",
+                filename: String = "$fullName.class",
                 flags: Flags = Flags.writeComputeFrames): File =
         ClassBuilder(cm, this).build().write(loader, filename, flags)
