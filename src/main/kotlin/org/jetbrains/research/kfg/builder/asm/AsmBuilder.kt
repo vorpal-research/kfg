@@ -358,7 +358,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitFieldLoadInst(inst: FieldLoadInst) {
         val opcode = if (inst.isStatic) GETSTATIC else GETFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.fullName, inst.field.name, inst.type.asmDesc)
+        val insn = FieldInsnNode(opcode, inst.field.klass.fullName, inst.field.name, inst.type.asmDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)
@@ -368,7 +368,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val opcode = if (inst.isStatic) PUTSTATIC else PUTFIELD
-        val insn = FieldInsnNode(opcode, inst.field.`class`.fullName, inst.field.name, inst.type.asmDesc)
+        val insn = FieldInsnNode(opcode, inst.field.klass.fullName, inst.field.name, inst.type.asmDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
         currentInsnList.add(insn)

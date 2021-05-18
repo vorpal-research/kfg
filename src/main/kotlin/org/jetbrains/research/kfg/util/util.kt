@@ -17,7 +17,7 @@ internal fun longestCommonPrefix(strings: List<String>): String {
     if (strings.isEmpty()) return ""
     if (strings.size == 1) return strings.first()
     var prefix = strings[0] lcp strings[1]
-    for (i in 2..strings.size) {
+    for (i in 2 until strings.size) {
         prefix = prefix lcp strings[i]
     }
     return prefix

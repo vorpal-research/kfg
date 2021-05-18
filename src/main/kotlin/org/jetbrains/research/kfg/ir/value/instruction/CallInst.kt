@@ -14,7 +14,7 @@ class CallInst : Instruction {
     val isStatic: Boolean
 
     val callee: Value
-        get() = asserted(isStatic) { ops[0] }
+        get() = asserted(!isStatic) { ops[0] }
 
     val args: List<Value>
         get() = when {

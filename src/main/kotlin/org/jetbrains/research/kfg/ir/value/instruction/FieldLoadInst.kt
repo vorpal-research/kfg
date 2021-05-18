@@ -13,7 +13,7 @@ class FieldLoadInst : Instruction {
         get() = !isStatic
 
     val owner: Value
-        get() = asserted(isStatic) { ops[0] }
+        get() = asserted(hasOwner) { ops[0] }
 
     constructor(name: Name, field: Field) : super(name, field.type, arrayOf()) {
         this.field = field
@@ -29,7 +29,7 @@ class FieldLoadInst : Instruction {
         val sb = StringBuilder()
         sb.append("$name = ")
         if (hasOwner) sb.append("$owner.")
-        else sb.append("${field.`class`.name}.")
+        else sb.append("${field.klass.name}.")
         sb.append(field.name)
         return sb.toString()
     }
