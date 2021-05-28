@@ -83,6 +83,8 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(cm.type, desc))
+    fun getMethod(name: String, returnType: Type, vararg argTypes: Type) =
+        this.getMethod(name, MethodDesc(argTypes, returnType))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
     override fun toString() = fullName

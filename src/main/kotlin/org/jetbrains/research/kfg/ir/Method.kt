@@ -17,7 +17,7 @@ import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.MethodNode
 
-data class MethodDesc(val args: Array<Type>, val retval: Type) {
+data class MethodDesc(val args: Array<out Type>, val retval: Type) {
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDesc {
             val (args, retval) = parseMethodDesc(tf, desc)

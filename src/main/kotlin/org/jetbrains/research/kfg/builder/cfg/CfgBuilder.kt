@@ -150,12 +150,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
     private fun convertConst(insn: InsnNode) = push(
         when (val opcode = insn.opcode) {
-            ACONST_NULL -> values.getNullConstant()
-            ICONST_M1 -> values.getIntConstant(-1)
-            in ICONST_0..ICONST_5 -> values.getIntConstant(opcode - ICONST_0)
-            in LCONST_0..LCONST_1 -> values.getLongConstant((opcode - LCONST_0).toLong())
-            in FCONST_0..FCONST_2 -> values.getFloatConstant((opcode - FCONST_0).toFloat())
-            in DCONST_0..DCONST_1 -> values.getDoubleConstant((opcode - DCONST_0).toDouble())
+            ACONST_NULL -> values.nullConstant
+            ICONST_M1 -> values.getInt(-1)
+            in ICONST_0..ICONST_5 -> values.getInt(opcode - ICONST_0)
+            in LCONST_0..LCONST_1 -> values.getLong((opcode - LCONST_0).toLong())
+            in FCONST_0..FCONST_2 -> values.getFloat((opcode - FCONST_0).toFloat())
+            in DCONST_0..DCONST_1 -> values.getDouble((opcode - DCONST_0).toDouble())
             else -> throw InvalidOpcodeException("Unknown const $opcode")
         }
     )
@@ -401,8 +401,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val opcode = insn.opcode
         val operand = insn.operand
         when (opcode) {
-            BIPUSH -> push(values.getIntConstant(operand))
-            SIPUSH -> push(values.getIntConstant(operand))
+            BIPUSH -> push(values.getInt(operand))
+            SIPUSH -> push(values.getInt(operand))
             NEWARRAY -> {
                 val type = parsePrimaryType(types, operand)
                 val count = pop()
@@ -538,9 +538,9 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 val opc = toCmpOpcode(insn.opcode)
                 val resType = getCmpResultType(types, opc)
                 val cond = when (insn.opcode) {
-                    in IFEQ..IFLE -> instructions.getCmp(name, resType, opc, rhv, values.getZeroConstant(rhv.type))
+                    in IFEQ..IFLE -> instructions.getCmp(name, resType, opc, rhv, values.getZero(rhv.type))
                     in IF_ICMPEQ..IF_ACMPNE -> instructions.getCmp(name, resType, opc, pop(), rhv)
-                    in IFNULL..IFNONNULL -> instructions.getCmp(name, resType, opc, rhv, values.getNullConstant())
+                    in IFNULL..IFNONNULL -> instructions.getCmp(name, resType, opc, rhv, values.nullConstant)
                     else -> throw InvalidOpcodeException("Jump opcode ${insn.opcode}")
                 }
                 addInstruction(bb, cond)
@@ -555,19 +555,19 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
     private fun convertLdcInsn(insn: LdcInsnNode) {
         when (val cst = insn.cst) {
-            is Int -> push(values.getIntConstant(cst))
-            is Float -> push(values.getFloatConstant(cst))
-            is Double -> push(values.getDoubleConstant(cst))
-            is Long -> push(values.getLongConstant(cst))
-            is String -> push(values.getStringConstant(cst))
+            is Int -> push(values.getInt(cst))
+            is Float -> push(values.getFloat(cst))
+            is Double -> push(values.getDouble(cst))
+            is Long -> push(values.getLong(cst))
+            is String -> push(values.getString(cst))
             is org.objectweb.asm.Type -> {
                 val type = parseDesc(types, cst.descriptor)
-                push(values.getClassConstant(type))
+                push(values.getClass(type))
             }
             is org.objectweb.asm.Handle -> {
                 val klass = cm[cst.owner]
                 val method = klass.getMethod(cst.name, cst.desc)
-                push(values.getMethodConstant(method))
+                push(values.getMethod(method))
             }
             else -> throw InvalidOperandException("Unknown object $cst")
         }
@@ -576,7 +576,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun convertIincInsn(insn: IincInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val lhv = locals[insn.`var`] ?: throw InvalidOperandException("${insn.`var`} local is invalid")
-        val rhv = instructions.getBinary(BinaryOpcode.Add(), values.getIntConstant(insn.incr), lhv)
+        val rhv = instructions.getBinary(BinaryOpcode.Add(), values.getInt(insn.incr), lhv)
         locals[insn.`var`] = rhv
         addInstruction(bb, rhv)
     }
@@ -584,8 +584,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
     private fun convertTableSwitchInsn(insn: TableSwitchInsnNode) {
         val bb = nodeToBlock.getValue(insn)
         val index = pop()
-        val min = values.getIntConstant(insn.min)
-        val max = values.getIntConstant(insn.max)
+        val min = values.getInt(insn.min)
+        val max = values.getInt(insn.max)
         val default = nodeToBlock.getValue(insn.dflt)
         val branches = insn.labels.map { nodeToBlock.getValue(it) }.toTypedArray()
         addInstruction(bb, instructions.getTableSwitch(index, min, max, default, branches))
@@ -597,7 +597,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val branches = hashMapOf<Value, BasicBlock>()
         val key = pop()
         for (i in 0..insn.keys.lastIndex) {
-            branches[values.getIntConstant(insn.keys[i])] = nodeToBlock.getValue(insn.labels[i])
+            branches[values.getInt(insn.keys[i])] = nodeToBlock.getValue(insn.labels[i])
         }
         addInstruction(bb, instructions.getSwitch(key, default, branches))
     }
