@@ -494,7 +494,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         val klass = when {
             // FIXME: This is literally fucked up. If insn owner is an array, class of the CallInst should be java/lang/Object,
             //  because java array don't have their own methods
-            insn.owner.startsWith("[") -> cm[TypeFactory.objectClass]
+            insn.owner.startsWith("[") -> cm.objectClass
             else -> cm[insn.owner]
         }
         val method = klass.getMethod(insn.name, insn.desc)
