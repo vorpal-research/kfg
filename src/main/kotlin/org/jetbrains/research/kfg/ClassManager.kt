@@ -8,6 +8,9 @@ import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
+import org.jetbrains.research.kfg.type.NullType
+import org.jetbrains.research.kfg.type.SystemTypeNames
+import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kthelper.KtException
@@ -63,6 +66,66 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     private val container2class = hashMapOf<Container, MutableSet<Class>>()
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
+
+    val stringClass
+        get() = this[SystemTypeNames.stringClass]
+
+    val objectClass
+        get() = this[SystemTypeNames.objectClass]
+
+    val boolWrapper
+        get() = this[SystemTypeNames.booleanClass]
+
+    val byteWrapper
+        get() = this[SystemTypeNames.byteClass]
+
+    val charWrapper
+        get() = this[SystemTypeNames.charClass]
+
+    val shortWrapper
+        get() = this[SystemTypeNames.shortClass]
+
+    val intWrapper
+        get() = this[SystemTypeNames.integerClass]
+
+    val longWrapper
+        get() = this[SystemTypeNames.longClass]
+
+    val floatWrapper
+        get() = this[SystemTypeNames.floatClass]
+
+    val doubleWrapper
+        get() = this[SystemTypeNames.doubleClass]
+
+    val collectionClass
+        get() = this[SystemTypeNames.collectionClass]
+
+    val listClass
+        get() = this[SystemTypeNames.listClass]
+
+    val arrayListClass
+        get() = this[SystemTypeNames.arrayListClass]
+
+    val linkedListClass
+        get() = this[SystemTypeNames.linkedListClass]
+
+    val setClass
+        get() = this[SystemTypeNames.setClass]
+
+    val hashSetClass
+        get() = this[SystemTypeNames.hashSetClass]
+
+    val treeSetClass
+        get() = this[SystemTypeNames.treeSetClass]
+
+    val mapClass
+        get() = this[SystemTypeNames.setClass]
+
+    val hashMapClass
+        get() = this[SystemTypeNames.hashMapClass]
+
+    val treeMapClass
+        get() = this[SystemTypeNames.treeMapClass]
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
         val container2ClassNode = containers.map { it to it.parse(flags, config.failOnError, loader) }.toMap()
