@@ -417,11 +417,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val isBranch = !(inst.opcode is CmpOpcode.Cmp || inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
         when {
             isBranch -> {
-                // this kind of cmp insns are handled in visitBranch
-                ktassert(inst.users.size == 1) {
-                    log.error("Unsupported usage of cmp inst")
-                }
-                ktassert(inst.users.first() is BranchInst) {
+                ktassert(inst.users.any { it is BranchInst }) {
                     log.error("Unsupported usage of cmp inst")
                 }
             }

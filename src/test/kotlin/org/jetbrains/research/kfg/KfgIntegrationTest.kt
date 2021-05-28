@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
+import org.jetbrains.research.kthelper.logging.log
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
@@ -13,22 +14,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 import kotlin.test.*
-
-private fun deleteDirectory(directory: File): Boolean {
-    if (directory.exists()) {
-        val files = directory.listFiles()
-        if (null != files) {
-            for (i in files.indices) {
-                if (files[i].isDirectory) {
-                    deleteDirectory(files[i])
-                } else {
-                    files[i].delete()
-                }
-            }
-        }
-    }
-    return directory.delete()
-}
 
 // simple test: run kfg on itself and check nothing fails
 class KfgIntegrationTest {
@@ -65,12 +50,14 @@ class KfgIntegrationTest {
 
     @Test
     fun run() {
-        val target = Files.createTempDirectory("kfg")
+        val target = Files.createTempDirectory(Paths.get("."), "kfg")
         jar.update(cm, target)
 
-        assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())
         assertTrue(err.toString().isBlank(), err.toString())
+        if (!target.toFile().deleteRecursively()) {
+            log.warn("Could not delete temp directory ${target.toAbsolutePath()}")
+        }
     }
 
     @Test
@@ -90,9 +77,11 @@ class KfgIntegrationTest {
         val target = Files.createTempDirectory("kfg")
         container.update(cm, target)
 
-        assertTrue(deleteDirectory(target.toFile()), "could not delete directory")
         assertTrue(out.toString().isBlank(), out.toString())
         assertTrue(err.toString().isBlank(), err.toString())
+        if (!target.toFile().deleteRecursively()) {
+            log.warn("Could not delete temp directory ${target.toAbsolutePath()}")
+        }
     }
 
     @Test

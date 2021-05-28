@@ -70,7 +70,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
-                        val path = "$absolutePath/${entry.fullClassName}"
+                        val path = "$absolutePath${File.separator}${entry.fullClassName}"
                         val classNode = readClassNode(entry.inputStream())
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }

@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kthelper.`try`
 import org.objectweb.asm.tree.ClassNode
+import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -108,8 +109,8 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
         val absolutePath = target.toAbsolutePath()
-        val jarName = file.name.substringAfterLast('/').removeSuffix(".jar")
-        val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)
+        val jarName = file.name.substringAfterLast(File.separator).removeSuffix(".jar")
+        val builder = JarBuilder("$absolutePath${File.separator}$jarName.jar", manifest)
         val enumeration = file.entries()
 
         unpack(cm, target, false, false, loader)
