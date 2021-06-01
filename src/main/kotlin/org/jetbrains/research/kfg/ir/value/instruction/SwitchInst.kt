@@ -11,7 +11,7 @@ class SwitchInst(
     default: BasicBlock,
     branches: Map<Value, BasicBlock>
 ) : TerminateInst(
-    UndefinedName,
+    UndefinedName(),
     type,
     arrayOf(key, *branches.keys.toTypedArray()),
     arrayOf(default, *branches.values.toTypedArray())

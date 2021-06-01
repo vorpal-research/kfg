@@ -1,6 +1,5 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.InvalidStateException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 
@@ -48,15 +47,21 @@ data class ConstantName(val name: String) : Name() {
     override fun toString() = name
 }
 
-object UndefinedName : Name() {
+class UndefinedName() : Name() {
+    private val number get() = st?.getUndefinedNumber(this) ?: -1
+
     override fun clone() = this
-    override fun toString(): String = throw InvalidStateException("Trying to print undefined name")
+    override fun toString(): String {
+        val num = this.number
+        return if (num == -1) "UNDEFINED_${System.identityHashCode(this)}" else "undefined$num"
+    }
 }
 
 class SlotTracker(val method: Method) {
     private val blocks = hashMapOf<String, MutableList<BlockName>>()
     private val strings = hashMapOf<String, MutableList<StringName>>()
     private val slots = hashMapOf<Slot, Int>()
+    private val undefs = hashMapOf<UndefinedName, Int>()
 
     private val nameToValue = hashMapOf<Name, Value>()
     private val nameToBlock = hashMapOf<BlockName, BasicBlock>()
@@ -64,6 +69,7 @@ class SlotTracker(val method: Method) {
     internal fun getBlockNumber(name: BlockName) = blocks[name.name]?.indexOf(name) ?: -1
     internal fun getStringNumber(name: StringName) = strings[name.name]?.indexOf(name) ?: -1
     internal fun getSlotNumber(slot: Slot) = slots.getOrDefault(slot, -1)
+    internal fun getUndefinedNumber(name: UndefinedName) = undefs.getOrDefault(name, -1)
 
     fun addBlock(block: BasicBlock) {
         val name = block.name
@@ -77,26 +83,24 @@ class SlotTracker(val method: Method) {
         name.st = this
         when (name) {
             is Slot -> slots[name] = slots.size
-            is StringName -> {
-                strings.getOrPut(name.name, ::arrayListOf).add(name)
-            }
+            is StringName -> strings.getOrPut(name.name, ::arrayListOf).add(name)
+            is UndefinedName -> undefs[name] = undefs.size
             else -> {
             }
         }
-        if (name !== UndefinedName) nameToValue[name] = value
     }
 
     fun getBlock(name: String) = nameToBlock
-            .filter { it.key.toString() == name }
-            .map { it.value }
-            .firstOrNull()
+        .filter { it.key.toString() == name }
+        .map { it.value }
+        .firstOrNull()
 
     fun getBlock(name: BlockName) = nameToBlock[name]
 
     fun getValue(name: String) = nameToValue
-            .filter { it.key.toString() == name }
-            .map { it.value }
-            .firstOrNull()
+        .filter { it.key.toString() == name }
+        .map { it.value }
+        .firstOrNull()
 
     fun getValue(name: Name) = nameToValue[name]
 
@@ -104,17 +108,20 @@ class SlotTracker(val method: Method) {
         strings.clear()
         slots.clear()
         blocks.clear()
+        undefs.clear()
         var slotCount = 0
+        var undefCount = 0
         for (bb in method) {
             val names = blocks.getOrPut(bb.name.name, ::arrayListOf)
             if (!names.contains(bb.name)) names.add(bb.name)
             for (inst in bb) {
                 for (value in inst.operands.plus(inst.get())) {
-                    when (value.name) {
-                        is Slot ->  slots.getOrPut(value.name) { slotCount++ }
+                    when (val name = value.name) {
+                        is Slot -> slots.getOrPut(name) { slotCount++ }
+                        is UndefinedName -> undefs.getOrPut(name) { undefCount++ }
                         is StringName -> {
-                            val nameCopies = strings.getOrPut(value.name.name, ::arrayListOf)
-                            if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
+                            val nameCopies = strings.getOrPut(name.name, ::arrayListOf)
+                            if (!nameCopies.contains(name)) nameCopies.add(name)
                         }
                         else -> Unit
                     }

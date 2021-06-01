@@ -19,7 +19,6 @@ class Field(cm: ClassManager, val fn: FieldNode, val klass: Class) : Node(cm, fn
 
         other as Field
 
-        if (fn != other.fn) return false
         if (klass != other.klass) return false
         if (type != other.type) return false
         if (defaultValue != other.defaultValue) return false
