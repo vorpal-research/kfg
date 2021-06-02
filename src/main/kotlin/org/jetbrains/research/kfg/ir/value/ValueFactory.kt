@@ -17,6 +17,10 @@ class ValueFactory(val cm: ClassManager) {
     // constants
     val nullConstant: Value
         get() = NullConstant(types.nullType)
+    val trueConstant: Value
+        get() = getBool(true)
+    val falseConstant: Value
+        get() = getBool(false)
     fun getBool(value: Boolean): Value = BoolConstant(value, types.boolType)
     fun getByte(value: Byte): Value = ByteConstant(value, types.byteType)
     fun getChar(value: Char): Value = CharConstant(value, types.charType)

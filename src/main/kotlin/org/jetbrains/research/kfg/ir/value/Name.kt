@@ -88,6 +88,7 @@ class SlotTracker(val method: Method) {
             else -> {
             }
         }
+        nameToValue[name] = value
     }
 
     fun getBlock(name: String) = nameToBlock
