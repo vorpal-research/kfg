@@ -8,9 +8,7 @@ import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
-import org.jetbrains.research.kfg.type.NullType
 import org.jetbrains.research.kfg.type.SystemTypeNames
-import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kthelper.KtException
@@ -128,12 +126,12 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         get() = this[SystemTypeNames.treeMapClass]
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
-        val container2ClassNode = containers.map { it to it.parse(flags, config.failOnError, loader) }.toMap()
+        val container2ClassNode = containers.associate { it to it.parse(flags, config.failOnError, loader) }
         initialize(container2ClassNode)
     }
 
     fun initialize(vararg containers: Container) {
-        val container2ClassNode = containers.map { it to it.parse(flags) }.toMap()
+        val container2ClassNode = containers.associate { it to it.parse(flags) }
         initialize(container2ClassNode)
     }
 
