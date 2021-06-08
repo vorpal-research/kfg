@@ -856,6 +856,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 phi.replaceAllUsesWith(newPhi)
                 phi.operands.forEach { it.removeUser(phi) }
                 block.replace(phi, newPhi)
+                phi.clearUses()
             }
 
             for ((local, phi) in sf.localPhis) {
@@ -868,6 +869,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 phi.replaceAllUsesWith(newPhi)
                 phi.operands.forEach { it.removeUser(phi) }
                 block.replace(phi, newPhi)
+                phi.clearUses()
             }
         }
     }
