@@ -26,8 +26,9 @@ abstract class Usable<T> {
 }
 
 abstract class UsableValue : Usable<Value>() {
+    @Suppress("UNCHECKED_CAST")
     val users: Set<ValueUser>
-        get() = abstractUsers.map { it as ValueUser }.toSet()
+        get() = abstractUsers as Set<ValueUser>
 
     override fun addUser(user: User) {
         require(user is ValueUser) { "Trying to register non-value user to value" }
@@ -35,13 +36,14 @@ abstract class UsableValue : Usable<Value>() {
     }
 
     open fun replaceAllUsesWith(to: UsableValue) {
-        users.forEach { it.replaceUsesOf(this, to) }
+        users.toSet().forEach { it.replaceUsesOf(this, to) }
     }
 }
 
 abstract class UsableBlock : Usable<BasicBlock>() {
+    @Suppress("UNCHECKED_CAST")
     val users: Set<BlockUser>
-        get() = abstractUsers.map { it as BlockUser }.toSet()
+        get() = abstractUsers as Set<BlockUser>
 
     override fun addUser(user: User) {
         require(user is BlockUser) { "Trying to register non-block user to block" }
@@ -49,6 +51,6 @@ abstract class UsableBlock : Usable<BasicBlock>() {
     }
 
     fun replaceAllUsesWith(to: UsableBlock) {
-        users.forEach { it.replaceUsesOf(this, to) }
+        users.toSet().forEach { it.replaceUsesOf(this, to) }
     }
 }

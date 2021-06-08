@@ -7,6 +7,9 @@ import org.jetbrains.research.kthelper.logging.log
 import java.lang.Class as JClass
 
 class TypeFactory(val cm: ClassManager) {
+    private val klassTypeHash = mutableMapOf<Class, Type>()
+    private val arrayTypeHash = mutableMapOf<Type, Type>()
+
     val voidType: Type
         get() = VoidType
 
@@ -34,8 +37,18 @@ class TypeFactory(val cm: ClassManager) {
     val doubleType: PrimaryType
         get() = DoubleType
 
-    val primaryTypes: Set<PrimaryType>
-        get() = setOf(boolType, byteType, shortType, intType, longType, charType, floatType, doubleType)
+    val primaryTypes: Set<PrimaryType> by lazy {
+        setOf(
+            boolType,
+            byteType,
+            shortType,
+            intType,
+            longType,
+            charType,
+            floatType,
+            doubleType
+        )
+    }
 
     val nullType: Type
         get() = NullType
@@ -103,9 +116,9 @@ class TypeFactory(val cm: ClassManager) {
     val objectArrayClass
         get() = getRefType(cm["$objectType[]"])
 
-    fun getRefType(cname: Class): Type = ClassType(cname)
-    fun getRefType(cname: String): Type = getRefType(cm.get(cname))
-    fun getArrayType(component: Type): Type = ArrayType(component)
+    fun getRefType(cname: Class): Type = klassTypeHash.getOrPut(cname) { ClassType(cname) }
+    fun getRefType(cname: String): Type = getRefType(cm[cname])
+    fun getArrayType(component: Type): Type = arrayTypeHash.getOrPut(component) { ArrayType(component) }
 
     fun getWrapper(type: PrimaryType): Type = when (type) {
         is BoolType -> boolWrapper

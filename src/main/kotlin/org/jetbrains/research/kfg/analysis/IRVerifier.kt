@@ -160,6 +160,8 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
             super.visit(method)
         } catch (e: AssertionException) {
             throw InvalidIRException(e)
+        } finally {
+            cleanup()
         }
     }
 

@@ -488,7 +488,9 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     operator fun invoke(): MethodNode = build()
 
     override fun cleanup() {
+        bbInsns.forEach { it.value.clear() }
         bbInsns.clear()
+        terminateInsns.forEach { it.value.clear() }
         terminateInsns.clear()
         stack.clear()
         locals.clear()
@@ -497,14 +499,14 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         maxLocals = 0
         maxStack = 0
 
-        if (!method.isStatic) {
-            val instance = values.getThis(types.getRefType(method.klass))
-            locals[instance] = instance.local
-        }
-        for ((index, type) in method.argTypes.withIndex()) {
-            val arg = values.getArgument(index, method, type)
-            locals[arg] = arg.local
-        }
+//        if (!method.isStatic) {
+//            val instance = values.getThis(types.getRefType(method.klass))
+//            locals[instance] = instance.local
+//        }
+//        for ((index, type) in method.argTypes.withIndex()) {
+//            val arg = values.getArgument(index, method, type)
+//            locals[arg] = arg.local
+//        }
     }
 
     fun build(): MethodNode {
@@ -522,6 +524,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         method.mn.maxStack = maxStack + 1
         // remove all info about local variables, because we don't keep it updated
         method.mn.localVariables?.clear()
+        cleanup()
         return method.mn
     }
 }

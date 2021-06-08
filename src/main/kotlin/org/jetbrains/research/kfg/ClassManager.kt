@@ -60,6 +60,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val failOnError: Boolean get() = config.failOnError
 
     private val classes = hashMapOf<String, Class>()
+    private val outerClasses = hashMapOf<String, Class>()
     private val class2container = hashMapOf<Class, Container>()
     private val container2class = hashMapOf<Container, MutableSet<Class>>()
 
@@ -166,7 +167,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         }
     }
 
-    operator fun get(name: String): Class = classes.getOrElse(name) {
+    operator fun get(name: String): Class = classes[name] ?: outerClasses.getOrPut(name) {
         val cn = ClassNode()
         cn.name = name
         OuterClass(this, cn)

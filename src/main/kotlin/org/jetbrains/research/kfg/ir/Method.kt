@@ -177,6 +177,7 @@ class Method(
 
             block.removeUser(this)
             block.parentUnsafe = null
+            slotTracker.removeBlock(block)
         }
     }
 

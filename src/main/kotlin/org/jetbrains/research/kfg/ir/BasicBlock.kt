@@ -52,6 +52,10 @@ sealed class BasicBlock(
         parentUnsafe?.slotTracker?.addValue(value)
     }
 
+    private fun removeValueFromParent(value: Value) {
+        parentUnsafe?.slotTracker?.removeValue(value)
+    }
+
     fun addSuccessor(bb: BasicBlock) {
         innerSuccessors.add(bb)
         bb.addUser(this)
@@ -141,6 +145,7 @@ sealed class BasicBlock(
         if (inst.parentUnsafe == this) {
             innerInstructions.remove(inst)
             inst.parentUnsafe = null
+            removeValueFromParent(inst)
         }
     }
 
@@ -152,10 +157,15 @@ sealed class BasicBlock(
     operator fun minusAssign(inst: Instruction) = remove(inst)
 
     fun replace(from: Instruction, to: Instruction) {
-        (0..innerInstructions.lastIndex).filter { innerInstructions[it] == from }.forEach {
-            innerInstructions[it] = to
-            to.parentUnsafe = this
-            addValueToParent(to)
+        for (index in 0..innerInstructions.lastIndex) {
+            if (innerInstructions[index] == from) {
+                innerInstructions[index] = to
+                to.parentUnsafe = this
+                addValueToParent(to)
+
+                from.parentUnsafe = null
+                removeValueFromParent(from)
+            }
         }
     }
 

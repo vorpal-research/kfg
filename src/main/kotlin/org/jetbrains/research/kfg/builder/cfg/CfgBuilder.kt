@@ -1027,9 +1027,10 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         NullTypeAdapter(cm).visit(method)
 
         method.slotTracker.rerun()
-        IRVerifier(cm).visit(method)
 
         clear()
+
+        IRVerifier(cm).visit(method)
         return method
     }
 }
