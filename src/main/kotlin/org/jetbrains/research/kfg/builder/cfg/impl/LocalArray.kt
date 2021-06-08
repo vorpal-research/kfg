@@ -40,4 +40,8 @@ internal class LocalArray(
             }
         }
     }
+
+    override fun clearUses() {
+        entries.forEach { it.value.removeUser(this) }
+    }
 }

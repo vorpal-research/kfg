@@ -37,6 +37,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
         val incomings = hashMapOf<BasicBlock, Value>()
         for ((bb, returnInst) in returnValues) {
             bb.remove(returnInst)
+            returnInst.clearUses()
             bb.addSuccessor(returnBlock)
             returnBlock.addPredecessor(bb)
             if (returnInst.hasReturnValue)

@@ -19,6 +19,8 @@ class NullTypeAdapter(override val cm: ClassManager) : MethodVisitor {
             val newPhi = instructions.getPhi(actualType, inst.incomings)
             inst.parent.insertBefore(inst, newPhi)
             inst.replaceAllUsesWith(newPhi)
+            inst.clearUses()
+            inst.parent -= inst
         }
     }
 }

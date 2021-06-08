@@ -63,4 +63,8 @@ internal class FrameStack(
         res.removeUser(this)
         return res
     }
+
+    override fun clearUses() {
+        stack.forEach { it.removeUser(this) }
+    }
 }

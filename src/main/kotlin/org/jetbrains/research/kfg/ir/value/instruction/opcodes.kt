@@ -49,7 +49,7 @@ enum class BinaryOpcode(val opcode: String) {
         }
     }
 
-    override fun toString() = name
+    override fun toString() = opcode
 
     val asmOpcode: Int
         get() = when (this) {
@@ -125,7 +125,7 @@ enum class CmpOpcode(val opcode: String) {
         }
     }
 
-    override fun toString() = name
+    override fun toString() = opcode
 }
 
 fun toCallOpcode(opcode: Int): CallOpcode = when (opcode) {

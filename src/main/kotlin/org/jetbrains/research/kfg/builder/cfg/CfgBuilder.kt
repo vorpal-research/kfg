@@ -885,7 +885,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                 incomingsSet.size == 1 -> {
                     val first = incomingsSet.first()
                     top.replaceAllUsesWith(first)
-                    operands.forEach { it.removeUser(top) }
+                    top.clearUses()
                     if (first is PhiInst) queue.add(first)
                     top.parentUnsafe?.remove(top) ?: continue@loop
                     operands.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
@@ -897,7 +897,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
                             else -> incomingsSet.first()
                         }
                     )
-                    operands.forEach { it.removeUser(top) }
+                    top.clearUses()
                     instUsers.mapNotNull { it as? PhiInst }.forEach { queue.add(it) }
                 }
                 instUsers.isEmpty() -> {

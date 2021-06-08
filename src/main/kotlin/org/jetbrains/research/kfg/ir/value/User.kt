@@ -6,6 +6,7 @@ interface User
 
 interface ValueUser : User {
     fun replaceUsesOf(from: UsableValue, to: UsableValue)
+    fun clearUses()
 }
 
 interface BlockUser : User {
