@@ -14,6 +14,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.jetbrains.research.kthelper.assert.AssertionException
+import org.jetbrains.research.kthelper.assert.fail
 import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.logging.log
 
@@ -24,6 +25,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
+    private var current: Method? = null
 
     private val Instruction.parents
         get(): Pair<Method, BasicBlock> {
@@ -43,6 +45,13 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
                 log.error("Same names for two different values")
             }
             valueNames[value.name.toString()] = value
+        }
+        for (user in value.users) {
+            if (user is Instruction) {
+                ktassert(user.hasParent && user.parent.hasParent && user.parent.parent == current)
+            } else {
+                fail("Unknown user of value $value")
+            }
         }
     }
 
@@ -157,7 +166,9 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
 
     override fun visit(method: Method) {
         try {
+            current = method
             super.visit(method)
+            current = null
         } catch (e: AssertionException) {
             throw InvalidIRException(e)
         } finally {

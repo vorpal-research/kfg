@@ -215,18 +215,18 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             }
         val opcode = if (cond.lhv.type is Reference) {
             when (cond.opcode) {
-                is CmpOpcode.Eq -> IF_ACMPEQ
-                is CmpOpcode.Neq -> IF_ACMPNE
+                CmpOpcode.EQ -> IF_ACMPEQ
+                CmpOpcode.NEQ -> IF_ACMPNE
                 else -> throw InvalidOpcodeException("Branch cmp opcode ${cond.opcode}")
             }
         } else {
             when (cond.opcode) {
-                is CmpOpcode.Eq -> IF_ICMPEQ
-                is CmpOpcode.Neq -> IF_ICMPNE
-                is CmpOpcode.Lt -> IF_ICMPLT
-                is CmpOpcode.Gt -> IF_ICMPGT
-                is CmpOpcode.Le -> IF_ICMPLE
-                is CmpOpcode.Ge -> IF_ICMPGE
+                CmpOpcode.EQ -> IF_ICMPEQ
+                CmpOpcode.NEQ -> IF_ICMPNE
+                CmpOpcode.LT -> IF_ICMPLT
+                CmpOpcode.GT -> IF_ICMPGT
+                CmpOpcode.LE -> IF_ICMPLE
+                CmpOpcode.GE -> IF_ICMPGE
                 else -> throw InvalidOpcodeException("Branch cmp opcode ${cond.opcode}")
             }
         }
@@ -414,7 +414,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     override fun visitCmpInst(inst: CmpInst) {
-        val isBranch = !(inst.opcode is CmpOpcode.Cmp || inst.opcode is CmpOpcode.Cmpg || inst.opcode is CmpOpcode.Cmpl)
+        val isBranch = !(inst.opcode == CmpOpcode.CMP || inst.opcode == CmpOpcode.CMPG || inst.opcode == CmpOpcode.CMPL)
         when {
             isBranch -> {
                 ktassert(inst.users.any { it is BranchInst }) {
@@ -423,13 +423,13 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             }
             else -> {
                 val opcode = when (inst.opcode) {
-                    is CmpOpcode.Cmp -> LCMP
-                    is CmpOpcode.Cmpg -> when (inst.lhv.type) {
+                    CmpOpcode.CMP -> LCMP
+                    CmpOpcode.CMPG -> when (inst.lhv.type) {
                         is FloatType -> FCMPG
                         is DoubleType -> DCMPG
                         else -> throw InvalidOperandException("Non-real operands of CMPG inst: ${inst.lhv.type}")
                     }
-                    is CmpOpcode.Cmpl -> when (inst.lhv.type) {
+                    CmpOpcode.CMPL -> when (inst.lhv.type) {
                         is FloatType -> FCMPL
                         is DoubleType -> DCMPL
                         else -> throw InvalidOperandException("Non-real operands of CMPL inst: ${inst.lhv.type}")
