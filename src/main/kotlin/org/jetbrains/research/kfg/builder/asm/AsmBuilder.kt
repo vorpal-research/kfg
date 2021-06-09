@@ -499,14 +499,14 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         maxLocals = 0
         maxStack = 0
 
-//        if (!method.isStatic) {
-//            val instance = values.getThis(types.getRefType(method.klass))
-//            locals[instance] = instance.local
-//        }
-//        for ((index, type) in method.argTypes.withIndex()) {
-//            val arg = values.getArgument(index, method, type)
-//            locals[arg] = arg.local
-//        }
+        if (!method.isStatic) {
+            val instance = values.getThis(types.getRefType(method.klass))
+            locals[instance] = instance.local
+        }
+        for ((index, type) in method.argTypes.withIndex()) {
+            val arg = values.getArgument(index, method, type)
+            locals[arg] = arg.local
+        }
     }
 
     fun build(): MethodNode {
