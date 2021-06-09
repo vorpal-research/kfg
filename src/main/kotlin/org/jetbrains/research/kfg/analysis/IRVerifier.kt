@@ -165,6 +165,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
     }
 
     override fun visit(method: Method) {
+        if (!cm.verifyIR) return
         try {
             current = method
             super.visit(method)

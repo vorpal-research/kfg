@@ -58,6 +58,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     val flags: Flags get() = config.flags
     val failOnError: Boolean get() = config.failOnError
+    val verifyIR: Boolean get() = config.verifyIR
 
     private val classes = hashMapOf<String, Class>()
     private val outerClasses = hashMapOf<String, Class>()
