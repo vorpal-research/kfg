@@ -1,6 +1,7 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.logging.log
@@ -146,7 +147,7 @@ class TypeFactory(val cm: ClassManager) {
             else -> unreachable { log.error("Unknown primary type $klass") }
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm[klass.name.replace('.', '/')])
+        else -> getRefType(cm[klass.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)])
     }
 
 }

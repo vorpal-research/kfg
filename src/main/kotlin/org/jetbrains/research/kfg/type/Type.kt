@@ -1,5 +1,7 @@
 package org.jetbrains.research.kfg.type
 
+import org.jetbrains.research.kfg.Package
+
 interface Type {
     companion object {
         const val WORD = 32
@@ -28,7 +30,7 @@ interface Type {
         get() = false
 
     val canonicalDesc
-        get() = asmDesc.replace('/', '.')
+        get() = asmDesc.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
     val bitSize: Int
 

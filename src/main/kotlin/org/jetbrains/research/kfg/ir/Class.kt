@@ -29,7 +29,7 @@ abstract class Class(
     protected val innerMethods = mutableMapOf<MethodKey, Method>()
     protected val innerFields = mutableMapOf<FieldKey, Field>()
     val pkg = Package.parse(
-        cn.name.substringBeforeLast(Package.SEPARATOR, "").replace(Package.SEPARATOR, '.')
+        cn.name.substringBeforeLast(Package.SEPARATOR, "")
     )
 
     val allMethods get() = innerMethods.values.toSet()
@@ -40,10 +40,10 @@ abstract class Class(
     internal val failingMethods = mutableSetOf<Method>()
 
     val fullName
-        get() = if (pkg == Package.emptyPackage) name else "$pkg/$name"
+        get() = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
 
     val canonicalDesc
-        get() = fullName.replace('/', '.')
+        get() = fullName.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
     val superClass
         get() = cn.superName?.let { cm[it] }

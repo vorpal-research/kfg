@@ -23,7 +23,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     override val commonPackage: Package
         get() {
             val klasses = file.allEntries.filter { it.isClass }.map { it.fullClassName }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
             return Package.parse("$commonSubstring*")
         }
 

@@ -20,14 +20,18 @@ class Package private constructor(name: String) {
     companion object {
         const val SEPARATOR = '/'
         const val EXPANSION = '*'
+        const val CANONICAL_SEPARATOR = '.'
         val defaultPackage = Package("$EXPANSION")
         val emptyPackage = Package("")
-        fun parse(string: String) = Package(string.replace('.', SEPARATOR))
+        fun parse(string: String) = Package(string.replace(CANONICAL_SEPARATOR, SEPARATOR))
     }
 
     val components: List<String> = name.removeSuffix("$EXPANSION").removeSuffix("$SEPARATOR").split(SEPARATOR)
     val isConcrete: Boolean = name.lastOrNull() != EXPANSION
 
+    val concretePackage get() = if (isConcrete) this else Package(concreteName)
+    val concreteName get() = components.joinToString("$SEPARATOR")
+    val canonicalName get() = components.joinToString("$CANONICAL_SEPARATOR")
     val fileSystemPath get() = components.joinToString(File.separator)
 
     fun isParent(other: Package) = when {

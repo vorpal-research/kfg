@@ -38,7 +38,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 }
 
             }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
             return Package.parse("$commonSubstring*")
         }
 

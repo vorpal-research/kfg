@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.Class
@@ -67,7 +68,7 @@ data class Flags(val value: Int) : Comparable<Flags> {
 class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
 
     private fun readClass(type: String) = try {
-        java.lang.Class.forName(type.replace('/', '.'), false, loader)
+        java.lang.Class.forName(type.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR), false, loader)
     } catch (e: Throwable) {
         throw ClassReadError(e.toString())
     }
@@ -84,7 +85,7 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
                 do {
                     class1 = class1.superclass
                 } while (!class1.isAssignableFrom(class2))
-                class1.name.replace('.', '/')
+                class1.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)
             }
         }
     } catch (e: Throwable) {
