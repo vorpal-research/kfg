@@ -8,7 +8,6 @@ import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
 import org.jetbrains.research.kthelper.logging.log
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -20,7 +19,7 @@ class KfgIntegrationTest {
     private val out = ByteArrayOutputStream()
     private val err = ByteArrayOutputStream()
 
-    val pkg = Package("org/jetbrains/research/kfg/*")
+    val pkg = Package.parse("org.jetbrains.research.kfg.*")
     lateinit var jar: JarContainer
     lateinit var cm: ClassManager
 
@@ -31,9 +30,8 @@ class KfgIntegrationTest {
 
         val version = System.getProperty("project.version")
         val jarPath = "target/kfg-$version-jar-with-dependencies.jar"
-        val `package` = Package("org/jetbrains/research/kfg/*")
 
-        jar = JarContainer(jarPath, `package`)
+        jar = JarContainer(jarPath, pkg)
         cm = ClassManager(
             KfgConfigBuilder()
                 .failOnError(false)
@@ -63,9 +61,8 @@ class KfgIntegrationTest {
     @Test
     fun directoryContainerTest() {
         val targetDirPath = Paths.get("./target/classes")
-        val `package` = Package("org/jetbrains/research/kfg/*")
 
-        val container = DirectoryContainer(targetDirPath, `package`)
+        val container = DirectoryContainer(targetDirPath, pkg)
         val cm = ClassManager(
             KfgConfigBuilder()
                 .failOnError(false)

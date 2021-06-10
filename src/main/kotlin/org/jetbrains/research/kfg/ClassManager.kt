@@ -14,40 +14,48 @@ import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kthelper.KtException
 import org.jetbrains.research.kthelper.defaultHashCode
 import org.objectweb.asm.tree.ClassNode
+import java.io.File
 
-class Package(name: String) {
-    val name: String
-    val isConcrete: Boolean = name.lastOrNull() != '*'
-
+class Package private constructor(name: String) {
     companion object {
-        val defaultPackage = Package("*")
+        const val SEPARATOR = '/'
+        const val EXPANSION = '*'
+        val defaultPackage = Package("$EXPANSION")
         val emptyPackage = Package("")
-        fun parse(string: String) = Package(string.replace('.', '/'))
+        fun parse(string: String) = Package(string.replace('.', SEPARATOR))
     }
 
-    init {
-        this.name = when {
-            isConcrete -> name
-            else -> name.removeSuffix("*").removeSuffix("/")
+    val components: List<String> = name.removeSuffix("$EXPANSION").removeSuffix("$SEPARATOR").split(SEPARATOR)
+    val isConcrete: Boolean = name.lastOrNull() != EXPANSION
+
+    val fileSystemPath get() = components.joinToString(File.separator)
+
+    fun isParent(other: Package) = when {
+        isConcrete -> this.components == other.components
+        this.components.size > other.components.size -> false
+        else -> this.components.indices.fold(true) { acc, i ->
+            acc && (this[i] == other[i])
         }
     }
 
-    fun isParent(other: Package) = when {
-        isConcrete -> this.name == other.name
-        else -> other.name.startsWith(this.name)
-    }
+    operator fun get(i: Int) = components[i]
 
     fun isChild(other: Package) = other.isParent(this)
     fun isParent(name: String) = isParent(Package(name))
     fun isChild(name: String) = isChild(Package(name))
 
-    override fun toString() = "$name${if (isConcrete) "" else "/*"}"
-    override fun hashCode() = defaultHashCode(name, isConcrete)
+    override fun toString() = buildString {
+        append(components.joinToString("$SEPARATOR"))
+        if (!isConcrete) {
+            append("$SEPARATOR$EXPANSION")
+        }
+    }
+    override fun hashCode() = defaultHashCode(components, isConcrete)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
         other as Package
-        return this.name == other.name && this.isConcrete == other.isConcrete
+        return this.components == other.components && this.isConcrete == other.isConcrete
     }
 }
 
