@@ -17,7 +17,10 @@ import org.jetbrains.research.kthelper.defaultHashCode
 import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.MethodNode
 
-data class MethodDesc(val args: Array<out Type>, val retval: Type) {
+data class MethodDesc(
+    val args: Array<out Type>,
+    val returnType: Type
+) {
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDesc {
             val (args, retval) = parseMethodDesc(tf, desc)
@@ -26,17 +29,17 @@ data class MethodDesc(val args: Array<out Type>, val retval: Type) {
     }
 
     val asmDesc: String
-        get() = "(${args.joinToString(separator = "") { it.asmDesc }})${retval.asmDesc}"
+        get() = "(${args.joinToString(separator = "") { it.asmDesc }})${returnType.asmDesc}"
 
-    override fun hashCode() = defaultHashCode(*args, retval)
+    override fun hashCode() = defaultHashCode(*args, returnType)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
         other as MethodDesc
-        return this.args.contentEquals(other.args) && this.retval == other.retval
+        return this.args.contentEquals(other.args) && this.returnType == other.returnType
     }
 
-    override fun toString() = "(${args.joinToString { it.name }}): ${retval.name}"
+    override fun toString() = "(${args.joinToString { it.name }}): ${returnType.name}"
 }
 
 class Method(
@@ -51,9 +54,10 @@ class Method(
     }
 
     val mn = node.jsrInlined
-    val desc = MethodDesc.fromDesc(cm.type, node.desc)
+    var desc = MethodDesc.fromDesc(cm.type, node.desc)
+        internal set
     val argTypes get() = desc.args
-    val returnType get() = desc.retval
+    val returnType get() = desc.returnType
     private val innerBlocks = arrayListOf<BasicBlock>()
     private val innerCatches = hashSetOf<CatchBlock>()
     val parameters = mn.parameters?.withIndex()?.map { (index, param) ->

@@ -87,6 +87,20 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
         this.getMethod(name, MethodDesc(argTypes, returnType))
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
+    fun modifyField(field: Field, type: Type): Field {
+        innerFields.remove(field.name to field.type)
+        field.type = type
+        innerFields[field.name to field.type] = field
+        return field
+    }
+
+    fun modifyMethod(method: Method, desc: MethodDesc): Method {
+        innerMethods.remove(method.name to method.desc)
+        method.desc = desc
+        innerMethods[method.name to method.desc] = method
+        return method
+    }
+
     override fun toString() = fullName
     override fun hashCode() = defaultHashCode(name, pkg)
     override fun equals(other: Any?): Boolean {
