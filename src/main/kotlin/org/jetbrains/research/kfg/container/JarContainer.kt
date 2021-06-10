@@ -93,12 +93,11 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
-                        val localPath = "${`class`.fullName}.class"
-                        val path = "$absolutePath/$localPath"
+                        val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
-                        val path = "$absolutePath/${entry.name}"
+                        val path = absolutePath.resolve(entry.name)
                         val classNode = readClassNode(file.getInputStream(entry))
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
@@ -110,7 +109,8 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
         val absolutePath = target.toAbsolutePath()
         val jarName = file.name.substringAfterLast(File.separator).removeSuffix(".jar")
-        val builder = JarBuilder("$absolutePath${File.separator}$jarName.jar", manifest)
+        val jarPath = absolutePath.resolve("$jarName.jar")
+        val builder = JarBuilder("$jarPath", manifest)
         val enumeration = file.entries()
 
         unpack(cm, target, false, false, loader)
@@ -124,7 +124,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
 
                 if (`class` is ConcreteClass) {
                     val localPath = "${`class`.fullName}.class"
-                    val path = "$absolutePath/$localPath"
+                    val path = "${absolutePath.resolve(localPath)}"
 
                     val newEntry = JarEntry(localPath.replace("\\", "/"))
                     builder.add(newEntry, FileInputStream(path))

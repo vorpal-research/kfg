@@ -14,6 +14,8 @@ import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
@@ -165,9 +167,9 @@ private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writ
 }
 
 internal fun ClassNode.write(loader: ClassLoader,
-                             filename: String,
+                             path: Path,
                              flags: Flags = Flags.writeComputeAll): File =
-        File(filename).apply {
+        path.toFile().apply {
             parentFile?.mkdirs()
             FileOutputStream(this).use { fos ->
                 fos.write(this@write.toByteArray(loader, flags))
@@ -175,6 +177,6 @@ internal fun ClassNode.write(loader: ClassLoader,
         }
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
-                filename: String = "$fullName.class",
+                path: Path = Paths.get("$fullName.class"),
                 flags: Flags = Flags.writeComputeFrames): File =
-        ClassBuilder(cm, this).build().write(loader, filename, flags)
+        ClassBuilder(cm, this).build().write(loader, path, flags)
