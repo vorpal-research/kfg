@@ -26,7 +26,10 @@ class Package private constructor(name: String) {
         fun parse(string: String) = Package(string.replace(CANONICAL_SEPARATOR, SEPARATOR))
     }
 
-    val components: List<String> = name.removeSuffix("$EXPANSION").removeSuffix("$SEPARATOR").split(SEPARATOR)
+    val components: List<String> = name.removeSuffix("$EXPANSION")
+        .removeSuffix("$SEPARATOR")
+        .split(SEPARATOR)
+        .filter { it.isNotBlank() }
     val isConcrete: Boolean = name.lastOrNull() != EXPANSION
 
     val concretePackage get() = if (isConcrete) this else Package(concreteName)
