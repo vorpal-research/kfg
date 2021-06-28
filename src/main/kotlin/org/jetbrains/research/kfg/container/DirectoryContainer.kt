@@ -13,6 +13,7 @@ import java.nio.file.Paths
 
 class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
     override val pkg: Package = pkg ?: commonPackage
+    override val path: Path = file.toPath()
 
     override val name: String
         get() = file.absolutePath

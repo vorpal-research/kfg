@@ -15,10 +15,10 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 
-class JarContainer(private val file: JarFile, pkg: Package? = null) : Container {
+class JarContainer(override val path: Path, pkg: Package? = null) : Container {
+    private val file = JarFile(path.toFile())
     private val manifest = Manifest()
 
-    constructor(path: Path, `package`: Package?) : this(JarFile(path.toFile()), `package`)
     constructor(path: String, `package`: Package?) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
