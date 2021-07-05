@@ -6,8 +6,16 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.parseDesc
 import org.objectweb.asm.tree.FieldNode
 
-class Field(cm: ClassManager, val fn: FieldNode, val klass: Class) : Node(cm, fn.name, fn.access) {
-    val type: Type = parseDesc(cm.type, fn.desc)
+class Field(
+    cm: ClassManager,
+    val fn: FieldNode,
+    val klass: Class
+) : Node(cm, fn.name, fn.access) {
+    var type: Type = parseDesc(cm.type, fn.desc)
+        internal set(value) {
+            field = value
+            fn.desc = value.asmDesc
+        }
     val defaultValue: Value? = cm.value.getConstant(fn.value)
 
     override val asmDesc
@@ -19,7 +27,6 @@ class Field(cm: ClassManager, val fn: FieldNode, val klass: Class) : Node(cm, fn
 
         other as Field
 
-        if (fn != other.fn) return false
         if (klass != other.klass) return false
         if (type != other.type) return false
         if (defaultValue != other.defaultValue) return false

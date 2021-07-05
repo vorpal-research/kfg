@@ -1,24 +1,15 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.logging.log
 import java.lang.Class as JClass
 
 class TypeFactory(val cm: ClassManager) {
-    companion object {
-        const val stringClass = "java/lang/String"
-        const val objectClass = "java/lang/Object"
-        const val booleanClass = "java/lang/Boolean"
-        const val byteClass = "java/lang/Byte"
-        const val charClass = "java/lang/Character"
-        const val shortClass = "java/lang/Short"
-        const val integerClass = "java/lang/Integer"
-        const val longClass = "java/lang/Long"
-        const val floatClass = "java/lang/Float"
-        const val doubleClass = "java/lang/Double"
-    }
+    private val klassTypeHash = mutableMapOf<Class, Type>()
+    private val arrayTypeHash = mutableMapOf<Type, Type>()
 
     val voidType: Type
         get() = VoidType
@@ -47,48 +38,88 @@ class TypeFactory(val cm: ClassManager) {
     val doubleType: PrimaryType
         get() = DoubleType
 
-    val primaryTypes: Set<PrimaryType>
-        get() = setOf(boolType, byteType, shortType, intType, longType, charType, floatType, doubleType)
+    val primaryTypes: Set<PrimaryType> by lazy {
+        setOf(
+            boolType,
+            byteType,
+            shortType,
+            intType,
+            longType,
+            charType,
+            floatType,
+            doubleType
+        )
+    }
 
     val nullType: Type
         get() = NullType
 
     val stringType
-        get() = getRefType(stringClass)
+        get() = getRefType(SystemTypeNames.stringClass)
 
     val objectType
-        get() = getRefType(objectClass)
+        get() = getRefType(SystemTypeNames.objectClass)
 
     val boolWrapper: Type
-        get() = getRefType(booleanClass)
+        get() = getRefType(SystemTypeNames.booleanClass)
 
     val byteWrapper: Type
-        get() = getRefType(byteClass)
+        get() = getRefType(SystemTypeNames.byteClass)
 
     val charWrapper: Type
-        get() = getRefType(charClass)
+        get() = getRefType(SystemTypeNames.charClass)
 
     val shortWrapper: Type
-        get() = getRefType(shortClass)
+        get() = getRefType(SystemTypeNames.shortClass)
 
     val intWrapper: Type
-        get() = getRefType(integerClass)
+        get() = getRefType(SystemTypeNames.integerClass)
 
     val longWrapper: Type
-        get() = getRefType(longClass)
+        get() = getRefType(SystemTypeNames.longClass)
 
     val floatWrapper: Type
-        get() = getRefType(floatClass)
+        get() = getRefType(SystemTypeNames.floatClass)
 
     val doubleWrapper: Type
-        get() = getRefType(doubleClass)
+        get() = getRefType(SystemTypeNames.doubleClass)
+
+    val collectionType: Type
+        get() = getRefType(SystemTypeNames.collectionClass)
+
+    val listType: Type
+        get() = getRefType(SystemTypeNames.listClass)
+
+    val arrayListType: Type
+        get() = getRefType(SystemTypeNames.arrayListClass)
+
+    val linkedListType: Type
+        get() = getRefType(SystemTypeNames.linkedListClass)
+
+    val setType: Type
+        get() = getRefType(SystemTypeNames.setClass)
+
+    val hashSetType: Type
+        get() = getRefType(SystemTypeNames.hashSetClass)
+
+    val treeSetType: Type
+        get() = getRefType(SystemTypeNames.treeSetClass)
+
+    val mapType: Type
+        get() = getRefType(SystemTypeNames.setClass)
+
+    val hashMapType: Type
+        get() = getRefType(SystemTypeNames.hashMapClass)
+
+    val treeMapType: Type
+        get() = getRefType(SystemTypeNames.treeMapClass)
 
     val objectArrayClass
-        get() = getRefType(cm.get("$objectType[]"))
+        get() = getRefType(cm["$objectType[]"])
 
-    fun getRefType(cname: Class): Type = ClassType(cname)
-    fun getRefType(cname: String): Type = getRefType(cm.get(cname))
-    fun getArrayType(component: Type): Type = ArrayType(component)
+    fun getRefType(cname: Class): Type = klassTypeHash.getOrPut(cname) { ClassType(cname) }
+    fun getRefType(cname: String): Type = getRefType(cm[cname])
+    fun getArrayType(component: Type): Type = arrayTypeHash.getOrPut(component) { ArrayType(component) }
 
     fun getWrapper(type: PrimaryType): Type = when (type) {
         is BoolType -> boolWrapper
@@ -116,7 +147,7 @@ class TypeFactory(val cm: ClassManager) {
             else -> unreachable { log.error("Unknown primary type $klass") }
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm[klass.name.replace('.', '/')])
+        else -> getRefType(cm[klass.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)])
     }
 
 }

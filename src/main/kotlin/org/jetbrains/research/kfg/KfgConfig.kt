@@ -1,16 +1,17 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kthelper.assert.ktassert
-import org.jetbrains.research.kthelper.logging.log
 import org.apache.commons.cli.*
 import org.jetbrains.research.kfg.util.Flags
+import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.logging.log
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.system.exitProcess
 
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
-        val failOnError: Boolean = true
+        val failOnError: Boolean = true,
+        val verifyIR: Boolean = false
 ) {
 
     init {
@@ -23,6 +24,7 @@ class KfgConfigBuilder private constructor(private val current: KfgConfig) {
 
     fun flags(flags: Flags) = KfgConfigBuilder(current.copy(flags = flags))
     fun failOnError(value: Boolean) = KfgConfigBuilder(current.copy(failOnError = value))
+    fun verifyIR(value: Boolean) = KfgConfigBuilder(current.copy(verifyIR = value))
 
     fun build() = current
 }

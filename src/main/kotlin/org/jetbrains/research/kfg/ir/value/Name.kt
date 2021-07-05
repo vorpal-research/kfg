@@ -1,11 +1,10 @@
 package org.jetbrains.research.kfg.ir.value
 
-import org.jetbrains.research.kfg.InvalidStateException
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 
 sealed class Name {
-    internal var st: SlotTracker? = null
+    internal var index: Int = -1
 
     abstract fun clone(): Name
     override fun hashCode() = System.identityHashCode(this)
@@ -13,32 +12,24 @@ sealed class Name {
 }
 
 class StringName(val name: String) : Name() {
-    private val number get() = st?.getStringNumber(this) ?: -1
-
     override fun clone() = StringName(name)
     override fun toString(): String {
-        val number = this.number
-        val suffix = if (number == -1) "" else "$number"
+        val suffix = if (index == -1) "" else "$index"
         return "%$name$suffix"
     }
 }
 
 class Slot : Name() {
-    private val number get() = st?.getSlotNumber(this) ?: -1
-
     override fun clone() = Slot()
     override fun toString(): String {
-        val num = this.number
-        return if (num == -1) "NO_SLOT_FOR${System.identityHashCode(this)}" else "%$num"
+        return if (index == -1) "NO_SLOT_FOR${System.identityHashCode(this)}" else "%$index"
     }
 }
 
 class BlockName(val name: String) : Name() {
-    private val number get() = st?.getBlockNumber(this) ?: -1
     override fun clone() = BlockName(name)
     override fun toString(): String {
-        val number = number
-        val suffix = if (number == -1) "" else "$number"
+        val suffix = if (index == -1) "" else "$index"
         return "%$name$suffix"
     }
 }
@@ -48,76 +39,89 @@ data class ConstantName(val name: String) : Name() {
     override fun toString() = name
 }
 
-object UndefinedName : Name() {
+class UndefinedName() : Name() {
     override fun clone() = this
-    override fun toString(): String = throw InvalidStateException("Trying to print undefined name")
+    override fun toString(): String {
+        return if (index == -1) "UNDEFINED_${System.identityHashCode(this)}" else "undefined$index"
+    }
 }
 
 class SlotTracker(val method: Method) {
-    private val blocks = hashMapOf<String, MutableList<BlockName>>()
-    private val strings = hashMapOf<String, MutableList<StringName>>()
-    private val slots = hashMapOf<Slot, Int>()
+    private val blocks = hashMapOf<String, Int>()
+    private val strings = hashMapOf<String, Int>()
+    private var slots: Int = 0
+    private var undefs: Int = 0
 
     private val nameToValue = hashMapOf<Name, Value>()
     private val nameToBlock = hashMapOf<BlockName, BasicBlock>()
 
-    internal fun getBlockNumber(name: BlockName) = blocks[name.name]?.indexOf(name) ?: -1
-    internal fun getStringNumber(name: StringName) = strings[name.name]?.indexOf(name) ?: -1
-    internal fun getSlotNumber(slot: Slot) = slots.getOrDefault(slot, -1)
-
     fun addBlock(block: BasicBlock) {
         val name = block.name
-        name.st = this
-        blocks.getOrPut(name.name, ::arrayListOf).add(name)
+        name.index = blocks.getOrDefault(name.name, 0)
+        blocks[name.name] = name.index + 1
         nameToBlock[name] = block
+    }
+
+    fun removeBlock(block: BasicBlock) {
+        nameToBlock.remove(block.name)
     }
 
     fun addValue(value: Value) {
         val name = value.name
-        name.st = this
-        when (name) {
-            is Slot -> slots[name] = slots.size
+        name.index = when (name) {
+            is Slot -> slots++
             is StringName -> {
-                strings.getOrPut(name.name, ::arrayListOf).add(name)
+                val result = strings.getOrDefault(name.name, 0)
+                strings[name.name] = result + 1
+                result
             }
-            else -> {
-            }
+            is UndefinedName -> undefs++
+            else -> -1
         }
-        if (name !== UndefinedName) nameToValue[name] = value
+        if (name !is ConstantName) nameToValue[name] = value
+    }
+
+    fun removeValue(value: Value) {
+        nameToValue.remove(value.name)
     }
 
     fun getBlock(name: String) = nameToBlock
-            .filter { it.key.toString() == name }
-            .map { it.value }
-            .firstOrNull()
+        .filter { it.key.toString() == name }
+        .map { it.value }
+        .firstOrNull()
 
     fun getBlock(name: BlockName) = nameToBlock[name]
 
     fun getValue(name: String) = nameToValue
-            .filter { it.key.toString() == name }
-            .map { it.value }
-            .firstOrNull()
+        .filter { it.key.toString() == name }
+        .map { it.value }
+        .firstOrNull()
 
     fun getValue(name: Name) = nameToValue[name]
 
-    internal fun rerun() {
+    fun rerun() {
+        nameToValue.clear()
+        nameToBlock.clear()
         strings.clear()
-        slots.clear()
+        slots = 0
         blocks.clear()
-        var slotCount = 0
+        undefs = 0
         for (bb in method) {
-            val names = blocks.getOrPut(bb.name.name, ::arrayListOf)
-            if (!names.contains(bb.name)) names.add(bb.name)
+            addBlock(bb)
             for (inst in bb) {
                 for (value in inst.operands.plus(inst.get())) {
-                    when (value.name) {
-                        is Slot ->  slots.getOrPut(value.name) { slotCount++ }
+                    val name = value.name
+                    name.index = when (name) {
+                        is Slot -> slots++
+                        is UndefinedName -> undefs++
                         is StringName -> {
-                            val nameCopies = strings.getOrPut(value.name.name, ::arrayListOf)
-                            if (!nameCopies.contains(value.name)) nameCopies.add(value.name)
+                            val result = strings.getOrDefault(name.name, 0)
+                            strings[name.name] = result + 1
+                            result
                         }
-                        else -> Unit
+                        else -> -1
                     }
+                    if (value !is Constant) nameToValue[name] = value
                 }
             }
         }

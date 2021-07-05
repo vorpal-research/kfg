@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.type.Type
 
 class JumpInst(type: Type, successor: BasicBlock)
-    : TerminateInst(UndefinedName, type, arrayOf(), arrayOf(successor)) {
+    : TerminateInst(UndefinedName(), type, arrayOf(), arrayOf(successor)) {
 
     val successor: BasicBlock
         get() = succs[0]

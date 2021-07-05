@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.util
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.KfgException
+import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.Class
@@ -13,6 +14,8 @@ import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import java.io.*
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
@@ -67,7 +70,7 @@ data class Flags(val value: Int) : Comparable<Flags> {
 class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
 
     private fun readClass(type: String) = try {
-        java.lang.Class.forName(type.replace('/', '.'), false, loader)
+        java.lang.Class.forName(type.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR), false, loader)
     } catch (e: Throwable) {
         throw ClassReadError(e.toString())
     }
@@ -84,7 +87,7 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
                 do {
                     class1 = class1.superclass
                 } while (!class1.isAssignableFrom(class2))
-                class1.name.replace('.', '/')
+                class1.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)
             }
         }
     } catch (e: Throwable) {
@@ -164,9 +167,9 @@ private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writ
 }
 
 internal fun ClassNode.write(loader: ClassLoader,
-                             filename: String,
+                             path: Path,
                              flags: Flags = Flags.writeComputeAll): File =
-        File(filename).apply {
+        path.toFile().apply {
             parentFile?.mkdirs()
             FileOutputStream(this).use { fos ->
                 fos.write(this@write.toByteArray(loader, flags))
@@ -174,6 +177,6 @@ internal fun ClassNode.write(loader: ClassLoader,
         }
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
-                filename: String = "$fullName.class",
+                path: Path = Paths.get("$fullName.class"),
                 flags: Flags = Flags.writeComputeFrames): File =
-        ClassBuilder(cm, this).build().write(loader, filename, flags)
+        ClassBuilder(cm, this).build().write(loader, path, flags)

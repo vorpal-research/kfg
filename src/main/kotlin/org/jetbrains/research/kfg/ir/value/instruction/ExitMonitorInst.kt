@@ -5,7 +5,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
 class ExitMonitorInst(type: Type, owner: Value)
-    : Instruction(UndefinedName, type, arrayOf(owner)) {
+    : Instruction(UndefinedName(), type, arrayOf(owner)) {
 
     val owner: Value
         get() = ops[0]

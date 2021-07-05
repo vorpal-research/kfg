@@ -13,6 +13,7 @@ import java.nio.file.Paths
 
 class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
     override val pkg: Package = pkg ?: commonPackage
+    override val path: Path = file.toPath()
 
     override val name: String
         get() = file.absolutePath
@@ -23,7 +24,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     override val commonPackage: Package
         get() {
             val klasses = file.allEntries.filter { it.isClass }.map { it.fullClassName }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
             return Package.parse("$commonSubstring*")
         }
 
@@ -65,12 +66,11 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                 val `class` = cm[entry.fullClassName]
                 when {
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
-                        val localPath = "${`class`.fullName}.class"
-                        val path = "$absolutePath/$localPath"
+                        val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
-                        val path = "$absolutePath/${entry.fullClassName}"
+                        val path = absolutePath.resolve(entry.fullClassName)
                         val classNode = readClassNode(entry.inputStream())
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
@@ -88,7 +88,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                 val `class` = cm[entry.fullClassName]
 
                 if (`class` is ConcreteClass) {
-                    val localName = "${`class`.fullName}.class"
+                    val localName = "${`class`.pkg.fileSystemPath}${File.separator}${`class`.name}.class"
 
                     File(absolutePath.toString(), localName).write(entry.inputStream())
                 }

@@ -56,6 +56,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
             val targetPhi = instructions.getPhi(phi.type, targetIncomings)
             target.insertBefore(phi, targetPhi)
             phi.replaceAllUsesWith(targetPhi)
+            phi.clearUses()
             target -= phi
         }
     }
@@ -70,6 +71,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
             val newPhi = instructions.getPhi(phi.type, incomings)
             catch.insertBefore(phi, newPhi)
             phi.replaceAllUsesWith(newPhi)
+            phi.clearUses()
             catch -= phi
         }
     }

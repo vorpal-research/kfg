@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kthelper.`try`
 import org.objectweb.asm.tree.ClassNode
+import java.io.File
 import java.io.FileInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -14,10 +15,10 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 
-class JarContainer(private val file: JarFile, pkg: Package? = null) : Container {
+class JarContainer(override val path: Path, pkg: Package? = null) : Container {
+    private val file = JarFile(path.toFile())
     private val manifest = Manifest()
 
-    constructor(path: Path, `package`: Package?) : this(JarFile(path.toFile()), `package`)
     constructor(path: String, `package`: Package?) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
@@ -37,7 +38,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 }
 
             }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != '/' }
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
             return Package.parse("$commonSubstring*")
         }
 
@@ -92,12 +93,11 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
                 val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
                     pkg.isParent(entry.name) && `class` is ConcreteClass -> {
-                        val localPath = "${`class`.fullName}.class"
-                        val path = "$absolutePath/$localPath"
+                        val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
                     unpackAllClasses -> {
-                        val path = "$absolutePath/${entry.name}"
+                        val path = absolutePath.resolve(entry.name)
                         val classNode = readClassNode(file.getInputStream(entry))
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
@@ -108,8 +108,9 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
         val absolutePath = target.toAbsolutePath()
-        val jarName = file.name.substringAfterLast('/').removeSuffix(".jar")
-        val builder = JarBuilder("$absolutePath/$jarName.jar", manifest)
+        val jarName = file.name.substringAfterLast(File.separator).removeSuffix(".jar")
+        val jarPath = absolutePath.resolve("$jarName.jar")
+        val builder = JarBuilder("$jarPath", manifest)
         val enumeration = file.entries()
 
         unpack(cm, target, false, false, loader)
@@ -123,7 +124,7 @@ class JarContainer(private val file: JarFile, pkg: Package? = null) : Container 
 
                 if (`class` is ConcreteClass) {
                     val localPath = "${`class`.fullName}.class"
-                    val path = "$absolutePath/$localPath"
+                    val path = "${absolutePath.resolve(localPath)}"
 
                     val newEntry = JarEntry(localPath.replace("\\", "/"))
                     builder.add(newEntry, FileInputStream(path))

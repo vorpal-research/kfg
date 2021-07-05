@@ -23,7 +23,7 @@ class CallInst : Instruction {
         }
 
     constructor(opcode: CallOpcode, method: Method, klass: Class, args: Array<Value>)
-            : super(UndefinedName, method.returnType, args) {
+            : super(UndefinedName(), method.returnType, args) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
@@ -31,7 +31,7 @@ class CallInst : Instruction {
     }
 
     constructor(opcode: CallOpcode, method: Method, klass: Class, obj: Value, args: Array<Value>)
-            : super(UndefinedName, method.returnType, arrayOf(obj).plus(args)) {
+            : super(UndefinedName(), method.returnType, arrayOf(obj).plus(args)) {
         this.opcode = opcode
         this.method = method
         this.klass = klass

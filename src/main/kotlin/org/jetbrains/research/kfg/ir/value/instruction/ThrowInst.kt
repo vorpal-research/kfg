@@ -4,7 +4,7 @@ import org.jetbrains.research.kfg.ir.value.UndefinedName
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
-class ThrowInst(type: Type, exc: Value) : TerminateInst(UndefinedName, type, arrayOf(exc), arrayOf()) {
+class ThrowInst(type: Type, exc: Value) : TerminateInst(UndefinedName(), type, arrayOf(exc), arrayOf()) {
 
     val throwable: Value
         get() = ops[0]

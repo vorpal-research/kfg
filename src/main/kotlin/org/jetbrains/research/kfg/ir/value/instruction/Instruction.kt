@@ -49,6 +49,12 @@ abstract class Instruction(
         new.location = loc
         return new
     }
+
+    override fun clearUses() {
+        ops.forEach {
+            it.removeUser(this)
+        }
+    }
 }
 
 abstract class TerminateInst(

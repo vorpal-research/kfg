@@ -10,7 +10,10 @@ import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 
-abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.substringAfterLast('/'), cn.access) {
+abstract class Class(
+    cm: ClassManager,
+    val cn: ClassNode
+) : Node(cm, cn.name.substringAfterLast(Package.SEPARATOR), cn.access) {
     protected data class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
 
@@ -25,7 +28,9 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     protected val innerMethods = mutableMapOf<MethodKey, Method>()
     protected val innerFields = mutableMapOf<FieldKey, Field>()
-    val pkg = Package(cn.name.substringBeforeLast('/', ""))
+    val pkg = Package.parse(
+        cn.name.substringBeforeLast(Package.SEPARATOR, "")
+    )
 
     val allMethods get() = innerMethods.values.toSet()
     val constructors get() = allMethods.filter { it.isConstructor }.toSet()
@@ -35,10 +40,10 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
     internal val failingMethods = mutableSetOf<Method>()
 
     val fullName
-        get() = if (pkg == Package.emptyPackage) name else "$pkg/$name"
+        get() = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
 
     val canonicalDesc
-        get() = fullName.replace('/', '.')
+        get() = fullName.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
     val superClass
         get() = cn.superName?.let { cm[it] }
@@ -83,7 +88,24 @@ abstract class Class(cm: ClassManager, val cn: ClassNode) : Node(cm, cn.name.sub
 
     fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(cm.type, desc))
+    fun getMethod(name: String, returnType: Type, vararg argTypes: Type) =
+        this.getMethod(name, MethodDesc(argTypes, returnType))
+
     abstract fun getMethod(name: String, desc: MethodDesc): Method
+
+    fun modifyField(field: Field, type: Type): Field {
+        innerFields.remove(field.name to field.type)
+        field.type = type
+        innerFields[field.name to field.type] = field
+        return field
+    }
+
+    fun modifyMethod(method: Method, desc: MethodDesc): Method {
+        innerMethods.remove(method.name to method.desc)
+        method.desc = desc
+        innerMethods[method.name to method.desc] = method
+        return method
+    }
 
     override fun toString() = fullName
     override fun hashCode() = defaultHashCode(name, pkg)

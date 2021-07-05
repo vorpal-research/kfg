@@ -51,6 +51,7 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
 
                 phi.replaceAllUsesWith(newPhi)
                 parent.replace(phi, newPhi)
+                phi.clearUses()
             }
 
             method.remove(block)
