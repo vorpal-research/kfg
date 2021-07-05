@@ -66,7 +66,7 @@ class Method(
     val exceptions = mn.exceptions.map { cm[it] }.toSet()
     val basicBlocks: List<BasicBlock> get() = innerBlocks
     val catchEntries: Set<CatchBlock> get() = innerCatches
-    val slotTracker = SlotTracker(this)
+    internal var namesGenerated = false
 
     override val entry: BasicBlock
         get() = innerBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
@@ -128,9 +128,10 @@ class Method(
                 log.error("Block ${bb.name} already belongs to other method")
             }
             innerBlocks.add(bb)
-            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
+
+            namesGenerated = false
         }
     }
 
@@ -145,9 +146,10 @@ class Method(
             }
 
             innerBlocks.add(index, bb)
-            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
+
+            namesGenerated = false
         }
     }
 
@@ -162,9 +164,10 @@ class Method(
             }
 
             innerBlocks.add(index + 1, bb)
-            slotTracker.addBlock(bb)
             bb.addUser(this)
             bb.parentUnsafe = this
+
+            namesGenerated = false
         }
     }
 
@@ -181,7 +184,8 @@ class Method(
 
             block.removeUser(this)
             block.parentUnsafe = null
-            slotTracker.removeBlock(block)
+
+            namesGenerated = false
         }
     }
 
@@ -199,6 +203,7 @@ class Method(
     fun getBlockByName(name: String) = innerBlocks.find { it.name.toString() == name }
 
     fun print() = buildString {
+        generateNames()
         appendLine(prototype)
         append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
     }
@@ -251,7 +256,14 @@ class Method(
             return nodes.values.toList()
         }
 
+    fun generateNames() {
+        if (!namesGenerated) {
+            SlotTracker(this).init()
+        }
+    }
+
     fun view(dot: String, viewer: String) {
+        generateNames()
         view(name, dot, viewer)
     }
 }

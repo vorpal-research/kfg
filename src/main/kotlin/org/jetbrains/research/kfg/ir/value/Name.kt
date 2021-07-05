@@ -14,7 +14,7 @@ sealed class Name {
 class StringName(val name: String) : Name() {
     override fun clone() = StringName(name)
     override fun toString(): String {
-        val suffix = if (index == -1) "" else "$index"
+        val suffix = if (index == -1) "${hashCode()}" else "$index"
         return "%$name$suffix"
     }
 }
@@ -22,14 +22,14 @@ class StringName(val name: String) : Name() {
 class Slot : Name() {
     override fun clone() = Slot()
     override fun toString(): String {
-        return if (index == -1) "NO_SLOT_FOR${System.identityHashCode(this)}" else "%$index"
+        return if (index == -1) "SLOT_FOR_${hashCode()}" else "%$index"
     }
 }
 
 class BlockName(val name: String) : Name() {
     override fun clone() = BlockName(name)
     override fun toString(): String {
-        val suffix = if (index == -1) "" else "$index"
+        val suffix = if (index == -1) "${hashCode()}" else "$index"
         return "%$name$suffix"
     }
 }
@@ -42,7 +42,7 @@ data class ConstantName(val name: String) : Name() {
 class UndefinedName() : Name() {
     override fun clone() = this
     override fun toString(): String {
-        return if (index == -1) "UNDEFINED_${System.identityHashCode(this)}" else "undefined$index"
+        return if (index == -1) "UNDEFINED_${hashCode()}" else "%undefined$index"
     }
 }
 
@@ -99,13 +99,19 @@ class SlotTracker(val method: Method) {
 
     fun getValue(name: Name) = nameToValue[name]
 
-    fun rerun() {
+    internal fun clear() {
         nameToValue.clear()
         nameToBlock.clear()
         strings.clear()
         slots = 0
         blocks.clear()
         undefs = 0
+    }
+
+    fun init() {
+        method.namesGenerated = true
+
+        clear()
         for (bb in method) {
             addBlock(bb)
             for (inst in bb) {

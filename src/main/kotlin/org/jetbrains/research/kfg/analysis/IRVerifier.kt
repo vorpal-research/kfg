@@ -168,6 +168,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
         if (!cm.verifyIR) return
         try {
             current = method
+            method.generateNames()
             super.visit(method)
             current = null
         } catch (e: AssertionException) {

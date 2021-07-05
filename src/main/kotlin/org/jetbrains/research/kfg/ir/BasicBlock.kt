@@ -15,10 +15,6 @@ sealed class BasicBlock(
     val name: BlockName
 ) : UsableBlock(), Iterable<Instruction>, PredecessorGraph.PredecessorVertex<BasicBlock>, BlockUser {
     internal var parentUnsafe: Method? = null
-        internal set(value) {
-            field = value
-            instructions.forEach { addValueToParent(it) }
-        }
 
     val hasParent get() = parentUnsafe != null
     val parent get() = asserted(hasParent) { parentUnsafe!! }
@@ -49,11 +45,11 @@ sealed class BasicBlock(
         get() = instructions.size
 
     private fun addValueToParent(value: Value) {
-        parentUnsafe?.slotTracker?.addValue(value)
+        parentUnsafe?.namesGenerated = false
     }
 
     private fun removeValueFromParent(value: Value) {
-        parentUnsafe?.slotTracker?.removeValue(value)
+        parentUnsafe?.namesGenerated = false
     }
 
     fun addSuccessor(bb: BasicBlock) {

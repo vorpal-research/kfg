@@ -943,7 +943,8 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         if (last == null || !last.isTerminate) {
             when (block.successors.size) {
                 1 -> addInstruction(block, instructions.getJump(block.successors.first()))
-                0 -> {}
+                0 -> {
+                }
                 else -> unreachable { log.error("Unexpected block in finish") }
             }
         }
@@ -956,14 +957,12 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         if (!method.isStatic) {
             val instance = values.getThis(types.getRefType(method.klass))
             locals[localIndex++] = instance
-            method.slotTracker.addValue(instance)
         }
         for ((index, type) in method.argTypes.withIndex()) {
             val arg = values.getArgument(index, method, type)
             locals[localIndex] = arg
             if (type.isDWord) localIndex += 2
             else ++localIndex
-            method.slotTracker.addValue(arg)
         }
         lastFrame = FrameState.parse(types, method, locals, stack)
     }
@@ -1028,7 +1027,7 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         CfgOptimizer(cm).visit(method)
         NullTypeAdapter(cm).visit(method)
 
-        method.slotTracker.rerun()
+        method.generateNames()
 
         clear()
 
