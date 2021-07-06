@@ -10,6 +10,7 @@ import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
+import org.jetbrains.research.kfg.ir.value.withUsageContextOf
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
 import org.jetbrains.research.kthelper.`try`
@@ -1011,17 +1012,35 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
         for ((_, frame) in frames) {
             frame.clear()
         }
+        frames.clear()
+        for ((_, frame) in unmappedBlocks) {
+            frame.clear()
+        }
         unmappedBlocks.clear()
+
+        clearUses()
     }
 
-    fun build(): Method {
+    private fun clearUses() {
+        for (inst in method.flatten()) {
+            for (value in (inst.operands + inst)) {
+                value.users.filterNot { it is Instruction }.forEach {
+                    value.removeUser(it)
+                }
+            }
+        }
+    }
+
+    fun build() = withUsageContextOf(method) {
         initFrame()
         buildCFG()
 
-        if (method.isEmpty()) return method
+        if (method.isEmpty()) return@withUsageContextOf
 
         buildFrames()
         buildInstructions()
+
+        clear()
 
         RetvalBuilder(cm).visit(method)
         CfgOptimizer(cm).visit(method)
@@ -1029,9 +1048,6 @@ class CfgBuilder(val cm: ClassManager, val method: Method) : Opcodes {
 
         method.generateNames()
 
-        clear()
-
         IRVerifier(cm).visit(method)
-        return method
     }
 }

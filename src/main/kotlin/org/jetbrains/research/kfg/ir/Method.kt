@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.BlockUser
 import org.jetbrains.research.kfg.ir.value.SlotTracker
 import org.jetbrains.research.kfg.ir.value.UsableBlock
+import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
@@ -267,3 +268,6 @@ class Method(
         view(name, dot, viewer)
     }
 }
+
+
+val Method.allValues: Set<Value> get() = flatten().flatMap { it.operands + it }.toSet()

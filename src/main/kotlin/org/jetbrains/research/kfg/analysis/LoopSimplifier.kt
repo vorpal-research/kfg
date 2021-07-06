@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
+import org.jetbrains.research.kfg.ir.value.withUsageContextOf
 import org.jetbrains.research.kthelper.logging.log
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
@@ -15,8 +16,8 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun cleanup() {}
 
-    override fun visit(method: Method) {
-        if (!method.hasBody) return
+    override fun visit(method: Method) = withUsageContextOf(method) {
+        if (!method.hasBody) return@withUsageContextOf
         current = method
         super.visit(method)
         IRVerifier(cm).visit(method)
