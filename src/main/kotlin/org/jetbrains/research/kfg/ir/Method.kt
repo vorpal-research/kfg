@@ -1,10 +1,7 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kfg.ir.value.SlotTracker
-import org.jetbrains.research.kfg.ir.value.UsableBlock
-import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
@@ -123,20 +120,20 @@ class Method(
         innerCatches.clear()
     }
 
-    fun add(bb: BasicBlock) {
+    fun add(ctx: BlockUsageContext, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent) {
                 log.error("Block ${bb.name} already belongs to other method")
             }
             innerBlocks.add(bb)
-            bb.addUser(this)
-            bb.parentUnsafe = this
+            bb.addUser(this@Method)
+            bb.parentUnsafe = this@Method
 
             namesGenerated = false
         }
     }
 
-    fun addBefore(before: BasicBlock, bb: BasicBlock) {
+    fun addBefore(ctx: BlockUsageContext, before: BasicBlock, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent) {
                 log.error("Block ${bb.name} already belongs to other method")
@@ -147,14 +144,14 @@ class Method(
             }
 
             innerBlocks.add(index, bb)
-            bb.addUser(this)
-            bb.parentUnsafe = this
+            bb.addUser(this@Method)
+            bb.parentUnsafe = this@Method
 
             namesGenerated = false
         }
     }
 
-    fun addAfter(after: BasicBlock, bb: BasicBlock) {
+    fun addAfter(ctx: BlockUsageContext, after: BasicBlock, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent) {
                 log.error("Block ${bb.name} already belongs to other method")
@@ -165,16 +162,16 @@ class Method(
             }
 
             innerBlocks.add(index + 1, bb)
-            bb.addUser(this)
-            bb.parentUnsafe = this
+            bb.addUser(this@Method)
+            bb.parentUnsafe = this@Method
 
             namesGenerated = false
         }
     }
 
-    fun remove(block: BasicBlock) {
+    fun remove(ctx: BlockUsageContext, block: BasicBlock) = with(ctx) {
         if (innerBlocks.contains(block)) {
-            ktassert(block.parentUnsafe == this) {
+            ktassert(block.parentUnsafe == this@Method) {
                 log.error("Block ${block.name} don't belong to $this")
             }
             innerBlocks.remove(block)
@@ -183,7 +180,7 @@ class Method(
                 innerCatches.remove(block)
             }
 
-            block.removeUser(this)
+            block.removeUser(this@Method)
             block.parentUnsafe = null
 
             namesGenerated = false
@@ -220,13 +217,13 @@ class Method(
         return this.name == other.name && this.klass == other.klass && this.desc == other.desc
     }
 
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+    override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
         (0 until innerBlocks.size)
             .filter { basicBlocks[it] == from }
             .forEach {
-                innerBlocks[it].removeUser(this)
+                innerBlocks[it].removeUser(this@Method)
                 innerBlocks[it] = to.get()
-                to.addUser(this)
+                to.addUser(this@Method)
             }
     }
 

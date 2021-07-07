@@ -7,7 +7,6 @@ import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.Opcodes.*
@@ -415,34 +414,27 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitCmpInst(inst: CmpInst) {
         val isBranch = !(inst.opcode == CmpOpcode.CMP || inst.opcode == CmpOpcode.CMPG || inst.opcode == CmpOpcode.CMPL)
-        when {
-            isBranch -> {
-                ktassert(inst.users.any { it is BranchInst }) {
-                    log.error("Unsupported usage of cmp inst")
+        if (!isBranch) {
+            val opcode = when (inst.opcode) {
+                CmpOpcode.CMP -> LCMP
+                CmpOpcode.CMPG -> when (inst.lhv.type) {
+                    is FloatType -> FCMPG
+                    is DoubleType -> DCMPG
+                    else -> throw InvalidOperandException("Non-real operands of CMPG inst: ${inst.lhv.type}")
                 }
-            }
-            else -> {
-                val opcode = when (inst.opcode) {
-                    CmpOpcode.CMP -> LCMP
-                    CmpOpcode.CMPG -> when (inst.lhv.type) {
-                        is FloatType -> FCMPG
-                        is DoubleType -> DCMPG
-                        else -> throw InvalidOperandException("Non-real operands of CMPG inst: ${inst.lhv.type}")
-                    }
-                    CmpOpcode.CMPL -> when (inst.lhv.type) {
-                        is FloatType -> FCMPL
-                        is DoubleType -> DCMPL
-                        else -> throw InvalidOperandException("Non-real operands of CMPL inst: ${inst.lhv.type}")
-                    }
-                    else -> throw InvalidStateException("Unknown non-branch cmp inst ${inst.print()}")
+                CmpOpcode.CMPL -> when (inst.lhv.type) {
+                    is FloatType -> FCMPL
+                    is DoubleType -> DCMPL
+                    else -> throw InvalidOperandException("Non-real operands of CMPL inst: ${inst.lhv.type}")
                 }
-                val insn = InsnNode(opcode)
-                val operands = inst.operands
-                addOperandsToStack(operands)
-                currentInsnList.add(insn)
-                stackPop(operands.size)
-                stackPush(inst)
+                else -> throw InvalidStateException("Unknown non-branch cmp inst ${inst.print()}")
             }
+            val insn = InsnNode(opcode)
+            val operands = inst.operands
+            addOperandsToStack(operands)
+            currentInsnList.add(insn)
+            stackPop(operands.size)
+            stackPush(inst)
         }
     }
 

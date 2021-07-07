@@ -77,6 +77,8 @@ abstract class Class(
 
     val allAncestors get() = listOfNotNull(superClass) + interfaces
 
+    fun toType() = cm.type.getRefType(this)
+
     abstract fun isAncestorOf(other: Class): Boolean
     fun isInheritorOf(other: Class) = other.isAncestorOf(this)
 

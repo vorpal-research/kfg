@@ -4,12 +4,14 @@ import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 
-class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
-    : Instruction(name, type, incomings.values.toTypedArray()), BlockUser {
+class PhiInst internal constructor(name: Name, type: Type, incomings: Map<BasicBlock, Value>, ctx: UsageContext) :
+    Instruction(name, type, incomings.values.toTypedArray(), ctx), BlockUser {
     private val preds = incomings.keys.toTypedArray()
 
     init {
-        incomings.keys.forEach { it.addUser(this) }
+        with(ctx) {
+            incomings.keys.forEach { it.addUser(this@PhiInst) }
+        }
     }
 
     val predecessors: List<BasicBlock>
@@ -30,23 +32,23 @@ class PhiInst(name: Name, type: Type, incomings: Map<BasicBlock, Value>)
         append("}")
     }
 
-    override fun clone(): Instruction = PhiInst(name.clone(), type, incomings)
+    override fun clone(ctx: UsageContext): Instruction = PhiInst(name.clone(), type, incomings, ctx)
 
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+    override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
         (0..preds.lastIndex)
-                .filter { preds[it] == from }
-                .forEach {
-                    preds[it].removeUser(this)
-                    preds[it] = to.get()
-                    to.addUser(this)
-                }
+            .filter { preds[it] == from }
+            .forEach {
+                preds[it].removeUser(this@PhiInst)
+                preds[it] = to.get()
+                to.addUser(this@PhiInst)
+            }
     }
 
-    override fun replaceAllUsesWith(to: UsableValue) {
-        super.replaceAllUsesWith(to)
+    fun replaceAllUsesWith(ctx: UsageContext, to: UsableValue) = with(ctx) {
+        this@PhiInst.replaceAllUsesWith(to)
         if (to is BlockUser) {
             for (it in preds) {
-                it.removeUser(this)
+                it.removeUser(this@PhiInst)
                 it.addUser(to)
             }
         }

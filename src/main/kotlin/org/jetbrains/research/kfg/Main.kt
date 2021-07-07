@@ -25,5 +25,5 @@ fun main(args: Array<String>) {
         +LoopAnalysis(classManager)
         +LoopSimplifier(classManager)
     }
-//    jar.update(classManager)
+    jar.update(classManager)
 }

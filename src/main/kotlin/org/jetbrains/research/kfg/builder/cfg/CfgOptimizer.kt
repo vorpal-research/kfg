@@ -3,13 +3,14 @@ package org.jetbrains.research.kfg.builder.cfg
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 
-class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
+class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
     override fun cleanup() {}
 
-    override fun visit(method: Method) {
+    override fun visit(method: Method) = with (ctx) {
         super.visit(method)
 
         for (block in method.basicBlocks.toList()) {
@@ -47,7 +48,7 @@ class CfgOptimizer(override val cm: ClassManager) : MethodVisitor {
                         (if (it.key == block) predecessor else it.key) to it.value
                     }.toMap()
                 }
-                val newPhi = cm.instruction.getPhi(phi.type, incomings)
+                val newPhi = inst(cm) { phi(phi.type, incomings) }
 
                 phi.replaceAllUsesWith(newPhi)
                 parent.replace(phi, newPhi)

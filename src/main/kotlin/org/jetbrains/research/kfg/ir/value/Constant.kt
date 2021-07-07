@@ -3,10 +3,7 @@ package org.jetbrains.research.kfg.ir.value
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.Type
 
-sealed class Constant(name: String, type: Type) : Value(ConstantName(name), type) {
-    // constants do not store users
-    override fun addUser(user: User) {}
-}
+sealed class Constant(name: String, type: Type) : Value(ConstantName(name), type)
 
 class BoolConstant(val value: Boolean, type: Type) : Constant(value.toString(), type) {
     override fun equals(other: Any?): Boolean {
