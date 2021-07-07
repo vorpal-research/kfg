@@ -64,7 +64,7 @@ class Method(
     val exceptions = mn.exceptions.map { cm[it] }.toSet()
     val basicBlocks: List<BasicBlock> get() = innerBlocks
     val catchEntries: Set<CatchBlock> get() = innerCatches
-    internal var namesGenerated = false
+    val slotTracker = SlotTracker(this)
 
     override val entry: BasicBlock
         get() = innerBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
@@ -126,10 +126,9 @@ class Method(
                 log.error("Block ${bb.name} already belongs to other method")
             }
             innerBlocks.add(bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this@Method)
             bb.parentUnsafe = this@Method
-
-            namesGenerated = false
         }
     }
 
@@ -144,10 +143,9 @@ class Method(
             }
 
             innerBlocks.add(index, bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this@Method)
             bb.parentUnsafe = this@Method
-
-            namesGenerated = false
         }
     }
 
@@ -162,10 +160,9 @@ class Method(
             }
 
             innerBlocks.add(index + 1, bb)
+            slotTracker.addBlock(bb)
             bb.addUser(this@Method)
             bb.parentUnsafe = this@Method
-
-            namesGenerated = false
         }
     }
 
@@ -182,8 +179,7 @@ class Method(
 
             block.removeUser(this@Method)
             block.parentUnsafe = null
-
-            namesGenerated = false
+            slotTracker.removeBlock(block)
         }
     }
 
@@ -201,7 +197,6 @@ class Method(
     fun getBlockByName(name: String) = innerBlocks.find { it.name.toString() == name }
 
     fun print() = buildString {
-        generateNames()
         appendLine(prototype)
         append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
     }
@@ -254,14 +249,7 @@ class Method(
             return nodes.values.toList()
         }
 
-    fun generateNames() {
-        if (!namesGenerated) {
-            SlotTracker(this).init()
-        }
-    }
-
     fun view(dot: String, viewer: String) {
-        generateNames()
         view(name, dot, viewer)
     }
 }

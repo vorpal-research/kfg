@@ -172,7 +172,6 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
         if (!cm.verifyIR) return
         try {
             current = method
-            method.generateNames()
             super.visit(method)
             current = null
         } catch (e: AssertionException) {
