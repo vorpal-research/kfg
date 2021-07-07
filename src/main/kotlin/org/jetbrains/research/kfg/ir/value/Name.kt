@@ -143,4 +143,14 @@ class NameMapper(val method: Method) {
     }
 }
 
+class NameMapperContext {
+    private val mappers = mutableMapOf<Method, NameMapper>()
+
+    fun getMapper(method: Method) = mappers.getOrPut(method) { NameMapper(method) }
+
+    fun clear() {
+        mappers.clear()
+    }
+}
+
 val Method.nameMapper get() = NameMapper(this)

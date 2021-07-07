@@ -95,7 +95,7 @@ sealed class BasicBlock(
     fun removeHandler(ctx: BlockUsageContext, handle: CatchBlock) = when {
         innerHandlers.remove(handle) -> with(ctx) {
             handle.removeUser(this@BasicBlock)
-            handle.removeThrower(this@BasicBlock)
+            handle.removeThrower(this, this@BasicBlock)
             true
         }
         else -> false
@@ -245,7 +245,11 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         throwers.forEach { addThrower(ctx, it) }
     }
 
-    fun removeThrower(bb: BasicBlock) = innerThrowers.remove(bb)
+    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Boolean = with(ctx) {
+        bb.removeUser(this@CatchBlock)
+        return innerThrowers.remove(bb)
+    }
+
     val allPredecessors get() = throwers + entries
 
     override fun print() = buildString {

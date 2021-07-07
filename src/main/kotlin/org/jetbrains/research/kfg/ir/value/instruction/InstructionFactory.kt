@@ -238,6 +238,15 @@ interface InstructionBuilder {
     val types get() = cm.type
 
     /**
+     * value wrappers
+     */
+    val Boolean.asValue get() = values.getBool(this)
+    val Number.asValue get() = values.getNumber(this)
+    val String.asValue get() = values.getString(this)
+
+    val Type.asArray get() = types.getArrayType(this)
+
+    /**
      * new array wrappers
      */
     fun Type.newArray(name: String, length: Int) = this.newArray(name, values.getInt(length))
