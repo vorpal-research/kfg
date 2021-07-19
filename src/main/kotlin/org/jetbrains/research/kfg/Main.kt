@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
 
     val jar = File(cfg.getStringValue("jar")).asContainer()!!
 
-    val classManager = ClassManager(KfgConfig(Flags.readAll, false))
+    val classManager = ClassManager(KfgConfig(Flags.readAll, true, verifyIR = true))
 
     classManager.initialize(jar)
 

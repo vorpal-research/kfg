@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.builder.asm
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.MethodDesc
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
@@ -13,6 +14,8 @@ import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type.getType
 import org.objectweb.asm.tree.*
 import java.util.*
+import org.objectweb.asm.Handle as AsmHandle
+import org.objectweb.asm.Type as AsmType
 
 private val Type.fullInt
     get() = when (this) {
@@ -378,6 +381,44 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val insn = TypeInsnNode(INSTANCEOF, inst.targetType.internalDesc)
         val operands = inst.operands
         addOperandsToStack(operands)
+        currentInsnList.add(insn)
+        stackPop(operands.size)
+        stackPush(inst)
+    }
+
+    private val Handle.asAsmHandle: AsmHandle
+        get() = AsmHandle(
+            tag,
+            method.klass.fullName,
+            method.name,
+            method.desc.asmDesc,
+            method.klass.isInterface
+        )
+
+    private val Type.asAsmType: AsmType get() = getType(this.asmDesc)
+    private val MethodDesc.asAsmType: AsmType get() = getType(this.asmDesc)
+
+    override fun visitInvokeDynamicInst(inst: InvokeDynamicInst) {
+        val insn = InvokeDynamicInsnNode(
+            inst.methodName,
+            inst.methodDesc.asmDesc,
+            inst.bootstrapMethod.asAsmHandle,
+            *inst.bootstrapMethodArgs.map {
+                when (it) {
+                    is IntConstant -> it.value
+                    is FloatConstant -> it.value
+                    is LongConstant -> it.value
+                    is DoubleConstant -> it.value
+                    is StringConstant -> it.value
+                    is Type -> it.asAsmType
+                    is MethodDesc -> it.asAsmType
+                    is Handle -> it.asAsmHandle
+                    else -> unreachable { log.error("Unknown arg of bsm: $it") }
+                }
+            }.toTypedArray()
+        )
+        val operands = inst.operands
+        addOperandsToStack(operands.reversed())
         currentInsnList.add(insn)
         stackPop(operands.size)
         stackPush(inst)

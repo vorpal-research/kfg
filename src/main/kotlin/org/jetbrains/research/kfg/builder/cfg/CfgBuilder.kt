@@ -21,6 +21,8 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
 import java.util.*
+import org.objectweb.asm.Handle as AsmHandle
+import org.objectweb.asm.Type as AsmType
 
 private val AbstractInsnNode.isDebugNode
     get() = when (this) {
@@ -519,9 +521,44 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
+    private val AsmHandle.asHandle: Handle get() =
+        Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc))
+
+    private val AsmType.asKfgType: Any get() = when (this.sort) {
+        org.objectweb.asm.Type.VOID -> types.voidType
+        org.objectweb.asm.Type.BOOLEAN -> types.boolType
+        org.objectweb.asm.Type.CHAR -> types.charType
+        org.objectweb.asm.Type.BYTE -> types.byteType
+        org.objectweb.asm.Type.SHORT -> types.shortType
+        org.objectweb.asm.Type.INT -> types.intType
+        org.objectweb.asm.Type.FLOAT -> types.floatType
+        org.objectweb.asm.Type.LONG -> types.longType
+        org.objectweb.asm.Type.DOUBLE -> types.doubleType
+        org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
+        org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
+        org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }.toTypedArray(), this.returnType.asKfgType as Type)
+        else -> unreachable { log.error("Unknown type: $this") }
+    }
+
     @Suppress("UNUSED_PARAMETER")
-    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode): Unit =
-        throw UnsupportedOperationException("InvokeDynamicInsn")
+    private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
+        val bb = nodeToBlock.getValue(insn)
+        val desc = MethodDesc.fromDesc(types, insn.desc)
+        val bsmMethod = insn.bsm.asHandle
+        val bsmArgs = insn.bsmArgs.map {
+            when (it) {
+                is Number -> it.asValue
+                is String -> it.asValue
+                is AsmType -> it.asKfgType
+                is AsmHandle -> it.asHandle
+                else -> unreachable { log.error("Unknown arg of bsm: $it") }
+            }
+        }.reversed().toTypedArray()
+        val args = desc.args.map { pop() }.toTypedArray()
+        val invokeDynamic = invokeDynamic(insn.name, desc, bsmMethod, bsmArgs, args)
+        addInstruction(bb, invokeDynamic)
+        push(invokeDynamic)
+    }
 
     private fun convertJumpInsn(insn: JumpInsnNode) {
         val bb = nodeToBlock.getValue(insn)

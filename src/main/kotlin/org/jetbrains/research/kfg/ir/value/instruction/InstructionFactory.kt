@@ -1,10 +1,7 @@
 package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.ir.BasicBlock
-import org.jetbrains.research.kfg.ir.Class
-import org.jetbrains.research.kfg.ir.Field
-import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
@@ -217,6 +214,36 @@ class InstructionFactory(val cm: ClassManager) {
         args: Array<Value>
     ) =
         CallInst(opcode, name, method, `class`, obj, args, ctx)
+
+
+    fun getInvokeDynamic(
+        ctx: UsageContext,
+        name: Name,
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = InvokeDynamicInst(name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
+
+    fun getInvokeDynamic(
+        ctx: UsageContext,
+        name: String,
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = getInvokeDynamic(ctx, StringName(name), methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+
+    fun getInvokeDynamic(
+        ctx: UsageContext,
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = InvokeDynamicInst(methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     fun getCatch(ctx: UsageContext, name: String, type: Type): Instruction = getCatch(ctx, StringName(name), type)
     fun getCatch(ctx: UsageContext, name: Name, type: Type): Instruction = CatchInst(name, type, ctx)
@@ -580,6 +607,32 @@ interface InstructionBuilder {
 
     fun Method.specialCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
         specialCall(klass, name, instance, args.toTypedArray())
+
+    fun invokeDynamic(
+        name: Name,
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+
+    fun invokeDynamic(
+        name: String,
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+
+    fun invokeDynamic(
+        methodName: String,
+        methodDesc: MethodDesc,
+        bootstrapMethod: Handle,
+        bootstrapMethodArgs: Array<Any>,
+        operands: Array<Value>
+    ) = instructions.getInvokeDynamic(ctx, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
 
     /**
      * catch/throw wrappers
