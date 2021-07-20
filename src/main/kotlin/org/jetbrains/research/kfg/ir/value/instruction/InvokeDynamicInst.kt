@@ -32,7 +32,7 @@ class InvokeDynamicInst(
     ) : this(Slot(), methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     override fun print(): String = buildString {
-        append("invokeDynamic $methodDesc $bootstrapMethod(${bootstrapMethodArgs.joinToString(", ")})")
+        append("$name = invokeDynamic $methodDesc $bootstrapMethod(${bootstrapMethodArgs.joinToString(", ")})")
     }
 
     override fun clone(ctx: UsageContext): Instruction =
