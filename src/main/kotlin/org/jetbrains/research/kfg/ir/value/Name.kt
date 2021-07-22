@@ -109,6 +109,7 @@ class SlotTracker(val method: Method) {
 }
 
 class NameMapper(val method: Method) {
+    private val stringToName = hashMapOf<String, Name>()
     private val nameToValue = hashMapOf<Name, Value>()
     private val nameToBlock = hashMapOf<BlockName, BasicBlock>()
 
@@ -123,10 +124,7 @@ class NameMapper(val method: Method) {
 
     fun getBlock(name: BlockName) = nameToBlock[name]
 
-    fun getValue(name: String) = nameToValue
-        .filter { it.key.toString() == name }
-        .map { it.value }
-        .firstOrNull()
+    fun getValue(name: String) = nameToValue[stringToName[name]]
 
     fun getValue(name: Name) = nameToValue[name]
 
@@ -136,7 +134,10 @@ class NameMapper(val method: Method) {
             for (inst in bb) {
                 for (value in inst.operands.plus(inst.get())) {
                     val name = value.name
-                    if (value !is Constant) nameToValue[name] = value
+                    if (value !is Constant) {
+                        nameToValue[name] = value
+                        stringToName[name.toString()] = name
+                    }
                 }
             }
         }

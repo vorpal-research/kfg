@@ -1,6 +1,6 @@
 package org.jetbrains.research.kfg.type
 
-internal object SystemTypeNames {
+object SystemTypeNames {
     const val stringClass = "java/lang/String"
     const val objectClass = "java/lang/Object"
     const val booleanClass = "java/lang/Boolean"
