@@ -54,6 +54,9 @@ class TypeFactory(val cm: ClassManager) {
     val nullType: Type
         get() = NullType
 
+    val classType
+        get() = getRefType(SystemTypeNames.classClass)
+
     val stringType
         get() = getRefType(SystemTypeNames.stringClass)
 

@@ -155,5 +155,6 @@ class MethodConstant(val method: Method, type: Type) : Constant(method.name, typ
     override fun hashCode(): Int = method.hashCode()
 }
 
-class ClassConstant(`class`: Type) : Constant("${`class`.name}.class", `class`)
+class ClassConstant(type: Type, val constantType: Type) : Constant("${constantType.name}.class", type)
+
 class NullConstant(type: Type) : Constant("null", type)

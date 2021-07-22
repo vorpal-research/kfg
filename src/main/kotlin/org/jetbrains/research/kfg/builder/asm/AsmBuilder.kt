@@ -125,7 +125,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         }
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(constant.value)
-        is ClassConstant -> LdcInsnNode(getType(constant.type.asmDesc))
+        is ClassConstant -> LdcInsnNode(getType(constant.constantType.asmDesc))
         is MethodConstant -> unreachable {
             log.error("Cannot convert constant $constant")
         }

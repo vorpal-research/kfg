@@ -596,11 +596,11 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             is Double -> push(values.getDouble(cst))
             is Long -> push(values.getLong(cst))
             is String -> push(values.getString(cst))
-            is org.objectweb.asm.Type -> {
+            is AsmType -> {
                 val type = parseDesc(types, cst.descriptor)
                 push(values.getClass(type))
             }
-            is org.objectweb.asm.Handle -> {
+            is AsmHandle -> {
                 val klass = cm[cst.owner]
                 val method = klass.getMethod(cst.name, cst.desc)
                 push(values.getMethod(method))
