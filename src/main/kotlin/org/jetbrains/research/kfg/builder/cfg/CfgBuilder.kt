@@ -1061,10 +1061,6 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    override fun clear() {
-        super.clear()
-    }
-
     fun build() {
         initFrame()
         buildCFG()
