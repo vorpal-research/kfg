@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.builder.asm.ClassBuilder
 import org.jetbrains.research.kfg.builder.cfg.LabelFilterer
 import org.jetbrains.research.kfg.ir.Class
+import org.jetbrains.research.kthelper.`try`
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.commons.JSRInlinerAdapter
@@ -37,6 +38,10 @@ val ClassNode.hasFrameInfo: Boolean get() {
 
 internal fun ClassNode.inlineJsrs() {
     this.methods = methods.map { it.jsrInlined }
+}
+
+internal fun Class.restoreMethodNodes() {
+    cn.methods = allMethods.map { it.mn }
 }
 
 internal val MethodNode.jsrInlined: MethodNode
@@ -178,5 +183,8 @@ internal fun ClassNode.write(loader: ClassLoader,
 
 fun Class.write(cm: ClassManager, loader: ClassLoader,
                 path: Path = Paths.get("$fullName.class"),
-                flags: Flags = Flags.writeComputeFrames): File =
-        ClassBuilder(cm, this).build().write(loader, path, flags)
+                flags: Flags = Flags.writeComputeFrames): File = `try` {
+    ClassBuilder(cm, this).build().write(loader, path, flags)
+}.also {
+    this.restoreMethodNodes()
+}.getOrThrow()
