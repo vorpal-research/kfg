@@ -38,7 +38,7 @@ class Package private constructor(name: String) {
     val fileSystemPath get() = components.joinToString(File.separator)
 
     fun isParent(other: Package) = when {
-        isConcrete -> this.components == other.components
+        isConcrete -> this.components == other.components.dropLast(1)
         this.components.size > other.components.size -> false
         else -> this.components.indices.fold(true) { acc, i ->
             acc && (this[i] == other[i])
