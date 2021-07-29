@@ -44,7 +44,7 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
         else -> copy(isConcrete = false)
     }
     val expanded: Package get() = when {
-        isConcrete -> copy(isConcrete = false)
+        isConcrete -> copy(isConcrete = true)
         else -> this
     }
 
