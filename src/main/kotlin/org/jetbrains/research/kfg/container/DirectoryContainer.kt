@@ -32,7 +32,8 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     constructor(path: String, pkg: Package?) : this(Paths.get(path), pkg)
     constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
-    private val File.fullClassName: String get() = this.relativeTo(file).path
+    private val File.fullClassName: String get() = this.relativeTo(file).path.removeSuffix(".class")
+    private val File.pkg: Package get() = Package(fullClassName.dropLastWhile { it != Package.SEPARATOR })
 
     private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
         action()
@@ -44,7 +45,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     override fun parse(flags: Flags, failOnError: Boolean, loader: ClassLoader): Map<String, ClassNode> {
         val classes = mutableMapOf<String, ClassNode>()
         for (entry in file.allEntries) {
-            if (entry.isClass && pkg.isParent(entry.fullClassName)) {
+            if (entry.isClass && pkg.isParent(entry.pkg)) {
                 val classNode = readClassNode(entry.inputStream(), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
@@ -65,7 +66,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
             if (entry.isClass) {
                 val `class` = cm[entry.fullClassName]
                 when {
-                    pkg.isParent(entry.name) && `class` is ConcreteClass -> {
+                    pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                         val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
@@ -84,7 +85,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
         unpack(cm, target)
 
         for (entry in file.allEntries) {
-            if (entry.isClass && pkg.isParent(entry.fullClassName)) {
+            if (entry.isClass && pkg.isParent(entry.pkg)) {
                 val `class` = cm[entry.fullClassName]
 
                 if (`class` is ConcreteClass) {
