@@ -23,7 +23,8 @@ import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 
 val JarEntry.isClass get() = this.name.endsWith(".class")
-val JarEntry.className get() = this.name.removeSuffix(".class")
+val JarEntry.fullName get() = this.name.removeSuffix(".class")
+val JarEntry.pkg get() = Package(fullName.dropLastWhile { it != Package.SEPARATOR })
 val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = File(this.name).classLoader

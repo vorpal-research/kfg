@@ -16,7 +16,7 @@ import org.jetbrains.research.kthelper.defaultHashCode
 import org.objectweb.asm.tree.ClassNode
 import java.io.File
 
-class Package private constructor(name: String) {
+data class Package(val components: List<String>, val isConcrete: Boolean) {
     companion object {
         const val SEPARATOR = '/'
         const val EXPANSION = '*'
@@ -26,16 +26,27 @@ class Package private constructor(name: String) {
         fun parse(string: String) = Package(string.replace(CANONICAL_SEPARATOR, SEPARATOR))
     }
 
-    val components: List<String> = name.removeSuffix("$EXPANSION")
-        .removeSuffix("$SEPARATOR")
-        .split(SEPARATOR)
-        .filter { it.isNotBlank() }
-    val isConcrete: Boolean = name.lastOrNull() != EXPANSION
+    constructor(name: String) : this(
+        name.removeSuffix("$EXPANSION")
+            .removeSuffix("$SEPARATOR")
+            .split(SEPARATOR)
+            .filter { it.isNotBlank() },
+        name.lastOrNull() != EXPANSION
+    )
 
     val concretePackage get() = if (isConcrete) this else Package(concreteName)
     val concreteName get() = components.joinToString("$SEPARATOR")
     val canonicalName get() = components.joinToString("$CANONICAL_SEPARATOR")
     val fileSystemPath get() = components.joinToString(File.separator)
+
+    val concretized: Package get() = when {
+        isConcrete -> this
+        else -> copy(isConcrete = false)
+    }
+    val expanded: Package get() = when {
+        isConcrete -> copy(isConcrete = false)
+        else -> this
+    }
 
     fun isParent(other: Package) = when {
         isConcrete -> this.components == other.components
@@ -57,6 +68,7 @@ class Package private constructor(name: String) {
             append("$SEPARATOR$EXPANSION")
         }
     }
+
     override fun hashCode() = defaultHashCode(components, isConcrete)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

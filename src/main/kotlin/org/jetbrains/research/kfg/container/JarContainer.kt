@@ -66,7 +66,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
 
-            if (entry.isClass && pkg.isParent(entry.className)) {
+            if (entry.isClass && pkg.isParent(entry.pkg)) {
                 val classNode = readClassNode(file.getInputStream(entry), flags)
 
                 // need to recompute frames because sometimes original Jar classes don't contain frame info
@@ -92,7 +92,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
             if (entry.isClass) {
                 val `class` = cm[entry.name.removeSuffix(".class")]
                 when {
-                    pkg.isParent(entry.name) && `class` is ConcreteClass -> {
+                    pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                         val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
                         failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
                     }
@@ -119,7 +119,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
             val entry = enumeration.nextElement() as JarEntry
             if (entry.isManifest) continue
 
-            if (entry.isClass && pkg.isParent(entry.name)) {
+            if (entry.isClass && pkg.isParent(entry.pkg)) {
                 val `class` = cm[entry.name.removeSuffix(".class")]
 
                 if (`class` is ConcreteClass) {
