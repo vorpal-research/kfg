@@ -41,10 +41,10 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
 
     val concretized: Package get() = when {
         isConcrete -> this
-        else -> copy(isConcrete = false)
+        else -> copy(isConcrete = true)
     }
     val expanded: Package get() = when {
-        isConcrete -> copy(isConcrete = true)
+        isConcrete -> copy(isConcrete = false)
         else -> this
     }
 
