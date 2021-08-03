@@ -107,13 +107,13 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     }
 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
+        unpack(cm, target, false, false, loader)
+
         val absolutePath = target.toAbsolutePath()
         val jarName = file.name.substringAfterLast(File.separator).removeSuffix(".jar")
         val jarPath = absolutePath.resolve("$jarName.jar")
         val builder = JarBuilder("$jarPath", manifest)
         val enumeration = file.entries()
-
-        unpack(cm, target, false, false, loader)
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
