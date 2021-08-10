@@ -45,6 +45,7 @@ Simple example of how to scan Jar file
 fun example(path: Path, `package`: Package) {
     // create Jar file instance
     val jar = Jar(path, `package`)
+    val target = Paths.get("updated")
     // create ClassManager and initialize it with the jar
     val cm = ClassManager(KfgConfig(Flags.readAll, failOnError = true))
     cm.initialize(jar)
@@ -55,8 +56,9 @@ fun example(path: Path, `package`: Package) {
             method.view("/usr/bin/dot", "/usr/bin/browser")
         }
     }
-    // save all changes to methods back to jar
-    jar.update(cm)
+    // create copy of the original jar with the updated 
+    // classes in directory `target`
+    jar.update(cm, target)
 }
 ```
 
