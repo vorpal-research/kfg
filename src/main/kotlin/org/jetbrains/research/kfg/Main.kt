@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.visitor.executePipeline
 import org.jetbrains.research.kthelper.logging.log
 import java.io.File
+import java.nio.file.Paths
 
 fun main(args: Array<String>) {
     val cfg = KfgConfigParser(args)
@@ -18,12 +19,12 @@ fun main(args: Array<String>) {
     classManager.initialize(jar)
 
     log.debug(classManager.concreteClasses.joinToString("\n") { it.fullName })
-    val target = File("instrumented/")
+    val target = Paths.get("instrumented/")
     println(jar.commonPackage)
-    jar.unpack(classManager, target.toPath(), true, classManager.failOnError)
+    jar.unpack(classManager, target, true, classManager.failOnError)
     executePipeline(classManager, jar.pkg) {
         +LoopAnalysis(classManager)
         +LoopSimplifier(classManager)
     }
-    jar.update(classManager)
+    jar.update(classManager, target)
 }
