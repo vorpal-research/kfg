@@ -1,7 +1,6 @@
 package org.jetbrains.research.kfg.type
 
 import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 
 interface TypeVisitor {
     val types: TypeFactory
@@ -10,7 +9,7 @@ interface TypeVisitor {
         is VoidType -> visitVoid(type)
         is PrimaryType -> visitPrimary(type)
         is Reference -> visitReference(type)
-        else -> unreachable { log.error("Unknown type: $type") }
+        else -> unreachable("Unknown type: $type")
     }
 
     fun visitVoid(type: VoidType): Type = type
@@ -18,7 +17,7 @@ interface TypeVisitor {
     fun visitPrimary(type: PrimaryType) = when (type) {
         is Integral -> visitIntegral(type)
         is Real -> visitReal(type)
-        else -> unreachable { log.error("Unknown primary type: $type") }
+        else -> unreachable("Unknown primary type: $type")
     }
 
     fun visitIntegral(type: Integral) = when (type) {
@@ -49,7 +48,7 @@ interface TypeVisitor {
         is NullType -> visitNull(type)
         is ClassType -> visitClass(type)
         is ArrayType -> visitArray(type)
-        else -> unreachable { log.error("Unknown reference type: $type") }
+        else -> unreachable("Unknown reference type: $type")
     }
 
     fun visitNull(type: NullType): Type = type

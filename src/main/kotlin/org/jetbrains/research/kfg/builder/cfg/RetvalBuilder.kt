@@ -12,7 +12,6 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.jetbrains.research.kthelper.assert.ktassert
-import org.jetbrains.research.kthelper.logging.log
 import kotlin.math.abs
 
 class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
@@ -61,9 +60,7 @@ class RetvalBuilder(override val cm: ClassManager) : MethodVisitor {
                     method.returnType -> retval
                     is Integral -> {
                         val methodRetType = method.returnType
-                        ktassert(methodRetType is Integral) {
-                            log.error("Return value type is integral and method return type is ${method.returnType}")
-                        }
+                        ktassert(methodRetType is Integral, "Return value type is integral and method return type is ${method.returnType}")
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine

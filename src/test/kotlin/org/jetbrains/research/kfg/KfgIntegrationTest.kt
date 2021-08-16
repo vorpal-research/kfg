@@ -6,7 +6,6 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
-import org.jetbrains.research.kthelper.logging.log
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
@@ -54,7 +53,7 @@ class KfgIntegrationTest {
         assertTrue(out.toString().isBlank(), out.toString())
         assertTrue(err.toString().isBlank(), err.toString())
         if (!target.toFile().deleteRecursively()) {
-            log.warn("Could not delete temp directory ${target.toAbsolutePath()}")
+            System.err.println("Could not delete temp directory ${target.toAbsolutePath()}")
         }
     }
 
@@ -77,7 +76,7 @@ class KfgIntegrationTest {
         assertTrue(out.toString().isBlank(), out.toString())
         assertTrue(err.toString().isBlank(), err.toString())
         if (!target.toFile().deleteRecursively()) {
-            log.warn("Could not delete temp directory ${target.toAbsolutePath()}")
+            System.err.println("Could not delete temp directory ${target.toAbsolutePath()}")
         }
     }
 

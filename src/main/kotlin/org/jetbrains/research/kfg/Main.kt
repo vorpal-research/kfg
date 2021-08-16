@@ -5,7 +5,6 @@ import org.jetbrains.research.kfg.analysis.LoopSimplifier
 import org.jetbrains.research.kfg.container.asContainer
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.visitor.executePipeline
-import org.jetbrains.research.kthelper.logging.log
 import java.io.File
 
 fun main(args: Array<String>) {
@@ -17,7 +16,7 @@ fun main(args: Array<String>) {
 
     classManager.initialize(jar)
 
-    log.debug(classManager.concreteClasses.joinToString("\n") { it.fullName })
+    println(classManager.concreteClasses.joinToString("\n") { it.fullName })
     val target = File("instrumented/")
     println(jar.commonPackage)
     jar.unpack(classManager, target.toPath(), true, classManager.failOnError)

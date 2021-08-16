@@ -6,7 +6,6 @@ import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
-import org.jetbrains.research.kthelper.logging.log
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var current: Method
@@ -25,7 +24,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     override fun visit(loop: Loop) {
         super.visit(loop)
         if (loop.allEntries.size != 1) {
-            log.error("Can't simplify loop with multiple entries")
+            if (cm.failOnError) {
+                throw IllegalStateException("Can't simplify loop with multiple entries")
+            }
             return
         }
         buildPreheader(loop)

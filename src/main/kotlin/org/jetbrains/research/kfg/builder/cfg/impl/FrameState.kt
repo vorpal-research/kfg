@@ -6,7 +6,6 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseDesc
 import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.AbstractInsnNode
 import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.LabelNode
@@ -51,7 +50,7 @@ private fun parsePrimitiveType(tf: TypeFactory, opcode: Int) = when (opcode) {
     4 -> tf.longType
     5 -> tf.nullType
     6 -> UninitializedThisType
-    else -> unreachable { log.error("Unknown opcode in primitive type parsing: $opcode") }
+    else -> unreachable("Unknown opcode in primitive type parsing: $opcode")
 }
 
 fun parseFrameDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
@@ -83,7 +82,7 @@ private fun parseType(types: TypeFactory, any: Any): Type = when (any) {
         }
         parseFrameDesc(types, newNode.desc)
     }
-    else -> unreachable { log.error("Unexpected local type $any") }
+    else -> unreachable("Unexpected local type $any")
 }
 
 private fun List<*>?.parseLocals(types: TypeFactory): SortedMap<Int, Type> {

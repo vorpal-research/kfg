@@ -1,7 +1,5 @@
 package org.jetbrains.research.kfg.builder.cfg
 
-import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.value.instruction.ArrayStoreInst
 import org.jetbrains.research.kfg.ir.value.instruction.FieldStoreInst
@@ -10,6 +8,7 @@ import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.BoolType
 import org.jetbrains.research.kfg.type.Integral
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kthelper.assert.unreachable
 
 class BoolValueAdapter(override val cm: ClassManager) : MethodVisitor {
     override fun cleanup() {}
@@ -18,7 +17,7 @@ class BoolValueAdapter(override val cm: ClassManager) : MethodVisitor {
         val bb = inst.parent
 
         val arrayType = inst.arrayRef.type as? ArrayType
-                ?: unreachable { log.error("Non-array type of array store reference") }
+                ?: unreachable("Non-array type of array store reference")
 
         if (arrayType.component is BoolType && inst.value.type is Integral) {
             val cast = instructions.getCast(types.boolType, inst.value)

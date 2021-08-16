@@ -4,7 +4,6 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import java.lang.Class as JClass
 
 class TypeFactory(val cm: ClassManager) {
@@ -130,7 +129,7 @@ class TypeFactory(val cm: ClassManager) {
         is LongType -> longWrapper
         is FloatType -> floatWrapper
         is DoubleType -> doubleWrapper
-        else -> unreachable { log.error("Unknown primary type $type") }
+        else -> unreachable("Unknown primary type $type")
     }
 
     fun get(klass: JClass<*>): Type = when {
@@ -144,7 +143,7 @@ class TypeFactory(val cm: ClassManager) {
             Long::class.javaPrimitiveType -> longType
             Float::class.javaPrimitiveType -> floatType
             Double::class.javaPrimitiveType -> doubleType
-            else -> unreachable { log.error("Unknown primary type $klass") }
+            else -> unreachable("Unknown primary type $klass")
         }
         klass.isArray -> getArrayType(get(klass.componentType))
         else -> getRefType(cm[klass.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)])
