@@ -3,7 +3,6 @@ package org.jetbrains.research.kfg
 import org.apache.commons.cli.*
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kthelper.assert.ktassert
-import org.jetbrains.research.kthelper.logging.log
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.system.exitProcess
@@ -15,7 +14,7 @@ data class KfgConfig(
 ) {
 
     init {
-        ktassert(flags < Flags.readSkipFrames) { log.error("Can't create config with 'skipFrames' option") }
+        ktassert(flags < Flags.readSkipFrames, "Can't create config with 'skipFrames' option")
     }
 }
 

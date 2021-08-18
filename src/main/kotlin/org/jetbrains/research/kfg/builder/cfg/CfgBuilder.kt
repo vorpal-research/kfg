@@ -16,7 +16,6 @@ import org.jetbrains.research.kfg.util.print
 import org.jetbrains.research.kthelper.`try`
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.collection.queueOf
-import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
@@ -126,7 +125,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         for ((local, type) in definedLocals) {
             val incomings = predFrames.associate {
                 it.bb to (it.locals[local]
-                    ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
+                    ?: unreachable("Predecessor frame does not contain a local value $local"))
             }
 
             val incomingValues = incomings.values.toSet()
@@ -729,7 +728,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             F_CHOP -> lastFrame.dropFrame(insn)
             F_SAME -> lastFrame.copy()
             F_SAME1 -> lastFrame.copy1(insn)
-            else -> unreachable { log.error("Unknown frame node type $insn") }
+            else -> unreachable("Unknown frame node type $insn")
         }
 
         when (block) {
@@ -896,7 +895,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             for ((local, phi) in sf.localPhis) {
                 val incomings = predFrames.associate {
                     it.bb to (it.locals[local]
-                        ?: unreachable { log.error("Predecessor frame does not contain a local value $local") })
+                        ?: unreachable("Predecessor frame does not contain a local value $local"))
                 }
 
                 val newPhi = phi(phi.type, incomings)
@@ -956,7 +955,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         val mappedFrame = unmappedBlocks.getValue(block)
         for ((index, value) in mappedFrame.locals) {
             val actualValue = locals[index]
-                ?: unreachable { log.error("Block ${block.name} does not define required local $index") }
+                ?: unreachable("Block ${block.name} does not define required local $index")
             value.replaceAllUsesWith(actualValue)
         }
         for ((index, value) in mappedFrame.stack.withIndex()) {
@@ -978,7 +977,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             when (block.successors.size) {
                 1 -> addInstruction(block, goto(block.successors.first()))
                 0 -> {}
-                else -> unreachable { log.error("Unexpected block in finish") }
+                else -> unreachable("Unexpected block in finish")
             }
         }
         reserveState(block)

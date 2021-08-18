@@ -9,7 +9,6 @@ import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type.getType
 import org.objectweb.asm.tree.*
@@ -28,7 +27,7 @@ private val Type.fullInt
         is FloatType -> 2
         is DoubleType -> 3
         is Reference -> 4
-        else -> unreachable { log.error("Unexpected type for conversion: $name") }
+        else -> unreachable("Unexpected type for conversion: $name")
     }
 
 private val Type.shortInt
@@ -38,7 +37,7 @@ private val Type.shortInt
         is FloatType -> 2
         is DoubleType -> 3
         is Reference -> 4
-        else -> unreachable { log.error("Unexpected type for conversion: $name") }
+        else -> unreachable("Unexpected type for conversion: $name")
     }
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
@@ -126,9 +125,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(constant.value)
         is ClassConstant -> LdcInsnNode(getType(constant.constantType.asmDesc))
-        is MethodConstant -> unreachable {
-            log.error("Cannot convert constant $constant")
-        }
+        is MethodConstant -> unreachable("Cannot convert constant $constant")
     }
 
     // register all instructions for loading required arguments to stack
@@ -212,9 +209,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         currentInsnList = inst.parent.terminateInsnList
 
         val cond = inst.cond as? CmpInst
-            ?: unreachable {
-                log.error("Unknown branch condition: ${inst.print()}")
-            }
+            ?: unreachable("Unknown branch condition: ${inst.print()}")
         val opcode = if (cond.lhv.type is Reference) {
             when (cond.opcode) {
                 CmpOpcode.EQ -> IF_ACMPEQ

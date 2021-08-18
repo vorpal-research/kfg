@@ -12,7 +12,6 @@ import org.jetbrains.research.kthelper.algorithm.Viewable
 import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.collection.queueOf
 import org.jetbrains.research.kthelper.defaultHashCode
-import org.jetbrains.research.kthelper.logging.log
 import org.objectweb.asm.tree.MethodNode
 
 data class MethodDesc(
@@ -122,9 +121,7 @@ class Method(
 
     fun add(ctx: BlockUsageContext, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
-            ktassert(!bb.hasParent) {
-                log.error("Block ${bb.name} already belongs to other method")
-            }
+            ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             innerBlocks.add(bb)
             slotTracker.addBlock(bb)
             bb.addUser(this@Method)
@@ -134,13 +131,9 @@ class Method(
 
     fun addBefore(ctx: BlockUsageContext, before: BasicBlock, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
-            ktassert(!bb.hasParent) {
-                log.error("Block ${bb.name} already belongs to other method")
-            }
+            ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(before)
-            ktassert(index >= 0) {
-                log.error("Block ${before.name} does not belong to method $this")
-            }
+            ktassert(index >= 0, "Block ${before.name} does not belong to method $this")
 
             innerBlocks.add(index, bb)
             slotTracker.addBlock(bb)
@@ -151,13 +144,9 @@ class Method(
 
     fun addAfter(ctx: BlockUsageContext, after: BasicBlock, bb: BasicBlock) = with(ctx) {
         if (bb !in innerBlocks) {
-            ktassert(!bb.hasParent) {
-                log.error("Block ${bb.name} already belongs to other method")
-            }
+            ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(after)
-            ktassert(index >= 0) {
-                log.error("Block ${after.name} does not belong to method $this")
-            }
+            ktassert(index >= 0, "Block ${after.name} does not belong to method $this")
 
             innerBlocks.add(index + 1, bb)
             slotTracker.addBlock(bb)
@@ -168,9 +157,7 @@ class Method(
 
     fun remove(ctx: BlockUsageContext, block: BasicBlock) = with(ctx) {
         if (innerBlocks.contains(block)) {
-            ktassert(block.parentUnsafe == this@Method) {
-                log.error("Block ${block.name} don't belong to $this")
-            }
+            ktassert(block.parentUnsafe == this@Method, "Block ${block.name} don't belong to $this")
             innerBlocks.remove(block)
 
             if (block in innerCatches) {

@@ -5,7 +5,6 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kthelper.assert.unreachable
-import org.jetbrains.research.kthelper.logging.log
 
 class ValueFactory(val cm: ClassManager) {
     val types get() = cm.type
@@ -45,7 +44,7 @@ class ValueFactory(val cm: ClassManager) {
         is FloatType -> getFloat(0.0f)
         is DoubleType -> getDouble(0.0)
         is Reference -> nullConstant
-        else -> unreachable { log.error("Unknown type: ${type.name}") }
+        else -> unreachable("Unknown type: ${type.name}")
     }
 
     fun getNumber(value: Number): Value = when (value) {
@@ -53,9 +52,7 @@ class ValueFactory(val cm: ClassManager) {
         is Float -> getFloat(value)
         is Long -> getLong(value)
         is Double -> getDouble(value)
-        else -> unreachable {
-            log.error("Unknown number: $value")
-        }
+        else -> unreachable("Unknown number: $value")
     }
 
     fun getConstant(value: Any?): Value? = when (value) {
