@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.0.14-1</version>
+    <version>0.1.0</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -16,13 +16,13 @@
         <maven.compiler.source>${jvm.version}</maven.compiler.source>
         <maven.compiler.target>${jvm.version}</maven.compiler.target>
 
-        <kotlin.version>1.5.0</kotlin.version>
+        <kotlin.version>1.5.21</kotlin.version>
         <compiler-plugin.version>3.5.1</compiler-plugin.version>
 
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.0.11</kt-helper.version>
-        <asm.version>7.3.1</asm.version>
+        <kt-helper.version>0.0.12</kt-helper.version>
+        <asm.version>9.2</asm.version>
         <commons-cli.version>1.4</commons-cli.version>
         <jdot.version>1.0</jdot.version>
     </properties>
@@ -81,14 +81,14 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
-        <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
+        <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <testSourceDirectory>src/test/kotlin</testSourceDirectory>
 
         <plugins>
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <configuration>
-			        <jvmTarget>${jvm.version}</jvmTarget>
+			        <jvmTarget>1.8</jvmTarget>
                 </configuration>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <version>${kotlin.version}</version>

@@ -6,9 +6,7 @@ import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.ir.value.Constant
-import org.jetbrains.research.kfg.ir.value.UndefinedName
-import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
@@ -19,12 +17,18 @@ import org.jetbrains.research.kthelper.assert.ktassert
 
 class InvalidIRException(reason: Throwable) : KfgException(reason)
 
-class IRVerifier(override val cm: ClassManager) : MethodVisitor {
+class IRVerifier(classManager: ClassManager) : MethodVisitor {
+    override val cm: ClassManager = classManager
     private val valueNameRegex = "(%([_\\-\$a-zA-Z]+[\\w.]*|\$|\\d+)|arg\\$\\d+|this)".toRegex()
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
     private var current: Method? = null
+    private var usageContext: UsageContext = EmptyUsageContext
+
+    constructor(classManager: ClassManager, ctx: UsageContext) : this(classManager) {
+        this.usageContext = ctx
+    }
 
     private val Instruction.parents
         get(): Pair<Method, BasicBlock> {
@@ -33,7 +37,7 @@ class IRVerifier(override val cm: ClassManager) : MethodVisitor {
             return method to bb
         }
 
-    private fun visitValue(value: Value) {
+    private fun visitValue(value: Value) = with (usageContext) {
         if (value.name !is UndefinedName && value !is Constant) {
             ktassert(valueNameRegex.matches("${value.name}"), "Incorrect value name format $value")
             val storedVal = valueNames[value.name.toString()]

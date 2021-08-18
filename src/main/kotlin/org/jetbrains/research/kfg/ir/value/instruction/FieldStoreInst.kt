@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.value.UndefinedName
+import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kthelper.assert.asserted
 
@@ -9,14 +10,14 @@ class FieldStoreInst : Instruction {
     val field: Field
     val isStatic: Boolean
 
-    constructor(field: Field, value: Value)
-            : super(UndefinedName(), field.type, arrayOf(value)) {
+    internal constructor(field: Field, value: Value, ctx: UsageContext)
+            : super(UndefinedName(), field.type, arrayOf(value), ctx) {
         this.field = field
         isStatic = true
     }
 
-    constructor(owner: Value, field: Field, value: Value)
-            : super(UndefinedName(), field.type, arrayOf(owner, value)) {
+    internal constructor(owner: Value, field: Field, value: Value, ctx: UsageContext)
+            : super(UndefinedName(), field.type, arrayOf(owner, value), ctx) {
         this.field = field
         isStatic = false
     }
@@ -38,8 +39,8 @@ class FieldStoreInst : Instruction {
         return sb.toString()
     }
 
-    override fun clone(): Instruction = when {
-        isStatic -> FieldStoreInst(field, value)
-        else -> FieldStoreInst(owner, field, value)
+    override fun clone(ctx: UsageContext): Instruction = when {
+        isStatic -> FieldStoreInst(field, value, ctx)
+        else -> FieldStoreInst(owner, field, value, ctx)
     }
 }

@@ -3,17 +3,19 @@ package org.jetbrains.research.kfg.ir.value.instruction
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.value.IntConstant
 import org.jetbrains.research.kfg.ir.value.UndefinedName
+import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.type.Type
 
-class TableSwitchInst(
+class TableSwitchInst internal constructor(
     type: Type,
     index: Value,
     min: Value,
     max: Value,
     default: BasicBlock,
-    branches: Array<BasicBlock>
-) : TerminateInst(UndefinedName(), type, arrayOf(index, min, max), arrayOf(default, *branches)) {
+    branches: Array<BasicBlock>,
+    ctx: UsageContext
+) : TerminateInst(UndefinedName(), type, arrayOf(index, min, max), arrayOf(default, *branches), ctx) {
 
     val index: Value
         get() = ops[0]
@@ -38,5 +40,6 @@ class TableSwitchInst(
         append("else -> ${default.name}}")
     }
 
-    override fun clone(): Instruction = TableSwitchInst(type, index, min, max, default, branches.toTypedArray())
+    override fun clone(ctx: UsageContext): Instruction =
+        TableSwitchInst(type, index, min, max, default, branches.toTypedArray(), ctx)
 }

@@ -94,6 +94,9 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
+    val classClass
+        get() = this[SystemTypeNames.classClass]
+
     val stringClass
         get() = this[SystemTypeNames.stringClass]
 

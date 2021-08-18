@@ -1,13 +1,12 @@
 package org.jetbrains.research.kfg.builder.cfg.impl
 
-import org.jetbrains.research.kfg.ir.value.UsableValue
-import org.jetbrains.research.kfg.ir.value.Value
-import org.jetbrains.research.kfg.ir.value.ValueUser
+import org.jetbrains.research.kfg.ir.value.*
 
 internal class FrameStack(
+    private val ctx: UsageContext,
     private val stack: MutableList<Value> = mutableListOf()
-) : ValueUser, MutableList<Value> by stack {
-    override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
+) : ValueUser, MutableList<Value> by stack, UsageContext by ctx {
+    override fun replaceUsesOf(ctx: ValueUsageContext, from: UsableValue, to: UsableValue) {
         stack.replaceAll { if (it == from) to.get() else it }
     }
 
@@ -64,7 +63,7 @@ internal class FrameStack(
         return res
     }
 
-    override fun clearUses() {
+    override fun clearUses(ctx: UsageContext) {
         stack.forEach { it.removeUser(this) }
     }
 }

@@ -3,16 +3,18 @@ package org.jetbrains.research.kfg.builder.asm
 import org.jetbrains.research.kfg.*
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.MethodDesc
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type.getType
 import org.objectweb.asm.tree.*
 import java.util.*
+import org.objectweb.asm.Handle as AsmHandle
+import org.objectweb.asm.Type as AsmType
 
 private val Type.fullInt
     get() = when (this) {
@@ -122,7 +124,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         }
         is NullConstant -> InsnNode(ACONST_NULL)
         is StringConstant -> LdcInsnNode(constant.value)
-        is ClassConstant -> LdcInsnNode(getType(constant.type.asmDesc))
+        is ClassConstant -> LdcInsnNode(getType(constant.constantType.asmDesc))
         is MethodConstant -> unreachable("Cannot convert constant $constant")
     }
 
@@ -379,6 +381,44 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         stackPush(inst)
     }
 
+    private val Handle.asAsmHandle: AsmHandle
+        get() = AsmHandle(
+            tag,
+            method.klass.fullName,
+            method.name,
+            method.desc.asmDesc,
+            method.klass.isInterface
+        )
+
+    private val Type.asAsmType: AsmType get() = getType(this.asmDesc)
+    private val MethodDesc.asAsmType: AsmType get() = getType(this.asmDesc)
+
+    override fun visitInvokeDynamicInst(inst: InvokeDynamicInst) {
+        val insn = InvokeDynamicInsnNode(
+            inst.methodName,
+            inst.methodDesc.asmDesc,
+            inst.bootstrapMethod.asAsmHandle,
+            *inst.bootstrapMethodArgs.map {
+                when (it) {
+                    is IntConstant -> it.value
+                    is FloatConstant -> it.value
+                    is LongConstant -> it.value
+                    is DoubleConstant -> it.value
+                    is StringConstant -> it.value
+                    is Type -> it.asAsmType
+                    is MethodDesc -> it.asAsmType
+                    is Handle -> it.asAsmHandle
+                    else -> unreachable("Unknown arg of bsm: $it")
+                }
+            }.toTypedArray()
+        )
+        val operands = inst.operands
+        addOperandsToStack(operands.reversed())
+        currentInsnList.add(insn)
+        stackPop(operands.size)
+        stackPush(inst)
+    }
+
     override fun visitTableSwitchInst(inst: TableSwitchInst) {
         stackSave()
         currentInsnList = inst.parent.terminateInsnList
@@ -410,32 +450,27 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     override fun visitCmpInst(inst: CmpInst) {
         val isBranch = !(inst.opcode == CmpOpcode.CMP || inst.opcode == CmpOpcode.CMPG || inst.opcode == CmpOpcode.CMPL)
-        when {
-            isBranch -> {
-                ktassert(inst.users.any { it is BranchInst }, "Unsupported usage of cmp inst")
-            }
-            else -> {
-                val opcode = when (inst.opcode) {
-                    CmpOpcode.CMP -> LCMP
-                    CmpOpcode.CMPG -> when (inst.lhv.type) {
-                        is FloatType -> FCMPG
-                        is DoubleType -> DCMPG
-                        else -> throw InvalidOperandException("Non-real operands of CMPG inst: ${inst.lhv.type}")
-                    }
-                    CmpOpcode.CMPL -> when (inst.lhv.type) {
-                        is FloatType -> FCMPL
-                        is DoubleType -> DCMPL
-                        else -> throw InvalidOperandException("Non-real operands of CMPL inst: ${inst.lhv.type}")
-                    }
-                    else -> throw InvalidStateException("Unknown non-branch cmp inst ${inst.print()}")
+        if (!isBranch) {
+            val opcode = when (inst.opcode) {
+                CmpOpcode.CMP -> LCMP
+                CmpOpcode.CMPG -> when (inst.lhv.type) {
+                    is FloatType -> FCMPG
+                    is DoubleType -> DCMPG
+                    else -> throw InvalidOperandException("Non-real operands of CMPG inst: ${inst.lhv.type}")
                 }
-                val insn = InsnNode(opcode)
-                val operands = inst.operands
-                addOperandsToStack(operands)
-                currentInsnList.add(insn)
-                stackPop(operands.size)
-                stackPush(inst)
+                CmpOpcode.CMPL -> when (inst.lhv.type) {
+                    is FloatType -> FCMPL
+                    is DoubleType -> DCMPL
+                    else -> throw InvalidOperandException("Non-real operands of CMPL inst: ${inst.lhv.type}")
+                }
+                else -> throw InvalidStateException("Unknown non-branch cmp inst ${inst.print()}")
             }
+            val insn = InsnNode(opcode)
+            val operands = inst.operands
+            addOperandsToStack(operands)
+            currentInsnList.add(insn)
+            stackPop(operands.size)
+            stackPush(inst)
         }
     }
 

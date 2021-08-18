@@ -6,10 +6,11 @@ import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kthelper.assert.asserted
 
-abstract class Instruction(
+abstract class Instruction internal constructor(
     name: Name,
     type: Type,
-    protected val ops: Array<Value>
+    protected val ops: Array<Value>,
+    ctx: UsageContext
 ) : Value(name, type), ValueUser, Iterable<Value> {
 
     internal var parentUnsafe: BasicBlock? = null
@@ -25,34 +26,36 @@ abstract class Instruction(
         get() = ops.toList()
 
     init {
-        ops.forEach { it.addUser(this) }
+        with(ctx) {
+            ops.forEach { it.addUser(this@Instruction) }
+        }
     }
 
 
     abstract fun print(): String
     override fun iterator(): Iterator<Value> = ops.iterator()
 
-    override fun replaceUsesOf(from: UsableValue, to: UsableValue) {
+    override fun replaceUsesOf(ctx: ValueUsageContext, from: UsableValue, to: UsableValue) = with(ctx) {
         ops.indices
             .filter { ops[it] == from }
             .forEach {
-                ops[it].removeUser(this)
+                ops[it].removeUser(this@Instruction)
                 ops[it] = to.get()
-                to.addUser(this)
+                to.addUser(this@Instruction)
             }
     }
 
-    abstract fun clone(): Instruction
-    open fun update(remapping: Map<Value, Value> = mapOf(), loc: Location = location): Instruction {
-        val new = clone()
-        remapping.forEach { (from, to) -> new.replaceUsesOf(from, to) }
+    abstract fun clone(ctx: UsageContext): Instruction
+    open fun update(ctx: UsageContext, remapping: Map<Value, Value> = mapOf(), loc: Location = location): Instruction {
+        val new = clone(ctx)
+        remapping.forEach { (from, to) -> new.replaceUsesOf(ctx, from, to) }
         new.location = loc
         return new
     }
 
-    override fun clearUses() {
+    override fun clearUses(ctx: UsageContext) = with(ctx) {
         ops.forEach {
-            it.removeUser(this)
+            it.removeUser(this@Instruction)
         }
     }
 }
@@ -61,8 +64,9 @@ abstract class TerminateInst(
     name: Name,
     type: Type,
     operands: Array<Value>,
-    protected val succs: Array<BasicBlock>
-) : Instruction(name, type, operands), BlockUser {
+    protected val succs: Array<BasicBlock>,
+    ctx: UsageContext
+) : Instruction(name, type, operands, ctx), BlockUser {
 
     val successors: List<BasicBlock>
         get() = succs.toList()
@@ -70,16 +74,18 @@ abstract class TerminateInst(
     override val isTerminate = true
 
     init {
-        succs.forEach { it.addUser(this) }
+        with(ctx) {
+            succs.forEach { it.addUser(this@TerminateInst) }
+        }
     }
 
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
+    override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
         succs.indices
             .filter { succs[it] == from }
             .forEach {
-                succs[it].removeUser(this)
+                succs[it].removeUser(this@TerminateInst)
                 succs[it] = to.get()
-                to.addUser(this)
+                to.addUser(this@TerminateInst)
             }
     }
 }

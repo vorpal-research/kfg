@@ -1,9 +1,6 @@
 package org.jetbrains.research.kfg.ir
 
-import org.jetbrains.research.kfg.ir.value.BlockName
-import org.jetbrains.research.kfg.ir.value.BlockUser
-import org.jetbrains.research.kfg.ir.value.UsableBlock
-import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
@@ -48,55 +45,57 @@ sealed class BasicBlock(
     val size: Int
         get() = instructions.size
 
+    @Suppress("UNUSED_PARAMETER")
     private fun addValueToParent(value: Value) {
         parentUnsafe?.slotTracker?.addValue(value)
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun removeValueFromParent(value: Value) {
         parentUnsafe?.slotTracker?.removeValue(value)
     }
 
-    fun addSuccessor(bb: BasicBlock) {
+    fun addSuccessor(ctx: BlockUsageContext, bb: BasicBlock) = with(ctx) {
         innerSuccessors.add(bb)
-        bb.addUser(this)
+        bb.addUser(this@BasicBlock)
     }
 
-    fun addSuccessors(vararg bbs: BasicBlock) = bbs.forEach { addSuccessor(it) }
-    fun addSuccessors(bbs: List<BasicBlock>) = bbs.forEach { addSuccessor(it) }
-    fun addPredecessor(bb: BasicBlock) {
+    fun addSuccessors(ctx: BlockUsageContext, vararg bbs: BasicBlock) = bbs.forEach { addSuccessor(ctx, it) }
+    fun addSuccessors(ctx: BlockUsageContext, bbs: List<BasicBlock>) = bbs.forEach { addSuccessor(ctx, it) }
+    fun addPredecessor(ctx: BlockUsageContext, bb: BasicBlock) = with(ctx) {
         innerPredecessors.add(bb)
-        bb.addUser(this)
+        bb.addUser(this@BasicBlock)
     }
 
-    fun addPredecessors(vararg bbs: BasicBlock) = bbs.forEach { addPredecessor(it) }
-    fun addPredecessors(bbs: List<BasicBlock>) = bbs.forEach { addPredecessor(it) }
-    fun addHandler(handle: CatchBlock) {
+    fun addPredecessors(ctx: BlockUsageContext, vararg bbs: BasicBlock) = bbs.forEach { addPredecessor(ctx, it) }
+    fun addPredecessors(ctx: BlockUsageContext, bbs: List<BasicBlock>) = bbs.forEach { addPredecessor(ctx, it) }
+    fun addHandler(ctx: BlockUsageContext, handle: CatchBlock) = with(ctx) {
         innerHandlers.add(handle)
-        handle.addUser(this)
+        handle.addUser(this@BasicBlock)
     }
 
-    fun removeSuccessor(bb: BasicBlock) = when {
-        innerSuccessors.remove(bb) -> {
-            bb.removeUser(this)
-            bb.removePredecessor(this)
+    fun removeSuccessor(ctx: BlockUsageContext, bb: BasicBlock) = when {
+        innerSuccessors.remove(bb) -> with(ctx) {
+            bb.removeUser(this@BasicBlock)
+            bb.removePredecessor(ctx, this@BasicBlock)
             true
         }
         else -> false
     }
 
-    fun removePredecessor(bb: BasicBlock): Boolean = when {
-        innerPredecessors.remove(bb) -> {
-            bb.removeUser(this)
-            bb.removeSuccessor(this)
+    fun removePredecessor(ctx: BlockUsageContext, bb: BasicBlock): Boolean = when {
+        innerPredecessors.remove(bb) -> with(ctx) {
+            bb.removeUser(this@BasicBlock)
+            bb.removeSuccessor(ctx, this@BasicBlock)
             true
         }
         else -> false
     }
 
-    fun removeHandler(handle: CatchBlock) = when {
-        innerHandlers.remove(handle) -> {
-            handle.removeUser(this)
-            handle.removeThrower(this)
+    fun removeHandler(ctx: BlockUsageContext, handle: CatchBlock) = when {
+        innerHandlers.remove(handle) -> with(ctx) {
+            handle.removeUser(this@BasicBlock)
+            handle.removeThrower(this, this@BasicBlock)
             true
         }
         else -> false
@@ -176,42 +175,42 @@ sealed class BasicBlock(
     override fun iterator() = instructions.iterator()
 
     override fun get() = this
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        if (removePredecessor(from.get())) {
-            addPredecessor(to.get())
-            to.get().addSuccessor(this)
+    override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
+        if (removePredecessor(ctx, from.get())) {
+            addPredecessor(ctx, to.get())
+            to.get().addSuccessor(ctx, this@BasicBlock)
         }
-        if (removeSuccessor(from.get())) {
-            addSuccessor(to.get())
-            to.get().addPredecessor(this)
+        if (removeSuccessor(ctx, from.get())) {
+            addSuccessor(ctx, to.get())
+            to.get().addPredecessor(ctx, this@BasicBlock)
         }
         if (handlers.contains(from.get())) {
             ktassert(from.get() is CatchBlock)
             val fromCatch = from.get() as CatchBlock
-            removeHandler(fromCatch)
+            removeHandler(ctx, fromCatch)
 
             ktassert(to.get() is CatchBlock)
             val toCatch = to.get() as CatchBlock
-            toCatch.addThrowers(listOf(this))
+            toCatch.addThrowers(ctx, listOf(this@BasicBlock))
         }
-        terminator.replaceUsesOf(from, to)
+        terminator.replaceUsesOf(ctx, from, to)
     }
 
-    fun replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) {
-        if (removeSuccessor(from.get())) {
-            addSuccessor(to.get())
-            to.get().addPredecessor(this)
+    fun replaceSuccessorUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
+        if (removeSuccessor(ctx, from.get())) {
+            addSuccessor(ctx, to.get())
+            to.get().addPredecessor(ctx, this@BasicBlock)
         }
         if (handlers.contains(from.get())) {
             ktassert(from.get() is CatchBlock)
             val fromCatch = from.get() as CatchBlock
-            removeHandler(fromCatch)
+            removeHandler(ctx, fromCatch)
 
             ktassert(to.get() is CatchBlock)
             val toCatch = to.get() as CatchBlock
-            toCatch.addThrowers(listOf(this))
+            toCatch.addThrowers(ctx, listOf(this@BasicBlock))
         }
-        terminator.replaceUsesOf(from, to)
+        terminator.replaceUsesOf(ctx, from, to)
     }
 }
 
@@ -237,16 +236,20 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
             return entries
         }
 
-    fun addThrower(thrower: BasicBlock) {
+    fun addThrower(ctx: BlockUsageContext, thrower: BasicBlock) = with(ctx) {
         innerThrowers.add(thrower)
-        thrower.addUser(this)
+        thrower.addUser(this@CatchBlock)
     }
 
-    fun addThrowers(throwers: List<BasicBlock>) {
-        throwers.forEach { addThrower(it) }
+    fun addThrowers(ctx: BlockUsageContext, throwers: List<BasicBlock>) {
+        throwers.forEach { addThrower(ctx, it) }
     }
 
-    fun removeThrower(bb: BasicBlock) = innerThrowers.remove(bb)
+    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Boolean = with(ctx) {
+        bb.removeUser(this@CatchBlock)
+        return innerThrowers.remove(bb)
+    }
+
     val allPredecessors get() = throwers + entries
 
     override fun print() = buildString {
@@ -259,12 +262,12 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         const val defaultException = "java/lang/Throwable"
     }
 
-    override fun replaceUsesOf(from: UsableBlock, to: UsableBlock) {
-        super.replaceUsesOf(from, to)
+    override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
+        super.replaceUsesOf(ctx, from, to)
         if (innerThrowers.remove(from)) {
-            from.removeUser(this)
+            from.removeUser(this@CatchBlock)
             innerThrowers.add(to.get())
-            to.addUser(this)
+            to.addUser(this@CatchBlock)
         }
     }
 }

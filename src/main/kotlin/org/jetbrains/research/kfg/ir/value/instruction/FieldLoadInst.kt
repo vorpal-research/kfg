@@ -2,6 +2,7 @@ package org.jetbrains.research.kfg.ir.value.instruction
 
 import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.value.Name
+import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kthelper.assert.asserted
 
@@ -15,12 +16,17 @@ class FieldLoadInst : Instruction {
     val owner: Value
         get() = asserted(hasOwner) { ops[0] }
 
-    constructor(name: Name, field: Field) : super(name, field.type, arrayOf()) {
+    internal constructor(name: Name, field: Field, ctx: UsageContext) : super(name, field.type, arrayOf(), ctx) {
         this.field = field
         isStatic = true
     }
 
-    constructor(name: Name, owner: Value, field: Field) : super(name, field.type, arrayOf(owner)) {
+    internal constructor(name: Name, owner: Value, field: Field, ctx: UsageContext) : super(
+        name,
+        field.type,
+        arrayOf(owner),
+        ctx
+    ) {
         this.field = field
         isStatic = false
     }
@@ -34,8 +40,8 @@ class FieldLoadInst : Instruction {
         return sb.toString()
     }
 
-    override fun clone(): Instruction = when {
-        isStatic -> FieldLoadInst(name.clone(), field)
-        else -> FieldLoadInst(name.clone(), owner, field)
+    override fun clone(ctx: UsageContext): Instruction = when {
+        isStatic -> FieldLoadInst(name.clone(), field, ctx)
+        else -> FieldLoadInst(name.clone(), owner, field, ctx)
     }
 }

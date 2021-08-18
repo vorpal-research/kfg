@@ -4,6 +4,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.Name
 import org.jetbrains.research.kfg.ir.value.UndefinedName
+import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kthelper.assert.asserted
 
@@ -22,32 +23,32 @@ class CallInst : Instruction {
             else -> ops.drop(1)
         }
 
-    constructor(opcode: CallOpcode, method: Method, klass: Class, args: Array<Value>)
-            : super(UndefinedName(), method.returnType, args) {
+    internal constructor(opcode: CallOpcode, method: Method, klass: Class, args: Array<Value>, ctx: UsageContext)
+            : super(UndefinedName(), method.returnType, args, ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
-    constructor(opcode: CallOpcode, method: Method, klass: Class, obj: Value, args: Array<Value>)
-            : super(UndefinedName(), method.returnType, arrayOf(obj).plus(args)) {
+    internal constructor(opcode: CallOpcode, method: Method, klass: Class, obj: Value, args: Array<Value>, ctx: UsageContext)
+            : super(UndefinedName(), method.returnType, arrayOf(obj).plus(args), ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = false
     }
 
-    constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, args: Array<Value>)
-            : super(name, method.returnType, args) {
+    internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, args: Array<Value>, ctx: UsageContext)
+            : super(name, method.returnType, args, ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
-    constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, obj: Value, args: Array<Value>)
-            : super(name, method.returnType, arrayOf(obj).plus(args)) {
+    internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, obj: Value, args: Array<Value>, ctx: UsageContext)
+            : super(name, method.returnType, arrayOf(obj).plus(args), ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
@@ -67,8 +68,8 @@ class CallInst : Instruction {
         return sb.toString()
     }
 
-    override fun clone(): Instruction = when {
-        isStatic -> CallInst(opcode, name.clone(), method, klass, args.toTypedArray())
-        else -> CallInst(opcode, name.clone(), method, klass, callee, args.toTypedArray())
+    override fun clone(ctx: UsageContext): Instruction = when {
+        isStatic -> CallInst(opcode, name.clone(), method, klass, args.toTypedArray(), ctx)
+        else -> CallInst(opcode, name.clone(), method, klass, callee, args.toTypedArray(), ctx)
     }
 }

@@ -35,6 +35,7 @@ interface MethodVisitor : NodeVisitor {
             is FieldLoadInst -> visitFieldLoadInst(inst)
             is FieldStoreInst -> visitFieldStoreInst(inst)
             is InstanceOfInst -> visitInstanceOfInst(inst)
+            is InvokeDynamicInst -> visitInvokeDynamicInst(inst)
             is NewArrayInst -> visitNewArrayInst(inst)
             is NewInst -> visitNewInst(inst)
             is PhiInst -> visitPhiInst(inst)
@@ -70,6 +71,7 @@ interface MethodVisitor : NodeVisitor {
     fun visitFieldLoadInst(inst: FieldLoadInst) {}
     fun visitFieldStoreInst(inst: FieldStoreInst) {}
     fun visitInstanceOfInst(inst: InstanceOfInst) {}
+    fun visitInvokeDynamicInst(inst: InvokeDynamicInst) {}
     fun visitNewArrayInst(inst: NewArrayInst) {}
     fun visitNewInst(inst: NewInst) {}
     fun visitPhiInst(inst: PhiInst) {}
