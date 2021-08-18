@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.MethodUsageContext
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
+import org.jetbrains.research.kfg.ir.value.usageContext
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var current: Method

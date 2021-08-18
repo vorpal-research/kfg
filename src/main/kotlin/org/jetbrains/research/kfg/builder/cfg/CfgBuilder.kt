@@ -536,7 +536,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
         org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
         org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }.toTypedArray(), this.returnType.asKfgType as Type)
-        else -> unreachable { log.error("Unknown type: $this") }
+        else -> unreachable("Unknown type: $this")
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -550,7 +550,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                 is String -> it.asValue
                 is AsmType -> it.asKfgType
                 is AsmHandle -> it.asHandle
-                else -> unreachable { log.error("Unknown arg of bsm: $it") }
+                else -> unreachable("Unknown arg of bsm: $it")
             }
         }.reversed().toTypedArray()
         val args = desc.args.map { pop() }.toTypedArray()

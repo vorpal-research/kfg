@@ -408,7 +408,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                     is Type -> it.asAsmType
                     is MethodDesc -> it.asAsmType
                     is Handle -> it.asAsmHandle
-                    else -> unreachable { log.error("Unknown arg of bsm: $it") }
+                    else -> unreachable("Unknown arg of bsm: $it")
                 }
             }.toTypedArray()
         )
