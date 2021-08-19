@@ -12,16 +12,16 @@ class Field : Node {
     val type: Type
     var defaultValue: Value?
 
-    constructor(cm: ClassManager, klass: Class, fn: FieldNode) : super(cm, fn.name, fn.access) {
+    constructor(cm: ClassManager, klass: Class, fn: FieldNode) : super(cm, fn.name, Modifiers(fn.access)) {
         this.fn = fn
         this.klass = klass
         this.type = parseDesc(cm.type, fn.desc)
         this.defaultValue = cm.value.getConstant(fn.value)
     }
 
-    constructor(cm: ClassManager, klass: Class, name: String, type: Type, modifiers: Int = 0) :
+    constructor(cm: ClassManager, klass: Class, name: String, type: Type, modifiers: Modifiers = Modifiers(0)) :
             super(cm, name, modifiers) {
-        this.fn = FieldNode(modifiers, name, type.asmDesc, null, null)
+        this.fn = FieldNode(modifiers.value, name, type.asmDesc, null, null)
         this.klass = klass
         this.type = type
         this.defaultValue = null

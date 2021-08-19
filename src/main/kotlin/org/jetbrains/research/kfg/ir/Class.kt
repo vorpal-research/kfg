@@ -32,7 +32,7 @@ abstract class Class : Node {
     protected var outerClassName: String? = null
     protected var outerMethodName: String? = null
     protected var outerMethodDesc: MethodDesc? = null
-    protected var innerClassNames = mutableSetOf<String>()
+    protected var innerClassesMap = mutableMapOf<String, Modifiers>()
 
     val allMethods get() = innerMethods.values.toSet()
     val constructors get() = allMethods.filter { it.isConstructor }.toSet()
@@ -73,7 +73,7 @@ abstract class Class : Node {
             outerClass = value?.klass
         }
 
-    val innerClasses get() = innerClassNames.map { cm[it] }.toSet()
+    val innerClasses get() = innerClassesMap.map { cm[it.key] to it.value }.toMap()
 
     override val asmDesc
         get() = "L$fullName;"
@@ -82,19 +82,19 @@ abstract class Class : Node {
         cm: ClassManager,
         pkg: Package,
         name: String,
-        modifiers: Int = 0
+        modifiers: Modifiers = Modifiers(0)
     ) : super(cm, name, modifiers) {
         ktassert(pkg.isConcrete)
         this.pkg = pkg
         this.cn = ClassNode()
         this.cn.name = fullName
-        this.cn.access = modifiers
+        this.cn.access = modifiers.value
     }
 
     constructor(
         cm: ClassManager,
         cn: ClassNode
-    ) : super(cm, cn.name.substringAfterLast(Package.SEPARATOR), cn.access) {
+    ) : super(cm, cn.name.substringAfterLast(Package.SEPARATOR), Modifiers(cn.access)) {
         this.cn = cn
         this.pkg = Package.parse(
             cn.name.substringBeforeLast(Package.SEPARATOR, "")
@@ -104,7 +104,7 @@ abstract class Class : Node {
         this.outerClassName = cn.outerClass
         this.outerMethodName = cn.outerMethod
         this.outerMethodDesc = cn.outerMethodDesc?.let { MethodDesc.fromDesc(cm.type, it) }
-        this.innerClassNames.addAll(cn.innerClasses.map { it.name }.toMutableSet())
+        this.innerClassesMap.putAll(cn.innerClasses.map { it.name to Modifiers(it.access) }.toMutableSet())
     }
 
     internal fun init() {
@@ -183,7 +183,7 @@ class ConcreteClass : Class {
         cm: ClassManager,
         pkg: Package,
         name: String,
-        modifiers: Int = 0
+        modifiers: Modifiers = Modifiers(0)
     ) : super(cm, pkg, name, modifiers)
 
     override fun getFieldConcrete(name: String, type: Type): Field? =
@@ -248,7 +248,7 @@ class OuterClass(
     cm: ClassManager,
     pkg: Package,
     name: String,
-    modifiers: Int = 0
+    modifiers: Modifiers = Modifiers(0)
 ) : Class(cm, pkg, name, modifiers) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)

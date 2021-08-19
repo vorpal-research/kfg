@@ -13,7 +13,7 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
 
     override fun visit(klass: Class) {
         val cn = klass.cn
-        cn.access = klass.modifiers
+        cn.access = klass.modifiers.value
         cn.superName = klass.superClass?.fullName
         cn.interfaces.clear()
         cn.interfaces.addAll(klass.interfaces.map { it.fullName })
@@ -21,8 +21,8 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
         cn.outerMethod = klass.outerMethod?.name
         cn.outerMethodDesc = klass.outerMethod?.desc?.asmDesc
         cn.innerClasses.clear()
-        cn.innerClasses.addAll(klass.innerClasses.map {
-            InnerClassNode(it.fullName, it.outerClass?.fullName, it.name, it.modifiers)
+        cn.innerClasses.addAll(klass.innerClasses.map { (klass, modifiers) ->
+            InnerClassNode(klass.fullName, klass.outerClass?.fullName, klass.name, modifiers.value)
         })
         cn.fields = klass.fields.map { it.fn }
         cn.methods = klass.allMethods.map { it.mn }

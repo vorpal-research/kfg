@@ -5,6 +5,7 @@ import org.jetbrains.research.kfg.builder.cfg.InnerClassNormalizer
 import org.jetbrains.research.kfg.container.Container
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
+import org.jetbrains.research.kfg.ir.Modifiers
 import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
@@ -227,7 +228,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         container: Container,
         pkg: Package,
         name: String,
-        modifiers: Int = 0
+        modifiers: Modifiers = Modifiers(0)
     ): Class {
         val klass = ConcreteClass(this, pkg, name, modifiers)
         classes[klass.fullName] = klass

@@ -55,13 +55,13 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         cm: ClassManager,
         klass: Class,
         node: MethodNode
-    ) : super(cm, node.name, node.access) {
+    ) : super(cm, node.name, Modifiers(node.access)) {
         this.klass = klass
         this.mn = node.jsrInlined
         this.desc = MethodDesc.fromDesc(cm.type, node.desc)
         this.innerParameters.addAll(
             mn.parameters?.withIndex()?.map { (index, param) ->
-                Parameter(cm, index, param.name, desc.args[index], param.access)
+                Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access))
             } ?: listOf()
         )
         this.innerExceptions.addAll(mn.exceptions.map { cm[it] })
@@ -72,10 +72,10 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         klass: Class,
         name: String,
         desc: MethodDesc,
-        modifiers: Int = 0
+        modifiers: Modifiers = Modifiers(0)
     ) : super(cm, name, modifiers) {
         this.klass = klass
-        this.mn = MethodNode(modifiers, name, desc.asmDesc, null, null)
+        this.mn = MethodNode(modifiers.value, name, desc.asmDesc, null, null)
         this.desc = desc
     }
 

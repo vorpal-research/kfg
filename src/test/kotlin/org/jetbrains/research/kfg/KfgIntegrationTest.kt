@@ -112,7 +112,7 @@ class KfgIntegrationTest {
             while (queue.isNotEmpty()) {
                 val first = queue.pollFirst()
                 result += first
-                queue.addAll(first.innerClasses.filterNot { it in result })
+                queue.addAll(first.innerClasses.keys.filterNot { it in result })
             }
             result
         }

@@ -546,7 +546,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             bb.insnList.forEach { insnList.add(it) }
             bb.terminateInsnList.forEach { insnList.add(it) }
         }
-        method.mn.parameters = method.parameters.map { ParameterNode(it.name, it.modifiers) }
+        method.mn.parameters = method.parameters.map { ParameterNode(it.name, it.modifiers.value) }
         method.mn.exceptions = method.exceptions.map { it.fullName }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()

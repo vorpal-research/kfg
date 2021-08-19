@@ -97,7 +97,7 @@ class ClassPipeline(
         while (classQueue.isNotEmpty()) {
             val top = classQueue.pollFirst()
             targets += top
-            classQueue.addAll(top.innerClasses.filterNot { it in targets })
+            classQueue.addAll(top.innerClasses.keys.filterNot { it in targets })
         }
     }
 
