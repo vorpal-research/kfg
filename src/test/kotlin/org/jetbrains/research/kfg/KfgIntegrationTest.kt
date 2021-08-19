@@ -2,8 +2,10 @@ package org.jetbrains.research.kfg
 
 import org.jetbrains.research.kfg.container.DirectoryContainer
 import org.jetbrains.research.kfg.container.JarContainer
+import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.ir.value.usageContext
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.executePipeline
 import java.io.ByteArrayOutputStream
@@ -161,5 +163,27 @@ class KfgIntegrationTest {
 
         assertEquals(targetMethods.intersect(visitedMethods), targetMethods)
         assertTrue((targetMethods - visitedMethods).isEmpty())
+    }
+
+    @Test
+    fun classCreateTest() {
+        val klass = cm.createClass(jar, pkg.concretized, "NewlyCreatedKlass")
+        klass.superClass = cm.objectClass
+        klass.isPublic = true
+
+        val testField = klass.addField("newlyCreatedField", cm.type.intType)
+        testField.defaultValue = cm.value.getConstant(12)
+
+        val initMethod = klass.addMethod(Method.CONSTRUCTOR_NAME, cm.type.voidType)
+        with(initMethod.usageContext) {
+            val block = BodyBlock("entry")
+            block.add(inst(cm) { `return`() })
+            initMethod.add(block)
+        }
+        val target = Files.createTempDirectory(Paths.get("."), "kfg")
+        jar.update(cm, target)
+        if (!target.toFile().deleteRecursively()) {
+            System.err.println("Could not delete temp directory ${target.toAbsolutePath()}")
+        }
     }
 }

@@ -39,28 +39,52 @@ data class MethodDesc(
     override fun toString() = "(${args.joinToString { it.name }}): ${returnType.name}"
 }
 
-class Method(
-    cm: ClassManager,
-    node: MethodNode,
+class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
     val klass: Class
-) : Node(cm, node.name, node.access), PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
+    internal val mn: MethodNode
+    val desc: MethodDesc
+    private var innerParameters = mutableListOf<Parameter>()
+    private var innerExceptions = mutableSetOf<Class>()
 
     companion object {
-        private val CONSTRUCTOR_NAMES = arrayOf("<init>")
-        private val STATIC_INIT_NAMES = arrayOf("<clinit>")
+        const val CONSTRUCTOR_NAME = "<init>"
+        const val STATIC_INIT_NAME = "<clinit>"
     }
 
-    val mn = node.jsrInlined
-    var desc = MethodDesc.fromDesc(cm.type, node.desc)
-        internal set
+    constructor(
+        cm: ClassManager,
+        klass: Class,
+        node: MethodNode
+    ) : super(cm, node.name, node.access) {
+        this.klass = klass
+        this.mn = node.jsrInlined
+        this.desc = MethodDesc.fromDesc(cm.type, node.desc)
+        this.innerParameters.addAll(
+            mn.parameters?.withIndex()?.map { (index, param) ->
+                Parameter(cm, index, param.name, desc.args[index], param.access)
+            } ?: listOf()
+        )
+        this.innerExceptions.addAll(mn.exceptions.map { cm[it] })
+    }
+
+    constructor(
+        cm: ClassManager,
+        klass: Class,
+        name: String,
+        desc: MethodDesc,
+        modifiers: Int = 0
+    ) : super(cm, name, modifiers) {
+        this.klass = klass
+        this.mn = MethodNode(modifiers, name, desc.asmDesc, null, null)
+        this.desc = desc
+    }
+
     val argTypes get() = desc.args
     val returnType get() = desc.returnType
     private val innerBlocks = arrayListOf<BasicBlock>()
     private val innerCatches = hashSetOf<CatchBlock>()
-    val parameters = mn.parameters?.withIndex()?.map { (index, param) ->
-        Parameter(cm, index, param.name, desc.args[index], param.access)
-    } ?: listOf()
-    val exceptions = mn.exceptions.map { cm[it] }.toSet()
+    val parameters get() = innerParameters
+    val exceptions get() = innerExceptions
     val basicBlocks: List<BasicBlock> get() = innerBlocks
     val catchEntries: Set<CatchBlock> get() = innerCatches
     val slotTracker = SlotTracker(this)
@@ -72,10 +96,10 @@ class Method(
         get() = "$klass::$name$desc"
 
     val isConstructor: Boolean
-        get() = name in CONSTRUCTOR_NAMES
+        get() = name == CONSTRUCTOR_NAME
 
     val isStaticInitializer: Boolean
-        get() = name in STATIC_INIT_NAMES
+        get() = name == STATIC_INIT_NAME
 
     val bodyBlocks: List<BasicBlock>
         get() {

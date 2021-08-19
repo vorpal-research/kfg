@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.container
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnsupportedCfgException
+import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kthelper.`try`
@@ -81,9 +82,17 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, failOnError: Boolean, loader: ClassLoader) {
+    override fun unpack(
+        cm: ClassManager,
+        target: Path,
+        unpackAllClasses: Boolean,
+        failOnError: Boolean,
+        loader: ClassLoader
+    ) {
         val absolutePath = target.toAbsolutePath()
         val enumeration = file.entries()
+        val allClasses = cm.getContainerClasses(this)
+        val visitedClasses = mutableSetOf<Class>()
 
         while (enumeration.hasMoreElements()) {
             val entry = enumeration.nextElement() as JarEntry
@@ -91,6 +100,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
 
             if (entry.isClass) {
                 val `class` = cm[entry.name.removeSuffix(".class")]
+                visitedClasses += `class`
                 when {
                     pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                         val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
@@ -101,6 +111,15 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
                         val classNode = readClassNode(file.getInputStream(entry))
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
+                }
+            }
+        }
+
+        for (newKlass in allClasses.filter { it !in visitedClasses }) {
+            when {
+                pkg.isParent(newKlass.pkg) || unpackAllClasses -> {
+                    val path = absolutePath.resolve(Paths.get(newKlass.pkg.fileSystemPath, "${newKlass.name}.class"))
+                    failSafeAction(failOnError) { newKlass.write(cm, loader, path, Flags.writeComputeFrames) }
                 }
             }
         }

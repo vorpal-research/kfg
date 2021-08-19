@@ -158,12 +158,12 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         get() = this[SystemTypeNames.treeMapClass]
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
-        val container2ClassNode = containers.associate { it to it.parse(flags, config.failOnError, loader) }
+        val container2ClassNode = containers.associateWith { it.parse(flags, config.failOnError, loader) }
         initialize(container2ClassNode)
     }
 
     fun initialize(vararg containers: Container) {
-        val container2ClassNode = containers.associate { it to it.parse(flags) }
+        val container2ClassNode = containers.associateWith { it.parse(flags) }
         initialize(container2ClassNode)
     }
 
@@ -199,9 +199,9 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     }
 
     operator fun get(name: String): Class = classes[name] ?: outerClasses.getOrPut(name) {
-        val cn = ClassNode()
-        cn.name = name
-        OuterClass(this, cn)
+        val pkg = Package.parse(name.substringBeforeLast(Package.SEPARATOR))
+        val klassName = name.substringAfterLast(Package.SEPARATOR)
+        OuterClass(this, pkg, klassName)
     }
 
     fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
@@ -222,4 +222,19 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         } while (current.isNotEmpty())
         return result
     }
+
+    fun createClass(
+        container: Container,
+        pkg: Package,
+        name: String,
+        modifiers: Int = 0
+    ): Class {
+        val klass = ConcreteClass(this, pkg, name, modifiers)
+        classes[klass.fullName] = klass
+        class2container[klass] = container
+        container2class.getOrPut(container, ::mutableSetOf).add(klass)
+        return klass
+    }
+
+    fun getContainerClasses(container: Container): Set<Class> = container2class.getOrDefault(container, emptySet())
 }

@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.container
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnsupportedCfgException
+import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
 import org.jetbrains.research.kfg.util.*
 import org.jetbrains.research.kthelper.`try`
@@ -62,9 +63,13 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
     override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, failOnError: Boolean, loader: ClassLoader) {
         val absolutePath = target.toAbsolutePath()
+        val allClasses = cm.getContainerClasses(this)
+        val visitedClasses = mutableSetOf<Class>()
+
         for (entry in file.allEntries) {
             if (entry.isClass) {
                 val `class` = cm[entry.fullClassName]
+                visitedClasses += `class`
                 when {
                     pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                         val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
@@ -75,6 +80,15 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                         val classNode = readClassNode(entry.inputStream())
                         failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
                     }
+                }
+            }
+        }
+
+        for (newKlass in allClasses.filter { it !in visitedClasses }) {
+            when {
+                pkg.isParent(newKlass.pkg) || unpackAllClasses -> {
+                    val path = absolutePath.resolve(Paths.get(newKlass.pkg.fileSystemPath, "${newKlass.name}.class"))
+                    failSafeAction(failOnError) { newKlass.write(cm, loader, path, Flags.writeComputeFrames) }
                 }
             }
         }

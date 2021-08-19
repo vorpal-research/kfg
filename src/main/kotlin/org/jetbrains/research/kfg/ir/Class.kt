@@ -1,19 +1,16 @@
 package org.jetbrains.research.kfg.ir
 
 import org.jetbrains.research.kfg.ClassManager
+import org.jetbrains.research.kfg.InvalidStateException
 import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.UnknownInstanceException
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
+import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.defaultHashCode
 import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
 
-abstract class Class(
-    cm: ClassManager,
-    val cn: ClassNode
-) : Node(cm, cn.name.substringAfterLast(Package.SEPARATOR), cn.access) {
+abstract class Class : Node {
     protected data class MethodKey(val name: String, val desc: MethodDesc) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
 
@@ -26,11 +23,16 @@ abstract class Class(
 
     protected infix fun String.to(type: Type) = FieldKey(this, type)
 
+    internal val cn: ClassNode
+    val pkg: Package
     protected val innerMethods = mutableMapOf<MethodKey, Method>()
     protected val innerFields = mutableMapOf<FieldKey, Field>()
-    val pkg = Package.parse(
-        cn.name.substringBeforeLast(Package.SEPARATOR, "")
-    )
+    protected var superClassName: String? = null
+    protected val interfaceNames = mutableSetOf<String>()
+    protected var outerClassName: String? = null
+    protected var outerMethodName: String? = null
+    protected var outerMethodDesc: MethodDesc? = null
+    protected var innerClassNames = mutableSetOf<String>()
 
     val allMethods get() = innerMethods.values.toSet()
     val constructors get() = allMethods.filter { it.isConstructor }.toSet()
@@ -45,32 +47,74 @@ abstract class Class(
     val canonicalDesc
         get() = fullName.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
-    val superClass
-        get() = cn.superName?.let { cm[it] }
+    var superClass
+        get() = superClassName?.let { cm[it] }
+        set(value) {
+            superClassName = value?.fullName
+        }
 
-    val interfaces
-        get() = cn.interfaces.map { cm[it] }
+    val interfaces get() = interfaceNames.map { cm[it] }.toSet()
 
-    val outerClass
-        get() = cn.outerClass?.let { cm[it] }
+    var outerClass
+        get() = outerClassName?.let { cm[it] }
+        set(value) {
+            outerClassName = value?.fullName
+        }
 
-    val outerMethod
-        get() = cn.outerMethod?.let { outerClass?.getMethod(it, cn.outerMethodDesc!!) }
+    var outerMethod
+        get() = outerMethodName?.let { name ->
+            outerMethodDesc?.let { desc ->
+                outerClass?.getMethod(name, desc)
+            }
+        }
+        set(value) {
+            outerMethodName = value?.name
+            outerMethodDesc = value?.desc
+            outerClass = value?.klass
+        }
 
-    val innerClasses
-        get() = cn.innerClasses?.map { cm[it.name] } ?: listOf()
+    val innerClasses get() = innerClassNames.map { cm[it] }.toSet()
 
     override val asmDesc
         get() = "L$fullName;"
 
-    fun init() {
+    constructor(
+        cm: ClassManager,
+        pkg: Package,
+        name: String,
+        modifiers: Int = 0
+    ) : super(cm, name, modifiers) {
+        ktassert(pkg.isConcrete)
+        this.pkg = pkg
+        this.cn = ClassNode()
+        this.cn.name = fullName
+        this.cn.access = modifiers
+    }
+
+    constructor(
+        cm: ClassManager,
+        cn: ClassNode
+    ) : super(cm, cn.name.substringAfterLast(Package.SEPARATOR), cn.access) {
+        this.cn = cn
+        this.pkg = Package.parse(
+            cn.name.substringBeforeLast(Package.SEPARATOR, "")
+        )
+        this.superClassName = cn.superName
+        this.interfaceNames.addAll(cn.interfaces.toMutableSet())
+        this.outerClassName = cn.outerClass
+        this.outerMethodName = cn.outerMethod
+        this.outerMethodDesc = cn.outerMethodDesc?.let { MethodDesc.fromDesc(cm.type, it) }
+        this.innerClassNames.addAll(cn.innerClasses.map { it.name }.toMutableSet())
+    }
+
+    internal fun init() {
         for (fieldNode in cn.fields) {
-            val field = Field(cm, fieldNode, this)
+            val field = Field(cm, this, fieldNode)
             innerFields[field.name to field.type] = field
         }
         cn.methods.forEach {
             val desc = MethodDesc.fromDesc(cm.type, it.desc)
-            innerMethods[it.name to desc] = Method(cm, it, this)
+            innerMethods[it.name to desc] = Method(cm, this, it)
         }
         cn.methods = this.allMethods.map { it.mn }
     }
@@ -95,19 +139,33 @@ abstract class Class(
 
     abstract fun getMethod(name: String, desc: MethodDesc): Method
 
-    fun modifyField(field: Field, type: Type): Field {
-        innerFields.remove(field.name to field.type)
-        field.type = type
-        innerFields[field.name to field.type] = field
+    /**
+     * creates a new field with given name and type and adds is to this klass
+     * @throws InvalidStateException if there already exists field with given parameters
+     */
+    fun addField(name: String, type: Type): Field {
+        if ((name to type) in innerFields) throw InvalidStateException("Field $name: $type already exists in $this")
+        val field = Field(cm, this, name, type)
+        innerFields[name to type] = field
         return field
     }
 
-    fun modifyMethod(method: Method, desc: MethodDesc): Method {
-        innerMethods.remove(method.name to method.desc)
-        method.desc = desc
-        innerMethods[method.name to method.desc] = method
+    /**
+     * creates a new method with given name and descriptor and adds is to this klass
+     * @throws InvalidStateException if there already exists method with given parameters
+     */
+    fun addMethod(name: String, desc: MethodDesc): Method {
+        if ((name to desc) in innerMethods) throw InvalidStateException("Method $name: $desc already exists in $this")
+        val method = Method(cm, this, name, desc)
+        innerMethods[name to desc] = method
         return method
     }
+
+    fun addMethod(name: String, returnType: Type, vararg argTypes: Type) =
+        addMethod(name, MethodDesc(argTypes, returnType))
+
+    fun removeField(field: Field) = innerFields.remove(field.name to field.type)
+    fun removeMethod(method: Method) = innerMethods.remove(method.name to method.desc)
 
     override fun toString() = fullName
     override fun hashCode() = defaultHashCode(name, pkg)
@@ -119,7 +177,15 @@ abstract class Class(
     }
 }
 
-class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
+class ConcreteClass : Class {
+    constructor(cm: ClassManager, cn: ClassNode) : super(cm, cn)
+    constructor(
+        cm: ClassManager,
+        pkg: Package,
+        name: String,
+        modifiers: Int = 0
+    ) : super(cm, pkg, name, modifiers)
+
     override fun getFieldConcrete(name: String, type: Type): Field? =
         innerFields.getOrElse(name to type) { superClass?.getFieldConcrete(name, type) }
 
@@ -178,22 +244,22 @@ class ConcreteClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
     }
 }
 
-class OuterClass(cm: ClassManager, cn: ClassNode) : Class(cm, cn) {
+class OuterClass(
+    cm: ClassManager,
+    pkg: Package,
+    name: String,
+    modifiers: Int = 0
+) : Class(cm, pkg, name, modifiers) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
     override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
 
     override fun getField(name: String, type: Type): Field = innerFields.getOrPut(name to type) {
-        val fn = FieldNode(0, name, type.asmDesc, null, null)
-        Field(cm, fn, this)
+        addField(name, type)
     }
 
     override fun getMethod(name: String, desc: MethodDesc): Method {
-        val methodDesc = name to desc
-        return innerMethods.getOrPut(methodDesc) {
-            val mn = MethodNode()
-            mn.name = name
-            mn.desc = desc.asmDesc
-            Method(cm, mn, this)
+        return innerMethods.getOrPut(name to desc) {
+            addMethod(name, desc)
         }
     }
 
