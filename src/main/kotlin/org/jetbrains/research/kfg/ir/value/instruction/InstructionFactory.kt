@@ -5,6 +5,7 @@ import org.jetbrains.research.kfg.ir.*
 import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
+import org.jetbrains.research.kthelper.collection.ListBuilder
 
 class InstructionFactory(val cm: ClassManager) {
     private val types get() = cm.type
@@ -655,7 +656,18 @@ interface InstructionBuilder {
     fun unreachable() = instructions.getUnreachable(ctx)
 }
 
-class InstructionBuilderImpl(override val cm: ClassManager, override val ctx: UsageContext) : InstructionBuilder
+class InstructionBuilderImpl(
+    override val cm: ClassManager,
+    override val ctx: UsageContext
+) : InstructionBuilder
+
+class InstructionListBuilderImpl(
+    override val cm: ClassManager,
+    override val ctx: UsageContext
+) : ListBuilder<Instruction>(), InstructionBuilder
 
 fun inst(cm: ClassManager, ctx: UsageContext, body: InstructionBuilder.() -> Instruction): Instruction =
     InstructionBuilderImpl(cm, ctx).body()
+
+fun insts(cm: ClassManager, ctx: UsageContext, body: InstructionListBuilderImpl.() -> List<Instruction>): List<Instruction> =
+    InstructionListBuilderImpl(cm, ctx).body()
