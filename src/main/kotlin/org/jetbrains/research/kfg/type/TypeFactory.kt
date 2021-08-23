@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kthelper.assert.unreachable
 import java.lang.Class as JClass
 
-class TypeFactory(val cm: ClassManager) {
+class TypeFactory internal constructor(val cm: ClassManager) {
     private val klassTypeHash = mutableMapOf<Class, Type>()
     private val arrayTypeHash = mutableMapOf<Type, Type>()
 

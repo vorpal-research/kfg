@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.type.ArrayType
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kthelper.collection.ListBuilder
 
-class InstructionFactory(val cm: ClassManager) {
+class InstructionFactory internal constructor(val cm: ClassManager) {
     private val types get() = cm.type
 
     fun getNewArray(ctx: UsageContext, name: String, componentType: Type, count: Value): Instruction =
