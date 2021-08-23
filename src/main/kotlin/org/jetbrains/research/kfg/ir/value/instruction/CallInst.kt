@@ -43,7 +43,7 @@ class CallInst : Instruction {
 
     internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, args: Array<Value>, ctx: UsageContext)
             : super(name, method.returnType, args, ctx) {
-        ktassert(method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
+        ktassert((method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
         this.opcode = opcode
         this.method = method
         this.klass = klass
@@ -52,7 +52,7 @@ class CallInst : Instruction {
 
     internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, obj: Value, args: Array<Value>, ctx: UsageContext)
             : super(name, method.returnType, arrayOf(obj).plus(args), ctx) {
-        ktassert(method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
+        ktassert((method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
         this.opcode = opcode
         this.method = method
         this.klass = klass
