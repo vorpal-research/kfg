@@ -57,8 +57,15 @@ interface UsageContext : ValueUsageContext, BlockUsageContext {
 
     fun BasicBlock.addHandler(handle: CatchBlock) = this.addHandler(this@UsageContext, handle)
     fun BasicBlock.removeHandler(handle: CatchBlock) = this.removeHandler(this@UsageContext, handle)
+    fun CatchBlock.addThrower(thrower: BasicBlock) = this.addThrowers(listOf(thrower))
     fun CatchBlock.addThrowers(throwers: List<BasicBlock>) = this.addThrowers(this@UsageContext, throwers)
     fun CatchBlock.removeThrower(thrower: BasicBlock) = this.removeThrower(this@UsageContext, thrower)
+
+    fun BasicBlock.linkForward(block: BasicBlock) = this.linkForward(this@UsageContext, block)
+    fun BasicBlock.linkBackward(block: BasicBlock) = this.linkBackward(this@UsageContext, block)
+    fun BasicBlock.linkThrowing(block: CatchBlock) = this.linkThrowing(this@UsageContext, block)
+    fun CatchBlock.linkCatching(thrower: BasicBlock) = this.linkCatching(this@UsageContext, thrower)
+    fun BasicBlock.unlink(block: BasicBlock): Unit = this.unlink(this@UsageContext, block)
 
     fun BasicBlock.replaceSuccessorUsesOf(from: UsableBlock, to: UsableBlock) =
         this.replaceSuccessorUsesOf(this@UsageContext, from, to)

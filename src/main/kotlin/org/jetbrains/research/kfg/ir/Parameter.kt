@@ -8,7 +8,7 @@ class Parameter(
     val index: Int,
     name: String,
     val type: Type,
-    modifiers: Int
+    modifiers: Modifiers
 ) : Node(cm, name, modifiers) {
     override val asmDesc = type.asmDesc
 

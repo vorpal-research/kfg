@@ -5,6 +5,7 @@ import org.jetbrains.research.kfg.builder.cfg.InnerClassNormalizer
 import org.jetbrains.research.kfg.container.Container
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.ConcreteClass
+import org.jetbrains.research.kfg.ir.Modifiers
 import org.jetbrains.research.kfg.ir.OuterClass
 import org.jetbrains.research.kfg.ir.value.ValueFactory
 import org.jetbrains.research.kfg.ir.value.instruction.InstructionFactory
@@ -39,14 +40,16 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
     val canonicalName get() = components.joinToString("$CANONICAL_SEPARATOR")
     val fileSystemPath get() = components.joinToString(File.separator)
 
-    val concretized: Package get() = when {
-        isConcrete -> this
-        else -> copy(isConcrete = true)
-    }
-    val expanded: Package get() = when {
-        isConcrete -> copy(isConcrete = false)
-        else -> this
-    }
+    val concretized: Package
+        get() = when {
+            isConcrete -> this
+            else -> copy(isConcrete = true)
+        }
+    val expanded: Package
+        get() = when {
+            isConcrete -> copy(isConcrete = false)
+            else -> this
+        }
 
     fun isParent(other: Package) = when {
         isConcrete -> this.components == other.components
@@ -139,8 +142,20 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val linkedListClass
         get() = this[SystemTypeNames.linkedListClass]
 
+    val queueClass
+        get() = this[SystemTypeNames.queueClass]
+    val dequeClass
+        get() = this[SystemTypeNames.dequeClass]
+    val arrayDequeClass
+        get() = this[SystemTypeNames.arrayDequeClass]
+
     val setClass
         get() = this[SystemTypeNames.setClass]
+
+    val sortedSetClass
+        get() = this[SystemTypeNames.sortedSetClass]
+    val navigableSetClass
+        get() = this[SystemTypeNames.navigableSetClass]
 
     val hashSetClass
         get() = this[SystemTypeNames.hashSetClass]
@@ -149,7 +164,13 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         get() = this[SystemTypeNames.treeSetClass]
 
     val mapClass
-        get() = this[SystemTypeNames.setClass]
+        get() = this[SystemTypeNames.mapClass]
+
+    val sortedMapClass
+        get() = this[SystemTypeNames.sortedMapClass]
+
+    val navigableMapClass
+        get() = this[SystemTypeNames.navigableMapClass]
 
     val hashMapClass
         get() = this[SystemTypeNames.hashMapClass]
@@ -158,12 +179,12 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         get() = this[SystemTypeNames.treeMapClass]
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
-        val container2ClassNode = containers.associate { it to it.parse(flags, config.failOnError, loader) }
+        val container2ClassNode = containers.associateWith { it.parse(flags, config.failOnError, loader) }
         initialize(container2ClassNode)
     }
 
     fun initialize(vararg containers: Container) {
-        val container2ClassNode = containers.associate { it to it.parse(flags) }
+        val container2ClassNode = containers.associateWith { it.parse(flags) }
         initialize(container2ClassNode)
     }
 
@@ -199,9 +220,9 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     }
 
     operator fun get(name: String): Class = classes[name] ?: outerClasses.getOrPut(name) {
-        val cn = ClassNode()
-        cn.name = name
-        OuterClass(this, cn)
+        val pkg = Package.parse(name.substringBeforeLast(Package.SEPARATOR))
+        val klassName = name.substringAfterLast(Package.SEPARATOR)
+        OuterClass(this, pkg, klassName)
     }
 
     fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
@@ -222,4 +243,19 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         } while (current.isNotEmpty())
         return result
     }
+
+    fun createClass(
+        container: Container,
+        pkg: Package,
+        name: String,
+        modifiers: Modifiers = Modifiers(0)
+    ): Class {
+        val klass = ConcreteClass(this, pkg, name, modifiers)
+        classes[klass.fullName] = klass
+        class2container[klass] = container
+        container2class.getOrPut(container, ::mutableSetOf).add(klass)
+        return klass
+    }
+
+    fun getContainerClasses(container: Container): Set<Class> = container2class.getOrDefault(container, emptySet())
 }

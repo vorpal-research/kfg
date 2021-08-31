@@ -6,7 +6,7 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kthelper.assert.unreachable
 
-class ValueFactory(val cm: ClassManager) {
+class ValueFactory internal constructor(val cm: ClassManager) {
     val types get() = cm.type
 
     fun getThis(type: Type): Value = ThisRef(type)

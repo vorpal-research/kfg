@@ -92,6 +92,32 @@ sealed class BasicBlock(
         else -> false
     }
 
+    fun linkForward(ctx: UsageContext, bb: BasicBlock) = with(ctx) {
+        val current = this@BasicBlock
+        current.addSuccessor(bb)
+        bb.addPredecessor(current)
+    }
+
+    fun linkBackward(ctx: UsageContext, bb: BasicBlock) = with(ctx) {
+        val current = this@BasicBlock
+        current.addPredecessor(bb)
+        bb.addSuccessor(current)
+    }
+
+    fun linkThrowing(ctx: UsageContext, bb: CatchBlock) = with(ctx) {
+        val current = this@BasicBlock
+        current.addHandler(bb)
+        bb.addThrower(current)
+    }
+
+    open fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        removePredecessor(ctx, bb)
+        removeSuccessor(ctx, bb)
+        if (bb is CatchBlock) {
+            removeHandler(bb)
+        }
+    }
+
     fun removeHandler(ctx: BlockUsageContext, handle: CatchBlock) = when {
         innerHandlers.remove(handle) -> with(ctx) {
             handle.removeUser(this@BasicBlock)
@@ -248,6 +274,17 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Boolean = with(ctx) {
         bb.removeUser(this@CatchBlock)
         return innerThrowers.remove(bb)
+    }
+
+    fun linkCatching(ctx: UsageContext, thrower: BasicBlock) = with(ctx) {
+        val current = this@CatchBlock
+        current.addThrower(thrower)
+        thrower.addHandler(current)
+    }
+
+    override fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        super.unlink(ctx, bb)
+        removeThrower(bb)
     }
 
     val allPredecessors get() = throwers + entries

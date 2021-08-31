@@ -3,171 +3,300 @@ package org.jetbrains.research.kfg.ir
 import org.jetbrains.research.kfg.ClassManager
 import org.objectweb.asm.Opcodes
 
-abstract class Node(val cm: ClassManager, val name: String, modifiers: Int) {
-    var modifiers: Int = modifiers
+@JvmInline
+value class Modifiers(val value: Int) {
+    val isPublic: Boolean
+        get() = (value and Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC
+
+    fun setPublic(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_PUBLIC
+            else -> this.value and (Opcodes.ACC_PUBLIC).inv()
+        }
+    )
+
+    val isPrivate: Boolean
+        get() = (value and Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE
+
+    fun setPrivate(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_PRIVATE
+            else -> this.value and (Opcodes.ACC_PRIVATE).inv()
+        }
+    )
+
+    val isProtected: Boolean
+        get() = (value and Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED
+
+    fun setProtected(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_PROTECTED
+            else -> this.value and (Opcodes.ACC_PROTECTED).inv()
+        }
+    )
+
+    val isStatic: Boolean
+        get() = (value and Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC
+
+    fun setStatic(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_STATIC
+            else -> this.value and (Opcodes.ACC_STATIC).inv()
+        }
+    )
+
+    val isFinal: Boolean
+        get() = (value and Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL
+
+    fun setFinal(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_FINAL
+            else -> this.value and (Opcodes.ACC_FINAL).inv()
+        }
+    )
+
+    val isSuper: Boolean
+        get() = (value and Opcodes.ACC_SUPER) == Opcodes.ACC_SUPER
+
+    fun setSuper(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_SUPER
+            else -> this.value and (Opcodes.ACC_SUPER).inv()
+        }
+    )
+
+    val isSynchronized: Boolean
+        get() = (value and Opcodes.ACC_SYNCHRONIZED) == Opcodes.ACC_SYNCHRONIZED
+
+    fun setSynchronized(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_SYNCHRONIZED
+            else -> this.value and (Opcodes.ACC_SYNCHRONIZED).inv()
+        }
+    )
+
+    val isVolatile: Boolean
+        get() = (value and Opcodes.ACC_VOLATILE) == Opcodes.ACC_VOLATILE
+
+    fun setVolatile(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_VOLATILE
+            else -> this.value and (Opcodes.ACC_VOLATILE).inv()
+        }
+    )
+
+    val isBridge: Boolean
+        get() = (value and Opcodes.ACC_BRIDGE) == Opcodes.ACC_BRIDGE
+
+    fun setBridge(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_BRIDGE
+            else -> this.value and (Opcodes.ACC_BRIDGE).inv()
+        }
+    )
+
+    val isVarargs: Boolean
+        get() = (value and Opcodes.ACC_VARARGS) == Opcodes.ACC_VARARGS
+
+    fun setVarargs(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_VARARGS
+            else -> this.value and (Opcodes.ACC_VARARGS).inv()
+        }
+    )
+
+    val isTransient: Boolean
+        get() = (value and Opcodes.ACC_TRANSIENT) == Opcodes.ACC_TRANSIENT
+
+    fun setTransient(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_TRANSIENT
+            else -> this.value and (Opcodes.ACC_TRANSIENT).inv()
+        }
+    )
+
+    val isNative: Boolean
+        get() = (value and Opcodes.ACC_NATIVE) == Opcodes.ACC_NATIVE
+
+    fun setNative(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_NATIVE
+            else -> this.value and (Opcodes.ACC_NATIVE).inv()
+        }
+    )
+
+    val isInterface: Boolean
+        get() = (value and Opcodes.ACC_INTERFACE) == Opcodes.ACC_INTERFACE
+
+    fun setInterface(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_INTERFACE
+            else -> this.value and (Opcodes.ACC_INTERFACE).inv()
+        }
+    )
+
+    val isAbstract: Boolean
+        get() = (value and Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT
+
+    fun setAbstract(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_ABSTRACT
+            else -> this.value and (Opcodes.ACC_ABSTRACT).inv()
+        }
+    )
+
+    val isStrict: Boolean
+        get() = (value and Opcodes.ACC_STRICT) == Opcodes.ACC_STRICT
+
+    fun setStrict(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_STRICT
+            else -> this.value and (Opcodes.ACC_STRICT).inv()
+        }
+    )
+
+    val isSynthetic: Boolean
+        get() = (value and Opcodes.ACC_SYNTHETIC) == Opcodes.ACC_SYNTHETIC
+
+    fun setSynthetic(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_SYNTHETIC
+            else -> this.value and (Opcodes.ACC_SYNTHETIC).inv()
+        }
+    )
+
+    val isAnnotation: Boolean
+        get() = (value and Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION
+
+    fun setAnnotation(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_ANNOTATION
+            else -> this.value and (Opcodes.ACC_ANNOTATION).inv()
+        }
+    )
+
+    val isEnum: Boolean
+        get() = (value and Opcodes.ACC_ENUM) == Opcodes.ACC_ENUM
+
+    fun setEnum(value: Boolean) = Modifiers(
+        when {
+            value -> this.value or Opcodes.ACC_ENUM
+            else -> this.value and (Opcodes.ACC_ENUM).inv()
+        }
+    )
+}
+
+abstract class Node(val cm: ClassManager, val name: String, modifiers: Modifiers) {
+    var modifiers: Modifiers = modifiers
         protected set
 
     abstract val asmDesc: String
 
     var isPublic: Boolean
-        get() = (modifiers and Opcodes.ACC_PUBLIC) == Opcodes.ACC_PUBLIC
+        get() = modifiers.isPublic
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_PUBLIC
-                else -> modifiers and (Opcodes.ACC_PUBLIC).inv()
-            }
+            modifiers = modifiers.setPublic(value)
         }
 
     var isPrivate: Boolean
-        get() = (modifiers and Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE
+        get() = modifiers.isPrivate
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_PRIVATE
-                else -> modifiers and (Opcodes.ACC_PRIVATE).inv()
-            }
+            modifiers = modifiers.setPrivate(value)
         }
 
     var isProtected: Boolean
-        get() = (modifiers and Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED
+        get() = modifiers.isProtected
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_PROTECTED
-                else -> modifiers and (Opcodes.ACC_PROTECTED).inv()
-            }
+            modifiers = modifiers.setProtected(value)
         }
 
     var isStatic: Boolean
-        get() = (modifiers and Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC
+        get() = modifiers.isStatic
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_STATIC
-                else -> modifiers and (Opcodes.ACC_STATIC).inv()
-            }
+            modifiers = modifiers.setStatic(value)
         }
 
     var isFinal: Boolean
-        get() = (modifiers and Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL
+        get() = modifiers.isFinal
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_FINAL
-                else -> modifiers and (Opcodes.ACC_FINAL).inv()
-            }
+            modifiers = modifiers.setFinal(value)
         }
 
     var isSuper: Boolean
-        get() = (modifiers and Opcodes.ACC_SUPER) == Opcodes.ACC_SUPER
+        get() = modifiers.isSuper
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_SUPER
-                else -> modifiers and (Opcodes.ACC_SUPER).inv()
-            }
+            modifiers = modifiers.setSuper(value)
         }
 
     var isSynchronized: Boolean
-        get() = (modifiers and Opcodes.ACC_SYNCHRONIZED) == Opcodes.ACC_SYNCHRONIZED
+        get() = modifiers.isSynchronized
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_SYNCHRONIZED
-                else -> modifiers and (Opcodes.ACC_SYNCHRONIZED).inv()
-            }
+            modifiers = modifiers.setSynchronized(value)
         }
 
     var isVolatile: Boolean
-        get() = (modifiers and Opcodes.ACC_VOLATILE) == Opcodes.ACC_VOLATILE
+        get() = modifiers.isVolatile
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_VOLATILE
-                else -> modifiers and (Opcodes.ACC_VOLATILE).inv()
-            }
+            modifiers = modifiers.setVolatile(value)
         }
 
     var isBridge: Boolean
-        get() = (modifiers and Opcodes.ACC_BRIDGE) == Opcodes.ACC_BRIDGE
+        get() = modifiers.isBridge
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_BRIDGE
-                else -> modifiers and (Opcodes.ACC_BRIDGE).inv()
-            }
+            modifiers = modifiers.setBridge(value)
         }
 
     var isVarargs: Boolean
-        get() = (modifiers and Opcodes.ACC_VARARGS) == Opcodes.ACC_VARARGS
+        get() = modifiers.isVarargs
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_VARARGS
-                else -> modifiers and (Opcodes.ACC_VARARGS).inv()
-            }
+            modifiers = modifiers.setVarargs(value)
         }
 
     var isTransient: Boolean
-        get() = (modifiers and Opcodes.ACC_TRANSIENT) == Opcodes.ACC_TRANSIENT
+        get() = modifiers.isTransient
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_TRANSIENT
-                else -> modifiers and (Opcodes.ACC_TRANSIENT).inv()
-            }
+            modifiers = modifiers.setTransient(value)
         }
 
     var isNative: Boolean
-        get() = (modifiers and Opcodes.ACC_NATIVE) == Opcodes.ACC_NATIVE
+        get() = modifiers.isNative
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_NATIVE
-                else -> modifiers and (Opcodes.ACC_NATIVE).inv()
-            }
+            modifiers = modifiers.setNative(value)
         }
 
     var isInterface: Boolean
-        get() = (modifiers and Opcodes.ACC_INTERFACE) == Opcodes.ACC_INTERFACE
+        get() = modifiers.isInterface
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_INTERFACE
-                else -> modifiers and (Opcodes.ACC_INTERFACE).inv()
-            }
+            modifiers = modifiers.setInterface(value)
         }
 
     var isAbstract: Boolean
-        get() = (modifiers and Opcodes.ACC_ABSTRACT) == Opcodes.ACC_ABSTRACT
+        get() = modifiers.isAbstract
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_ABSTRACT
-                else -> modifiers and (Opcodes.ACC_ABSTRACT).inv()
-            }
+            modifiers = modifiers.setAbstract(value)
         }
 
     var isStrict: Boolean
-        get() = (modifiers and Opcodes.ACC_STRICT) == Opcodes.ACC_STRICT
+        get() = modifiers.isStrict
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_STRICT
-                else -> modifiers and (Opcodes.ACC_STRICT).inv()
-            }
+            modifiers = modifiers.setStrict(value)
         }
 
     var isSynthetic: Boolean
-        get() = (modifiers and Opcodes.ACC_SYNTHETIC) == Opcodes.ACC_SYNTHETIC
+        get() = modifiers.isSynthetic
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_SYNTHETIC
-                else -> modifiers and (Opcodes.ACC_SYNTHETIC).inv()
-            }
+            modifiers = modifiers.setSynthetic(value)
         }
 
     var isAnnotation: Boolean
-        get() = (modifiers and Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION
+        get() = modifiers.isAnnotation
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_ANNOTATION
-                else -> modifiers and (Opcodes.ACC_ANNOTATION).inv()
-            }
+            modifiers = modifiers.setAnnotation(value)
         }
 
     var isEnum: Boolean
-        get() = (modifiers and Opcodes.ACC_ENUM) == Opcodes.ACC_ENUM
+        get() = modifiers.isEnum
         set(value) {
-            modifiers = when {
-                value -> modifiers or Opcodes.ACC_ENUM
-                else -> modifiers and (Opcodes.ACC_ENUM).inv()
-            }
+            modifiers = modifiers.setEnum(value)
         }
 }
