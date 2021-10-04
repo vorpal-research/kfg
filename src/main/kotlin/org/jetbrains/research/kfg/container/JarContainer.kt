@@ -23,6 +23,8 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     constructor(path: String, `package`: Package?) : this(Paths.get(path), `package`)
     constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
+    override fun toString(): String = path.toString()
+
     override val pkg: Package = pkg ?: commonPackage
     override val name: String get() = file.name
     override val classLoader get() = file.classLoader

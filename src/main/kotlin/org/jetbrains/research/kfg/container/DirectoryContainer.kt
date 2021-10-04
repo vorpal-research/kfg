@@ -33,6 +33,8 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     constructor(path: String, pkg: Package?) : this(Paths.get(path), pkg)
     constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
+    override fun toString(): String = path.toString()
+
     private val File.fullClassName: String get() = this.relativeTo(file).path.removeSuffix(".class")
     private val File.pkg: Package get() = Package(fullClassName.dropLastWhile { it != Package.SEPARATOR })
 
