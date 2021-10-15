@@ -97,7 +97,7 @@ fun primaryTypeToInt(type: Type): Int = when (type) {
 
 fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
     val args = mutableListOf<Type>()
-    val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[a-zA-Z$0-9/_]+;))")
+    val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[^;]+;))")
     val matcher = pattern.matcher(desc)
     while (matcher.find()) {
         args.add(parseDesc(tf, matcher.group(0)))
