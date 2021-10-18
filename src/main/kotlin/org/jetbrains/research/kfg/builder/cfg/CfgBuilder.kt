@@ -100,7 +100,11 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             val incomings = predStacks.map { it.key to it.value[index] }.toMap()
             val incomingValues = incomings.values.toSet()
             when {
-                incomingValues.isEmpty() -> throw InvalidStateException("Empty incoming values map")
+                incomingValues.isEmpty() -> {
+                    val newPhi = phi(type, incomings)
+                    addInstruction(bb, newPhi)
+                    push(newPhi)
+                }
                 incomingValues.size > 1 -> {
                     val newPhi = phi(type, incomings)
                     addInstruction(bb, newPhi)
@@ -676,6 +680,19 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
         fun FrameState.copyStackAndLocals(predFrames: List<BlockFrame>) {
             when {
+                predFrames.isEmpty() -> {
+                    val frame = frames.getValue(block)
+                    for ((_, element) in this.stack) {
+                        val generated = phi(element, mapOf())
+                        push(generated)
+                        frame.stack.add(generated)
+                    }
+                    for ((key, element) in this.local) {
+                        val generated = phi(element, mapOf())
+                        locals[key] = generated
+                        frame.locals[key] = generated
+                    }
+                }
                 predFrames.size == 1 -> {
                     val predFrame = predFrames.first()
                     val mappedFrame = when {
@@ -689,6 +706,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         locals[key] = mappedFrame.locals[key]
                             ?: throw InvalidStateException("Invalid local frame info")
                     }
+                    mappedFrame.clear()
                 }
                 !isCycle -> {
                     createStackPhis(block, predFrames, this.stack)
@@ -703,6 +721,14 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
         fun FrameState.copyLocals(predFrames: List<BlockFrame>) {
             when {
+                predFrames.isEmpty() -> {
+                    val frame = frames.getValue(block)
+                    for ((key, element) in this.local) {
+                        val generated = phi(element, mapOf())
+                        locals[key] = generated
+                        frame.locals[key] = generated
+                    }
+                }
                 predFrames.size == 1 -> {
                     val predFrame = predFrames.first()
                     val mappedFrame = when {
@@ -712,6 +738,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                     this.local.filterValues { it !is VoidType }.keys.forEach { i ->
                         locals[i] = mappedFrame.locals.getValue(i)
                     }
+                    mappedFrame.clear()
                 }
                 !isCycle -> createLocalPhis(block, predFrames, this.local)
                 else -> createLocalCyclePhis(block, this.local)

@@ -4,7 +4,10 @@ import org.jetbrains.research.kfg.InvalidOpcodeException
 import org.jetbrains.research.kfg.InvalidStateException
 import org.jetbrains.research.kfg.InvalidTypeException
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.FrameNode
 import java.util.regex.Pattern
+
+val FrameNode.frameType get() = FrameNodeHelper.getFrameType(this)
 
 val Type.internalDesc: String
     get() = when {
