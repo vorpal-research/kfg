@@ -706,7 +706,9 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         locals[key] = mappedFrame.locals[key]
                             ?: throw InvalidStateException("Invalid local frame info")
                     }
-                    mappedFrame.clear()
+                    if (mappedFrame !== predFrame) {
+                        mappedFrame.clear()
+                    }
                 }
                 !isCycle -> {
                     createStackPhis(block, predFrames, this.stack)
@@ -738,7 +740,9 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                     this.local.filterValues { it !is VoidType }.keys.forEach { i ->
                         locals[i] = mappedFrame.locals.getValue(i)
                     }
-                    mappedFrame.clear()
+                    if (mappedFrame !== predFrame) {
+                        mappedFrame.clear()
+                    }
                 }
                 !isCycle -> createLocalPhis(block, predFrames, this.local)
                 else -> createLocalCyclePhis(block, this.local)
