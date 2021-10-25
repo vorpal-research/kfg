@@ -101,17 +101,20 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
             if (entry.isManifest) continue
 
             if (entry.isClass) {
-                val `class` = cm[entry.name.removeSuffix(".class")]
-                visitedClasses += `class`
-                when {
-                    pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
-                        val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
-                        failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
-                    }
-                    unpackAllClasses -> {
-                        val path = absolutePath.resolve(entry.name)
-                        val classNode = readClassNode(file.getInputStream(entry))
-                        failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
+                failSafeAction(failOnError) {
+                    val `class` = cm[entry.name.removeSuffix(".class")]
+                    visitedClasses += `class`
+                    when {
+                        pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
+                            val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
+                            `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                        }
+                        unpackAllClasses -> {
+                            val path = absolutePath.resolve(entry.name)
+                            val classNode = readClassNode(file.getInputStream(entry))
+                            classNode.write(loader, path, Flags.writeComputeNone)
+                        }
+                        else -> Unit
                     }
                 }
             }
