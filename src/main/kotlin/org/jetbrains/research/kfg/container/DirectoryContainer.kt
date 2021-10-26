@@ -33,6 +33,8 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     constructor(path: String, pkg: Package?) : this(Paths.get(path), pkg)
     constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
+    override fun toString(): String = path.toString()
+
     private val File.fullClassName: String get() = this.relativeTo(file).path.removeSuffix(".class")
     private val File.pkg: Package get() = Package(fullClassName.dropLastWhile { it != Package.SEPARATOR })
 
@@ -68,17 +70,21 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
         for (entry in file.allEntries) {
             if (entry.isClass) {
-                val `class` = cm[entry.fullClassName]
-                visitedClasses += `class`
-                when {
-                    pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
-                        val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
-                        failSafeAction(failOnError) { `class`.write(cm, loader, path, Flags.writeComputeFrames) }
-                    }
-                    unpackAllClasses -> {
-                        val path = absolutePath.resolve(entry.fullClassName)
-                        val classNode = readClassNode(entry.inputStream())
-                        failSafeAction(failOnError) { classNode.write(loader, path, Flags.writeComputeNone) }
+                failSafeAction(failOnError) {
+                    val `class` = cm[entry.fullClassName]
+                    visitedClasses += `class`
+                    when {
+                        pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
+                            val path =
+                                absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
+                            `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                        }
+                        unpackAllClasses -> {
+                            val path = absolutePath.resolve(entry.fullClassName)
+                            val classNode = readClassNode(entry.inputStream())
+                            classNode.write(loader, path, Flags.writeComputeNone)
+                        }
+                        else -> Unit
                     }
                 }
             }
