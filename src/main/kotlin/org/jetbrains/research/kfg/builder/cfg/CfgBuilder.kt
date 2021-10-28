@@ -339,8 +339,8 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
     private fun convertCmp(insn: InsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val lhv = pop()
         val rhv = pop()
+        val lhv = pop()
         val op = toCmpOpcode(insn.opcode)
         val inst = cmp(op, lhv, rhv)
         addInstruction(bb, inst)
