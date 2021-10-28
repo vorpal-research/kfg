@@ -31,7 +31,7 @@ abstract class Class : Node {
     protected val interfaceNames = mutableSetOf<String>()
     protected var outerClassName: String? = null
     protected var outerMethodName: String? = null
-    protected var outerMethodDesc: MethodDesc? = null
+    protected var outerMethodDesc: String? = null
     protected var innerClassesMap = mutableMapOf<String, Modifiers>()
 
     val allMethods get() = innerMethods.values.toSet()
@@ -69,7 +69,7 @@ abstract class Class : Node {
         }
         set(value) {
             outerMethodName = value?.name
-            outerMethodDesc = value?.desc
+            outerMethodDesc = value?.desc?.asmDesc
             outerClass = value?.klass
         }
 
@@ -103,7 +103,7 @@ abstract class Class : Node {
         this.interfaceNames.addAll(cn.interfaces.toMutableSet())
         this.outerClassName = cn.outerClass
         this.outerMethodName = cn.outerMethod
-        this.outerMethodDesc = cn.outerMethodDesc?.let { MethodDesc.fromDesc(cm.type, it) }
+        this.outerMethodDesc = cn.outerMethodDesc
         this.innerClassesMap.putAll(cn.innerClasses.map { it.name to Modifiers(it.access) }.toMutableSet())
     }
 
