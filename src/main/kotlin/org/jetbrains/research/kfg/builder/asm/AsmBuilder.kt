@@ -8,6 +8,8 @@ import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type.getType
@@ -41,6 +43,13 @@ private val Type.shortInt
     }
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
+
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.associateWith { LabelNode() }

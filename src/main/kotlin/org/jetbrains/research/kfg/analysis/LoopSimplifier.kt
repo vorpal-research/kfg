@@ -15,9 +15,17 @@ import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kthelper.KtException
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.assert.unreachable
+import org.jetbrains.research.kfg.visitor.Pipeline
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
+
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
 
     override val preservesLoopInfo get() = false
 

@@ -5,10 +5,30 @@ import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
+import org.jetbrains.research.kfg.visitor.pass.AnalysisManager
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
+import org.jetbrains.research.kfg.visitor.pass.PassManager
+import org.jetbrains.research.kfg.visitor.pass.PassOrder
 import java.util.*
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
+    val passManager = PassManager()
+    val analysisManager: AnalysisManager by lazy {
+        AnalysisManager(cm, this@Pipeline)
+    }
+
     protected open val pipeline = pipeline.map { it.wrap() }.toMutableList()
+    protected val passOrder get() = passManager.getPassOrder(this@Pipeline)
+
+    fun <T : NodeVisitor> add(visitor: java.lang.Class<T>, vararg additionalArgs: Any?) {
+        val visitorInstance = visitor.getConstructor(ClassManager::class.java,
+                    Pipeline::class.java,
+                    *additionalArgs.map { it?.javaClass ?: Object::class.java }.toTypedArray()
+                )
+                .apply { isAccessible = true }
+                .newInstance(cm, this@Pipeline, *additionalArgs)
+        add(visitorInstance)
+    }
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
     operator fun plusAssign(visitor: NodeVisitor) {
@@ -20,14 +40,31 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         visitors.forEach { add(it) }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    fun getPasses() = pipeline.map { it }
+
     protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> visitor
         is MethodVisitor -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
+            override val pipeline get() = this@Pipeline
 
             override fun cleanup() {
                 visitor.cleanup()
             }
+
+            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
+                return visitor.javaClass
+            }
+
+            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getRequiredAnalysisVisitors()
+
+            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getPersistedAnalysisVisitors()
+
+            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+                    visitor.getRequiredPasses()
 
             override fun visitMethod(method: Method) {
                 super.visitMethod(method)
@@ -36,10 +73,24 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         }
         else -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
+            override val pipeline get() = this@Pipeline
 
             override fun cleanup() {
                 visitor.cleanup()
             }
+
+            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
+                return visitor.javaClass
+            }
+
+            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getRequiredAnalysisVisitors()
+
+            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getPersistedAnalysisVisitors()
+
+            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+                    visitor.getRequiredPasses()
 
             override fun visit(node: Node) {
                 super.visit(node)
@@ -62,9 +113,13 @@ class PackagePipeline(
 ) : Pipeline(cm, pipeline) {
     override fun run() {
         val classes = cm.getByPackage(target)
-        for (pass in pipeline) {
+        for (pass in passOrder) {
             for (`class` in classes) {
-                pass.visit(`class`)
+                (pass as ClassVisitor).visit(`class`)
+                analysisManager.invalidateAllExcept(
+                        pass.getPersistedAnalysisVisitors(),
+                        `class`
+                )
             }
         }
     }
@@ -77,9 +132,9 @@ class MultiplePackagePipeline(
 ) : Pipeline(cm, pipeline) {
     override fun run() {
         val classes = targets.flatMap { cm.getByPackage(it) }
-        for (pass in pipeline) {
+        for (pass in passOrder) {
             for (`class` in classes) {
-                pass.visit(`class`)
+                (pass as ClassVisitor).visit(`class`)
             }
         }
     }
@@ -102,9 +157,9 @@ class ClassPipeline(
     }
 
     override fun run() {
-        for (pass in pipeline) {
+        for (pass in passOrder) {
             for (`class` in targets) {
-                pass.visit(`class`)
+                (pass as ClassVisitor).visit(`class`)
             }
         }
     }
@@ -121,10 +176,24 @@ class MethodPipeline(
     protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> object : ClassVisitor {
             override val cm get() = this@MethodPipeline.cm
+            override val pipeline get() = this@MethodPipeline
 
             override fun cleanup() {
                 visitor.cleanup()
             }
+
+            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
+                return visitor.javaClass
+            }
+
+            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getRequiredAnalysisVisitors()
+
+            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getPersistedAnalysisVisitors()
+
+            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+                    visitor.getRequiredPasses()
 
             override fun visit(klass: Class) {
                 super.visit(klass)
@@ -140,10 +209,24 @@ class MethodPipeline(
         }
         is MethodVisitor -> object : ClassVisitor {
             override val cm get() = this@MethodPipeline.cm
+            override val pipeline get() = this@MethodPipeline
 
             override fun cleanup() {
                 visitor.cleanup()
             }
+
+            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
+                return visitor.javaClass
+            }
+
+            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getRequiredAnalysisVisitors()
+
+            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+                    visitor.getPersistedAnalysisVisitors()
+
+            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+                    visitor.getRequiredPasses()
 
             override fun visitMethod(method: Method) {
                 if (method in targets) {
@@ -158,9 +241,9 @@ class MethodPipeline(
     override fun add(visitor: NodeVisitor) = pipeline.add(visitor.methodWrap())
 
     override fun run() {
-        for (pass in pipeline) {
+        for (pass in passOrder) {
             for (`class` in classTargets) {
-                pass.visit(`class`)
+                (pass as ClassVisitor).visit(`class`)
             }
         }
     }

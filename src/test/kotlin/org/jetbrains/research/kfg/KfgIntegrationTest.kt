@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.usageContext
 import org.jetbrains.research.kfg.visitor.ClassVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
 import org.jetbrains.research.kfg.visitor.executePipeline
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -91,6 +92,8 @@ class KfgIntegrationTest {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
+                override val pipeline: Pipeline
+                    get() = this@executePipeline
 
                 override fun cleanup() {}
 
@@ -124,6 +127,8 @@ class KfgIntegrationTest {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
+                override val pipeline: Pipeline
+                    get() = this@executePipeline
 
                 override fun cleanup() {}
 
@@ -153,6 +158,8 @@ class KfgIntegrationTest {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
+                override val pipeline: Pipeline
+                    get() = this@executePipeline
 
                 override fun cleanup() {}
 

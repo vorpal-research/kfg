@@ -3,8 +3,15 @@ package org.jetbrains.research.kfg.builder.cfg
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.visitor.ClassVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
 
 class InnerClassNormalizer(override val cm: ClassManager) : ClassVisitor {
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
     override fun cleanup() {}
 
     override fun visit(klass: Class) {

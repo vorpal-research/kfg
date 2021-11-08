@@ -16,10 +16,17 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.mergeTypes
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
 import org.jetbrains.research.kthelper.assert.ktassert
 import kotlin.math.abs
 
 class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
     private val returnValues = hashMapOf<BasicBlock, ReturnInst>()
     override val instructions: InstructionFactory
         get() = cm.instruction

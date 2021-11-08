@@ -5,10 +5,19 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Field
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.ClassVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.InnerClassNode
 
 class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVisitor {
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
+
     override fun cleanup() {}
 
     override fun visit(klass: Class) {

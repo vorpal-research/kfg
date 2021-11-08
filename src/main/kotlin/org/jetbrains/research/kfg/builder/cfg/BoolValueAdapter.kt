@@ -9,6 +9,8 @@ import org.jetbrains.research.kfg.type.BoolType
 import org.jetbrains.research.kfg.type.Integral
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.jetbrains.research.kthelper.assert.unreachable
 
 class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
@@ -18,6 +20,14 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
         get() = cm.type
     override val values: ValueFactory
         get() = cm.value
+
+
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
 
     override fun cleanup() {}
 

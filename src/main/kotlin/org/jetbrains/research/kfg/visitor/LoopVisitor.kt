@@ -4,6 +4,9 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
+
+import org.jetbrains.research.kfg.visitor.MethodVisitor
+import org.jetbrains.research.kfg.visitor.Pipeline
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.graph.GraphView
 import org.jetbrains.research.kthelper.graph.LoopDetector
@@ -129,6 +132,13 @@ fun performLoopAnalysis(method: Method): List<Loop> {
 }
 
 class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
+    private val _pipeline = object : Pipeline(cm) {
+        override fun run() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
+
     private val loops = arrayListOf<Loop>()
 
     override fun cleanup() {
