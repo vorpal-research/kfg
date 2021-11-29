@@ -4,41 +4,40 @@ import org.apache.commons.collections4.map.ReferenceMap
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.Node
 import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.VisitorRegistry
 
 private fun Node.equalsTo(other: Node) = this === other
 
 @Suppress("UNCHECKED_CAST")
 class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeline) {
-    private val visitors = mutableMapOf<Class<AnalysisVisitor<*>>, AnalysisVisitor<*>>()
+    private val visitors = mutableMapOf<String, AnalysisVisitor<*>>()
     private val cache = ReferenceMap<VisitorNodePair, AnalysisResult>()
 
-    fun <T : AnalysisVisitor<*>> invalidateAllExcept(persisted: List<Class<T>>, node: Node) {
+    fun invalidateAllExcept(persisted: List<String>, node: Node) {
         cache.iterator().apply {
             val persistedSet = persisted.toSet()
             while (hasNext()) {
                 val current = next()
                 if (current.key.node.equalsTo(node) &&
-                        !persistedSet.contains(current.key.visitor as Class<T>)) {
+                        !persistedSet.contains(current.key.name)) {
                     remove()
                 }
             }
         }
     }
 
-    fun <R : AnalysisResult, T : AnalysisVisitor<R>> getAnalysisResult(visitorClass: Class<T>, node: Node): R =
-            cache.computeIfAbsent(VisitorNodePair(visitorClass as Class<AnalysisVisitor<AnalysisResult>>, node)) {
-                getVisitorInstance(visitorClass).analyse(node)
+    fun <R : AnalysisResult> getAnalysisResult(name: String, node: Node): R =
+            cache.computeIfAbsent(VisitorNodePair(name, node)) {
+                (getVisitorInstance(name) as AnalysisVisitor<*>).analyse(node)
             } as R
 
-    private fun <T : AnalysisVisitor<*>> getVisitorInstance(analysisVisitorClass: Class<T>): T =
-            visitors.computeIfAbsent(analysisVisitorClass as Class<AnalysisVisitor<*>>) {
-                analysisVisitorClass.getConstructor(ClassManager::class.java, Pipeline::class.java)
-                        .apply { isAccessible = true }
-                        .newInstance(cm, pipeline) as T
+    private fun <T : AnalysisVisitor<*>> getVisitorInstance(name: String): T =
+            visitors.computeIfAbsent(name) {
+                VisitorRegistry.getAnalysis(name)!!.invoke(cm, pipeline) as T
             } as T
 }
 
-private data class VisitorNodePair(val visitor: Class<AnalysisVisitor<AnalysisResult>>, val node: Node) {
+private data class VisitorNodePair(val name: String, val node: Node) {
     override fun equals(other: Any?): Boolean {
         if (other == null) {
             return false
@@ -49,11 +48,11 @@ private data class VisitorNodePair(val visitor: Class<AnalysisVisitor<AnalysisRe
         if (other !is VisitorNodePair) {
             return false
         }
-        return other.visitor === this.visitor && this.node.equalsTo(other.node)
+        return other.name == this.name && this.node.equalsTo(other.node)
     }
 
     override fun hashCode(): Int {
-        var result = System.identityHashCode(visitor)
+        var result = name.hashCode()
         result = 31 * result + System.identityHashCode(node)
         return result
     }

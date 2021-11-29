@@ -53,17 +53,17 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 visitor.cleanup()
             }
 
-            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
-                return visitor.javaClass
+            override fun getName(): String {
+                return visitor.getName()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getRequiredAnalysisVisitors(): List<String> =
                     visitor.getRequiredAnalysisVisitors()
 
-            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getPersistedAnalysisVisitors(): List<String> =
                     visitor.getPersistedAnalysisVisitors()
 
-            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+            override fun getRequiredPasses(): List<String> =
                     visitor.getRequiredPasses()
 
             override fun visitMethod(method: Method) {
@@ -79,17 +79,17 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 visitor.cleanup()
             }
 
-            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
-                return visitor.javaClass
+            override fun getName(): String {
+                return visitor.getName()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getRequiredAnalysisVisitors(): List<String> =
                     visitor.getRequiredAnalysisVisitors()
 
-            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getPersistedAnalysisVisitors(): List<String> =
                     visitor.getPersistedAnalysisVisitors()
 
-            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+            override fun getRequiredPasses(): List<String> =
                     visitor.getRequiredPasses()
 
             override fun visit(node: Node) {
@@ -182,17 +182,17 @@ class MethodPipeline(
                 visitor.cleanup()
             }
 
-            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
-                return visitor.javaClass
+            override fun getName(): String {
+                return visitor.getName()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getRequiredAnalysisVisitors(): List<String> =
                     visitor.getRequiredAnalysisVisitors()
 
-            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getPersistedAnalysisVisitors(): List<String> =
                     visitor.getPersistedAnalysisVisitors()
 
-            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+            override fun getRequiredPasses(): List<String> =
                     visitor.getRequiredPasses()
 
             override fun visit(klass: Class) {
@@ -215,17 +215,17 @@ class MethodPipeline(
                 visitor.cleanup()
             }
 
-            override fun getOriginalClass(): java.lang.Class<NodeVisitor> {
-                return visitor.javaClass
+            override fun getName(): String {
+                return visitor.getName()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getRequiredAnalysisVisitors(): List<String> =
                     visitor.getRequiredAnalysisVisitors()
 
-            override fun getPersistedAnalysisVisitors(): List<java.lang.Class<AnalysisVisitor<*>>> =
+            override fun getPersistedAnalysisVisitors(): List<String> =
                     visitor.getPersistedAnalysisVisitors()
 
-            override fun getRequiredPasses(): List<java.lang.Class<NodeVisitor>> =
+            override fun getRequiredPasses(): List<String> =
                     visitor.getRequiredPasses()
 
             override fun visitMethod(method: Method) {

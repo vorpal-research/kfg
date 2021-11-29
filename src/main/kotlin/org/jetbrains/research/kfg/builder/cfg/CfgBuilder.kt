@@ -14,6 +14,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
 import org.jetbrains.research.kfg.visitor.Loop
+import org.jetbrains.research.kfg.visitor.VisitorRegistry
 import org.jetbrains.research.kthelper.`try`
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.collection.queueOf
