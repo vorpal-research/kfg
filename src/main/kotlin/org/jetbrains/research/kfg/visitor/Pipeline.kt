@@ -30,6 +30,10 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         add(visitorInstance)
     }
 
+    fun add(visitorName: String) {
+        add(VisitorRegistry.getVisitor(visitorName)!!.invoke(cm, this@Pipeline) as NodeVisitor)
+    }
+
     operator fun plus(visitor: NodeVisitor) = add(visitor)
     operator fun plusAssign(visitor: NodeVisitor) {
         add(visitor)
