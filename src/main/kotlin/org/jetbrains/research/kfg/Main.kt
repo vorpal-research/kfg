@@ -5,11 +5,12 @@ import org.jetbrains.research.kfg.analysis.LoopSimplifier
 import org.jetbrains.research.kfg.container.asContainer
 import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.visitor.executePipeline
+import org.jetbrains.research.kthelper.tryOrNull
 import java.io.File
 import java.nio.file.Paths
 
 fun main(args: Array<String>) {
-    val cfg = KfgConfigParser(args)
+    val cfg = tryOrNull { KfgConfigParser(args) } ?: return
 
     val jar = File(cfg.getStringValue("jar")).asContainer()!!
 

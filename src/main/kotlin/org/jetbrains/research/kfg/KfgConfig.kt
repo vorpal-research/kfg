@@ -2,10 +2,14 @@ package org.jetbrains.research.kfg
 
 import org.apache.commons.cli.*
 import org.jetbrains.research.kfg.util.Flags
+import org.jetbrains.research.kthelper.KtException
 import org.jetbrains.research.kthelper.assert.ktassert
 import java.io.PrintWriter
 import java.io.StringWriter
-import kotlin.system.exitProcess
+
+class InvalidKfgConfigException(msg: String) : KtException(msg) {
+    constructor() : this("")
+}
 
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
@@ -39,8 +43,7 @@ class KfgConfigParser(args: Array<String>) {
         cmd = try {
             parser.parse(options, args)
         } catch (e: ParseException) {
-            printHelp()
-            exitProcess(1)
+            throw InvalidKfgConfigException(e.message ?: "")
         }
     }
 
