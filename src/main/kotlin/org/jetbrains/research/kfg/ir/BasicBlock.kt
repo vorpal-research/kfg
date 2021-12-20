@@ -45,12 +45,10 @@ sealed class BasicBlock(
     val size: Int
         get() = instructions.size
 
-    @Suppress("UNUSED_PARAMETER")
     private fun addValueToParent(value: Value) {
         parentUnsafe?.slotTracker?.addValue(value)
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun removeValueFromParent(value: Value) {
         parentUnsafe?.slotTracker?.removeValue(value)
     }
