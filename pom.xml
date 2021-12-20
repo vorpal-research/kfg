@@ -6,7 +6,7 @@
 
     <groupId>org.jetbrains.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -16,14 +16,14 @@
         <maven.compiler.source>${jvm.version}</maven.compiler.source>
         <maven.compiler.target>${jvm.version}</maven.compiler.target>
 
-        <kotlin.version>1.5.21</kotlin.version>
+        <kotlin.version>1.6.10</kotlin.version>
         <compiler-plugin.version>3.5.1</compiler-plugin.version>
 
         <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.0.13</kt-helper.version>
+        <kt-helper.version>0.0.14</kt-helper.version>
         <asm.version>9.2</asm.version>
-        <commons-cli.version>1.4</commons-cli.version>
+        <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>
     </properties>
 
@@ -96,7 +96,7 @@
                 <executions>
                     <execution>
                         <id>compile</id>
-                        <phase>compile</phase>
+                        <phase>process-sources</phase>
                         <goals>
                             <goal>compile</goal>
                         </goals>
