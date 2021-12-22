@@ -192,9 +192,10 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
 interface LoopVisitor : MethodVisitor {
     val preservesLoopInfo get() = false
 
-    override fun visit(method: Method) {
+    override fun visit(method: Method) = try {
         val loops = LoopManager.getMethodLoopInfo(method)
         loops.forEach { visit(it) }
+    } finally {
         updateLoopInfo(method)
     }
 

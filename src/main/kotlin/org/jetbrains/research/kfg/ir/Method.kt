@@ -157,7 +157,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(before)
-            ktassert(index >= 0, "Block ${before.name} does not belong to method $this")
+            ktassert(index >= 0, "Block ${before.name} does not belong to method $prototype")
 
             innerBlocks.add(index, bb)
             slotTracker.addBlock(bb)
@@ -170,7 +170,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(after)
-            ktassert(index >= 0, "Block ${after.name} does not belong to method $this")
+            ktassert(index >= 0, "Block ${after.name} does not belong to method $prototype")
 
             innerBlocks.add(index + 1, bb)
             slotTracker.addBlock(bb)
@@ -181,7 +181,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
 
     fun remove(ctx: BlockUsageContext, block: BasicBlock) = with(ctx) {
         if (innerBlocks.contains(block)) {
-            ktassert(block.parentUnsafe == this@Method, "Block ${block.name} don't belong to $this")
+            ktassert(block.parentUnsafe == this@Method, "Block ${block.name} don't belong to $prototype")
             innerBlocks.remove(block)
 
             if (block in innerCatches) {

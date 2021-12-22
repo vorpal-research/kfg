@@ -22,7 +22,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         current = method
         current.usageContext.also { ctx = it }.use {
             super.visit(method)
-            IRVerifier(cm).visit(method)
+            IRVerifier(cm, it).visit(method)
         }
     }
 
