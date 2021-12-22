@@ -102,30 +102,6 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Predecess
 }
 
 
-object LoopManager {
-    private class LoopInfo(val loops: List<Loop>, var valid: Boolean) {
-        constructor() : this(listOf(), false)
-        constructor(loops: List<Loop>) : this(loops, true)
-    }
-
-    private val loopInfo = mutableMapOf<Method, LoopInfo>()
-
-    fun setInvalid(method: Method) {
-        loopInfo.getOrPut(method, LoopManager::LoopInfo).valid = false
-    }
-
-    fun getMethodLoopInfo(method: Method): List<Loop> {
-        val info = loopInfo.getOrPut(method, LoopManager::LoopInfo)
-        return when {
-            info.valid -> info.loops
-            else -> {
-                val loops = performLoopAnalysis(method)
-                loopInfo[method] = LoopInfo(loops)
-                loops
-            }
-        }
-    }
-}
 
 fun performLoopAnalysis(method: Method): List<Loop> {
     val la = LoopAnalysis(method.cm)
@@ -193,7 +169,7 @@ interface LoopVisitor : MethodVisitor {
     val preservesLoopInfo get() = false
 
     override fun visit(method: Method) = try {
-        val loops = LoopManager.getMethodLoopInfo(method)
+        val loops = cm.loopManager.getMethodLoopInfo(method)
         loops.forEach { visit(it) }
     } finally {
         updateLoopInfo(method)
@@ -205,7 +181,7 @@ interface LoopVisitor : MethodVisitor {
 
     fun updateLoopInfo(method: Method) {
         if (!this.preservesLoopInfo) {
-            LoopManager.setInvalid(method)
+            cm.loopManager.setInvalid(method)
         }
     }
 }
