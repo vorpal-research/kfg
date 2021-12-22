@@ -1,8 +1,8 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.analysis.Loop
-import org.jetbrains.research.kfg.analysis.performLoopAnalysis
 import org.jetbrains.research.kfg.ir.Method
+import org.jetbrains.research.kfg.visitor.Loop
+import org.jetbrains.research.kfg.visitor.performLoopAnalysis
 
 internal class LoopManager(val cm: ClassManager) {
     private class LoopInfo(val loops: List<Loop>, var valid: Boolean) {

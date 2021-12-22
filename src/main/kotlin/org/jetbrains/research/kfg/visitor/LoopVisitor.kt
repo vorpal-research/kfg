@@ -1,15 +1,35 @@
-package org.jetbrains.research.kfg.analysis
+package org.jetbrains.research.kfg.visitor
 
 import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.jetbrains.research.kthelper.algorithm.GraphView
 import org.jetbrains.research.kthelper.algorithm.LoopDetector
 import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
 import org.jetbrains.research.kthelper.algorithm.Viewable
 import org.jetbrains.research.kthelper.assert.asserted
+
+interface LoopVisitor : MethodVisitor {
+    val preservesLoopInfo get() = false
+
+    override fun visit(method: Method): Unit = try {
+        val loops = cm.loopManager.getMethodLoopInfo(method)
+        loops.forEach { visitLoop(it) }
+    } finally {
+        updateLoopInfo(method)
+    }
+
+    fun visitLoop(loop: Loop) {
+        for (it in loop.subLoops) visitLoop(it)
+    }
+
+    fun updateLoopInfo(method: Method) {
+        if (!this.preservesLoopInfo) {
+            cm.loopManager.setInvalid(method)
+        }
+    }
+}
 
 data class LoopNode(val parent: Loop, val block: BasicBlock) : PredecessorGraph.PredecessorVertex<LoopNode> {
     override val predecessors: Set<LoopNode>
@@ -161,27 +181,6 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
         for (loop in allLoops) {
             val headers = loop.body.count { !it.predecessors.all { pred -> pred in loop } }
             require(headers == 1) { "Only loops with single header are supported" }
-        }
-    }
-}
-
-interface LoopVisitor : MethodVisitor {
-    val preservesLoopInfo get() = false
-
-    override fun visit(method: Method) = try {
-        val loops = cm.loopManager.getMethodLoopInfo(method)
-        loops.forEach { visit(it) }
-    } finally {
-        updateLoopInfo(method)
-    }
-
-    fun visit(loop: Loop) {
-        for (it in loop.subLoops) visit(it)
-    }
-
-    fun updateLoopInfo(method: Method) {
-        if (!this.preservesLoopInfo) {
-            cm.loopManager.setInvalid(method)
         }
     }
 }

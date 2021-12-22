@@ -1,9 +1,9 @@
 package org.jetbrains.research.kfg
 
-import org.jetbrains.research.kfg.analysis.LoopAnalysis
 import org.jetbrains.research.kfg.analysis.LoopSimplifier
 import org.jetbrains.research.kfg.container.asContainer
 import org.jetbrains.research.kfg.util.Flags
+import org.jetbrains.research.kfg.visitor.LoopAnalysis
 import org.jetbrains.research.kfg.visitor.executePipeline
 import org.jetbrains.research.kthelper.tryOrNull
 import java.io.File

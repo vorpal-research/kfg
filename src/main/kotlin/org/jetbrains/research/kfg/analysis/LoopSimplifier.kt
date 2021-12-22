@@ -8,6 +8,9 @@ import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.MethodUsageContext
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.usageContext
+import org.jetbrains.research.kfg.visitor.Loop
+import org.jetbrains.research.kfg.visitor.LoopVisitor
+import org.jetbrains.research.kthelper.KtException
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var current: Method
@@ -26,13 +29,11 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
-    override fun visit(loop: Loop) {
-        super.visit(loop)
+    override fun visitLoop(loop: Loop) {
+        super.visitLoop(loop)
         if (loop.allEntries.size != 1) {
-            if (cm.failOnError) {
-                throw IllegalStateException("Can't simplify loop with multiple entries")
-            }
-            return
+            if (cm.failOnError) throw KtException("Can't simplify loop with multiple entries")
+            else return
         }
         buildPreheader(loop)
         buildLatch(loop)
