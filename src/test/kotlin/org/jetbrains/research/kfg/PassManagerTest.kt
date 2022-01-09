@@ -9,20 +9,30 @@ import org.jetbrains.research.kfg.visitor.VisitorRegistry
 import org.jetbrains.research.kfg.visitor.executePipeline
 import org.jetbrains.research.kfg.visitor.pass.AnalysisResult
 import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
+import org.jetbrains.research.kfg.visitor.pass.PassManager
+import org.jetbrains.research.kfg.visitor.pass.strategy.astar.AStarPassStrategy
+import org.jetbrains.research.kfg.visitor.pass.strategy.dynamic.DynamicPassStrategy
+import org.jetbrains.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
 import org.junit.*
 import java.io.*
 import kotlin.random.Random
 
 class PassManagerTest {
 
-    private val PASSES_COUNT = 100
+    private val PASSES_COUNT = 40
     private val ANALYSIS_COUNT = 100
     private val ROOT_CHANCE = 0.2f
     private val CONNECTEDNESS = 1f
-    private val DATASET_COUNT = 1
+    private val DATASET_COUNT = 5
 
     private val out = System.out
     private val err = System.err
+
+    private val passStrategiesToTest = listOf(
+        DefaultPassStrategy(),
+        AStarPassStrategy(),
+        DynamicPassStrategy()
+    )
 
     val pkg = Package.parse("org.jetbrains.research.kfg.*")
     lateinit var jar: JarContainer
@@ -95,15 +105,26 @@ class PassManagerTest {
 
     @Test
     fun testPipeline() {
-        val dataset = readDataset(2)
-        var count = 0
-        var countAnalysis = 0
+        val klass = run {
+            var temp = cm.concreteClasses.random()
+            while (temp.methods.isEmpty())
+                temp = cm.concreteClasses.random()
+            temp
+        }
+        val targetMethod = klass.getMethods(klass.methods.random().name).toList()[0]
+        val targetMethods = listOf(targetMethod)
 
-        val passedSet = mutableSetOf<String>()
+        for (datasetId in 1..DATASET_COUNT) {
+            val dataset = readDataset(datasetId)
+            var count = 0
+            var countAnalysis = 0
 
-        generateVisitors(dataset,
+            val passedSet = mutableSetOf<String>()
+
+            VisitorRegistry.clearAll()
+            generateVisitors(dataset,
                 { wrapper, classManager, pipeline, node ->
-                    println("Pass ${wrapper.name}")
+                    //println("Pass ${wrapper.name}")
 
                     wrapper.requiredAnalysis.forEach { analysisName ->
                         pipeline.analysisManager.getAnalysisResult<AnalysisResultDummy>(analysisName, node)
@@ -126,23 +147,20 @@ class PassManagerTest {
 
                     countAnalysis += 1
                 }
-        )
+            )
 
-        val klass = run {
-            var temp = cm.concreteClasses.random()
-            while (temp.methods.isEmpty())
-                temp = cm.concreteClasses.random()
-            temp
+            for (passStrategy in passStrategiesToTest) {
+                executePipeline(cm, targetMethods) {
+                    dataset.forEach { add(it.name) }
+                    passManager = PassManager(passStrategy)
+                }
+                println("Dataset ${datasetId}, PassStrategy - ${passStrategy.javaClass.name.substringAfterLast('.')}")
+                println("Pass count $count")
+                println("Analysis count $countAnalysis")
+                count = 0
+                countAnalysis = 0
+            }
         }
-        val targetMethod = klass.getMethods(klass.methods.random().name).toList()[0]
-        val targetMethods = listOf(targetMethod)
-
-        executePipeline(cm, targetMethods) {
-            dataset.forEach { add(it.name) }
-        }
-
-        println("Pass count $count")
-        println("Analysis count $countAnalysis")
     }
 
     @Suppress("UNCHECKED_CAST")

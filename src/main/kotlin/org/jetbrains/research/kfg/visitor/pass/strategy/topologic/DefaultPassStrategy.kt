@@ -1,8 +1,9 @@
-package org.jetbrains.research.kfg.visitor.pass
+package org.jetbrains.research.kfg.visitor.pass.strategy.topologic
 
 import org.jetbrains.research.kfg.visitor.NodeVisitor
 import org.jetbrains.research.kfg.visitor.Pipeline
-import java.util.*
+import org.jetbrains.research.kfg.visitor.pass.strategy.PassOrder
+import org.jetbrains.research.kfg.visitor.pass.strategy.PassStrategy
 import kotlin.math.max
 
 class DefaultPassStrategy : PassStrategy {

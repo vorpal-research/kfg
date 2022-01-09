@@ -6,13 +6,11 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
 import org.jetbrains.research.kfg.visitor.pass.AnalysisManager
-import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.jetbrains.research.kfg.visitor.pass.PassManager
-import org.jetbrains.research.kfg.visitor.pass.PassOrder
 import java.util.*
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
-    val passManager = PassManager()
+    var passManager = PassManager()
     val analysisManager: AnalysisManager by lazy {
         AnalysisManager(cm, this@Pipeline)
     }

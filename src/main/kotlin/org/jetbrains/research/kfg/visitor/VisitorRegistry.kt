@@ -23,6 +23,11 @@ class VisitorRegistry {
         fun getVisitor(name: String) = visitors[name]
         fun getAnalysis(name: String) = analysis[name]
 
+        fun clearAll() {
+            visitors.clear()
+            analysis.clear()
+        }
+
         fun <T : NodeVisitor> addVisitor(name: String, visitorClass: Class<T>, vararg args: Any?) {
             val constructor = visitorClass.getDeclaredConstructor(
                     ClassManager::class.java,

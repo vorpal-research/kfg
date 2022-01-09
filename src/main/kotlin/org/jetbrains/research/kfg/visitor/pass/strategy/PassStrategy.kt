@@ -1,4 +1,4 @@
-package org.jetbrains.research.kfg.visitor.pass
+package org.jetbrains.research.kfg.visitor.pass.strategy
 
 import org.jetbrains.research.kfg.visitor.NodeVisitor
 import org.jetbrains.research.kfg.visitor.Pipeline
@@ -23,4 +23,16 @@ interface PassOrder: Iterable<NodeVisitor> {
     fun isParallelSupported(): Boolean
     fun getNextParallel(): NodeVisitor
     fun completedParallel(pass: NodeVisitor)
+}
+
+class IteratedPassOrder(private val iterator: Iterator<NodeVisitor>) : PassOrder {
+    override fun hasNext() = iterator.hasNext()
+
+    override fun getNext() = iterator.next()
+
+    override fun isParallelSupported() = false
+
+    override fun getNextParallel(): NodeVisitor = throw NotImplementedError("Parallel execution is not supported for this pass order")
+
+    override fun completedParallel(pass: NodeVisitor) = throw NotImplementedError("Parallel execution is not supported for this pass order")
 }
