@@ -22,7 +22,36 @@ class DynamicPassStrategy : PassStrategy {
 
         val passOrder = mutableListOf<NodeVisitor>()
         while (open.isNotEmpty()) {
-            val nodeToInsert = open.poll()
+            var bestCostOfInsertion0 = Int.MAX_VALUE
+            var bestIndexToInsert0 = 0
+            var bestNode = open[0]
+            for (nodeToInsert in open) {
+                // Calculate cost of adding at the end
+                var bestCostOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, passOrder.size)
+                var bestIndexToInsert = passOrder.size
+
+                // Calculate cost of insertion in every other place
+                for (i in 0 until passOrder.size) {
+                    if (!isPossibleToInsert(passOrder, nodeToInsert, i)) {
+                        continue
+                    }
+
+                    val costOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, i)
+                    if (costOfInsertion < bestCostOfInsertion) {
+                        bestCostOfInsertion = costOfInsertion
+                        bestIndexToInsert = i
+                    }
+                }
+
+                if (bestCostOfInsertion < bestCostOfInsertion0) {
+                    bestCostOfInsertion0 = bestCostOfInsertion
+                    bestIndexToInsert0 = bestIndexToInsert
+                    bestNode = nodeToInsert
+                }
+            }
+
+            val nodeToInsert = bestNode
+            open.remove(bestNode)
 
             // Extend open list by looking for new available passes
             closed.add(nodeToInsert.getName())
@@ -32,25 +61,7 @@ class DynamicPassStrategy : PassStrategy {
             open.addAll(openedPasses)
             openSet = open.map { it.getName() }
 
-
-            // Calculate cost of adding at the end
-            var bestCostOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, passOrder.size)
-            var bestIndexToInsert = passOrder.size
-
-            // Calculate cost of insertion in every other place
-            for (i in 0 until passOrder.size) {
-                if (!isPossibleToInsert(passOrder, nodeToInsert, i)) {
-                    continue
-                }
-
-                val costOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, i)
-                if (costOfInsertion < bestCostOfInsertion) {
-                    bestCostOfInsertion = costOfInsertion
-                    bestIndexToInsert = i
-                }
-            }
-
-            passOrder.add(bestIndexToInsert, nodeToInsert)
+            passOrder.add(bestIndexToInsert0, nodeToInsert)
         }
 
         return IteratedPassOrder(passOrder.iterator())
@@ -90,7 +101,7 @@ class DynamicPassStrategy : PassStrategy {
             cost = processPass(passOrder[i], cachedAnalysis, cost)
         }
 
-        cost -= cachedAnalysis.size
+        //cost -= cachedAnalysis.size
 
         return cost
     }

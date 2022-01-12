@@ -7,11 +7,13 @@ import org.jetbrains.research.kfg.visitor.MethodVisitor
 import org.jetbrains.research.kfg.visitor.Pipeline
 import org.jetbrains.research.kfg.visitor.VisitorRegistry
 import org.jetbrains.research.kfg.visitor.executePipeline
+import org.jetbrains.research.kfg.visitor.pass.AnalysisManager
 import org.jetbrains.research.kfg.visitor.pass.AnalysisResult
 import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.jetbrains.research.kfg.visitor.pass.PassManager
 import org.jetbrains.research.kfg.visitor.pass.strategy.astar.AStarPassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.dynamic.DynamicPassStrategy
+import org.jetbrains.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
 import org.junit.*
 import java.io.*
@@ -19,19 +21,20 @@ import kotlin.random.Random
 
 class PassManagerTest {
 
-    private val PASSES_COUNT = 40
+    private val PASSES_COUNT = 100
     private val ANALYSIS_COUNT = 100
     private val ROOT_CHANCE = 0.2f
     private val CONNECTEDNESS = 1f
-    private val DATASET_COUNT = 5
+    private val DATASET_COUNT = 15
 
     private val out = System.out
     private val err = System.err
 
     private val passStrategiesToTest = listOf(
         DefaultPassStrategy(),
+        IterativeAStarPassStrategy(),
         AStarPassStrategy(),
-        DynamicPassStrategy()
+        DynamicPassStrategy(),
     )
 
     val pkg = Package.parse("org.jetbrains.research.kfg.*")
@@ -73,33 +76,31 @@ class PassManagerTest {
 
         repeat(PASSES_COUNT - 1) { index ->
             val isRoot = rng.nextFloat() <= ROOT_CHANCE
-            if (isRoot) {
-                nodes.add(DependencyNodeWrapper((index + 1).toString(), emptyList(), emptyList(), emptyList()))
-                return@repeat
-            }
 
             nodes.shuffle()
             val requiredPasses = mutableListOf<String>()
-            repeat(rng.nextInt((nodes.size * CONNECTEDNESS).toInt())) { indexRequired ->
-                requiredPasses.add(nodes[indexRequired].name)
+            if (!isRoot) {
+                repeat(rng.nextInt((nodes.size * CONNECTEDNESS).toInt())) { indexRequired ->
+                    requiredPasses.add(nodes[indexRequired].name)
+                }
             }
 
             analysis.shuffle()
             val requiredAnalysis = mutableListOf<String>()
-            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 0.5f).toInt())) { indexRequired ->
+            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 0.75f).toInt())) { indexRequired ->
                 requiredAnalysis.add(analysis[indexRequired])
             }
 
             analysis.shuffle()
             val persistedAnalysis = mutableListOf<String>()
-            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 0.5f).toInt())) { indexPersisted ->
+            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 1f).toInt())) { indexPersisted ->
                 persistedAnalysis.add(analysis[indexPersisted])
             }
 
             nodes.add(DependencyNodeWrapper((index + 1).toString(), requiredPasses, requiredAnalysis, persistedAnalysis))
         }
 
-        val oos = ObjectOutputStream(FileOutputStream(File("dataset_${DATASET_COUNT + 1}")))
+        val oos = ObjectOutputStream(FileOutputStream(File("dataset_${DATASET_COUNT}")))
         oos.writeObject(nodes)
     }
 
