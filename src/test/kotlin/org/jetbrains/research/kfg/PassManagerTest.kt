@@ -14,18 +14,25 @@ import org.jetbrains.research.kfg.visitor.pass.PassManager
 import org.jetbrains.research.kfg.visitor.pass.strategy.astar.AStarPassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.dynamic.DynamicPassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPassStrategy
+import org.jetbrains.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPlusPassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
 import org.junit.*
 import java.io.*
 import kotlin.random.Random
 
 class PassManagerTest {
+    private val START_FROM = 20
+
+    private val DATASET_COUNT = 25
 
     private val PASSES_COUNT = 100
-    private val ANALYSIS_COUNT = 100
+    private val ANALYSIS_COUNT = 200
+
     private val ROOT_CHANCE = 0.2f
+
     private val CONNECTEDNESS = 1f
-    private val DATASET_COUNT = 15
+    private val ANALYSIS_REQUIRED = 0.6f
+    private val ANALYSIS_PERSISTED = 0.4f
 
     private val out = System.out
     private val err = System.err
@@ -35,6 +42,7 @@ class PassManagerTest {
         IterativeAStarPassStrategy(),
         AStarPassStrategy(),
         DynamicPassStrategy(),
+        IterativeAStarPlusPassStrategy(),
     )
 
     val pkg = Package.parse("org.jetbrains.research.kfg.*")
@@ -87,13 +95,13 @@ class PassManagerTest {
 
             analysis.shuffle()
             val requiredAnalysis = mutableListOf<String>()
-            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 0.75f).toInt())) { indexRequired ->
+            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * ANALYSIS_REQUIRED).toInt())) { indexRequired ->
                 requiredAnalysis.add(analysis[indexRequired])
             }
 
             analysis.shuffle()
             val persistedAnalysis = mutableListOf<String>()
-            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * 1f).toInt())) { indexPersisted ->
+            repeat(rng.nextInt((analysis.size * CONNECTEDNESS * ANALYSIS_PERSISTED).toInt())) { indexPersisted ->
                 persistedAnalysis.add(analysis[indexPersisted])
             }
 
@@ -115,7 +123,7 @@ class PassManagerTest {
         val targetMethod = klass.getMethods(klass.methods.random().name).toList()[0]
         val targetMethods = listOf(targetMethod)
 
-        for (datasetId in 1..DATASET_COUNT) {
+        for (datasetId in START_FROM..DATASET_COUNT) {
             val dataset = readDataset(datasetId)
             var count = 0
             var countAnalysis = 0

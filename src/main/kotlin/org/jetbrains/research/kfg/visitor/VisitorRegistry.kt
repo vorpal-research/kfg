@@ -23,6 +23,9 @@ class VisitorRegistry {
         fun getVisitor(name: String) = visitors[name]
         fun getAnalysis(name: String) = analysis[name]
 
+        fun getVisitorsCount() = visitors.size
+        fun getAnalysisCount() = analysis.size
+
         fun clearAll() {
             visitors.clear()
             analysis.clear()

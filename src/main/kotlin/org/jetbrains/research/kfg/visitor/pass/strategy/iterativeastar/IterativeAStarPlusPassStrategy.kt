@@ -7,9 +7,9 @@ import org.jetbrains.research.kfg.visitor.pass.strategy.PassStrategy
 import java.util.*
 
 // Use iterative way - limit the depth by 10 (for example) and try our best at this depth
-private const val ITERATIVE_DEPTH = 15
+private const val ITERATIVE_DEPTH = 10
 
-class IterativeAStarPassStrategy : PassStrategy {
+class IterativeAStarPlusPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
     override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
@@ -28,7 +28,7 @@ class IterativeAStarPassStrategy : PassStrategy {
                 .filter { it.isAvailableFrom(currentIteration) }
                 .map {
                     val availableAnalysis = currentIteration.availableAnalysis.toMutableSet()
-                    val analysisComputed = it.updateAnalysis(availableAnalysis)
+                    val analysisComputed = currentIteration.analysisComputed + it.updateAnalysis(availableAnalysis)
 
                     SearchNode(
                         previousIteration = currentIteration,
@@ -47,6 +47,10 @@ class IterativeAStarPassStrategy : PassStrategy {
             while (newIteration == null) {
                 val currentNode = open.poll()
 
+                if (currentNode == null) {
+                    println()
+                }
+
                 val openedNodes = currentNode.openNodes(currentIteration, open)
 
                 val suitableForNextIteration = currentNode.getSuitableNode(openedNodes, ITERATIVE_DEPTH)
@@ -54,18 +58,18 @@ class IterativeAStarPassStrategy : PassStrategy {
                 if (suitableForNextIteration != null) {
                     open.clear()
 
+                    val first = suitableForNextIteration.passOrder.first()
+
+                    val availableAnalysis = currentIteration.availableAnalysis.toMutableSet()
+                    val analysisComputed = currentIteration.analysisComputed + first.updateAnalysis(availableAnalysis)
+
                     newIteration = IterationSearchNode(
-                        passOrder = currentIteration.passOrder.toMutableList()
-                            .apply { addAll(suitableForNextIteration.passOrder) },
-                        availableAnalysis = suitableForNextIteration.availableAnalysis,
+                        passOrder = currentIteration.passOrder.toMutableList().apply { add(first) },
+                        availableAnalysis = availableAnalysis,
                         closedPasses = currentIteration.closedPasses.toMutableSet()
-                            .apply { addAll(suitableForNextIteration.closedPasses) },
-                        passesLeft = currentIteration.passesLeft.filter {
-                            !suitableForNextIteration.closedPasses.contains(
-                                it.name
-                            )
-                        },
-                        analysisComputed = suitableForNextIteration.analysisComputed
+                            .apply { add(first.name) },
+                        passesLeft = currentIteration.passesLeft.filter { it.name != first.name },
+                        analysisComputed = analysisComputed
                     )
 
                     break
