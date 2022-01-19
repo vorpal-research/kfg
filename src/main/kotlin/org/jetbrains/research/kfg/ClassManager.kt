@@ -20,24 +20,27 @@ import java.io.File
 data class Package(val components: List<String>, val isConcrete: Boolean) {
     companion object {
         const val SEPARATOR = '/'
+        const val SEPARATOR_STR = SEPARATOR.toString()
         const val EXPANSION = '*'
+        const val EXPANSION_STR = EXPANSION.toString()
         const val CANONICAL_SEPARATOR = '.'
-        val defaultPackage = Package("$EXPANSION")
+        const val CANONICAL_SEPARATOR_STR = CANONICAL_SEPARATOR.toString()
+        val defaultPackage = Package(EXPANSION_STR)
         val emptyPackage = Package("")
         fun parse(string: String) = Package(string.replace(CANONICAL_SEPARATOR, SEPARATOR))
     }
 
     constructor(name: String) : this(
-        name.removeSuffix("$EXPANSION")
-            .removeSuffix("$SEPARATOR")
+        name.removeSuffix(EXPANSION_STR)
+            .removeSuffix(EXPANSION_STR)
             .split(SEPARATOR)
             .filter { it.isNotBlank() },
         name.lastOrNull() != EXPANSION
     )
 
     val concretePackage get() = if (isConcrete) this else Package(concreteName)
-    val concreteName get() = components.joinToString("$SEPARATOR")
-    val canonicalName get() = components.joinToString("$CANONICAL_SEPARATOR")
+    val concreteName get() = components.joinToString(SEPARATOR_STR)
+    val canonicalName get() = components.joinToString(CANONICAL_SEPARATOR_STR)
     val fileSystemPath get() = components.joinToString(File.separator)
 
     val concretized: Package
@@ -66,9 +69,10 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
     fun isChild(name: String) = isChild(Package(name))
 
     override fun toString() = buildString {
-        append(components.joinToString("$SEPARATOR"))
+        append(components.joinToString(SEPARATOR_STR))
         if (!isConcrete) {
-            append("$SEPARATOR$EXPANSION")
+            if (components.isNotEmpty()) append(SEPARATOR)
+            append(EXPANSION)
         }
     }
 
