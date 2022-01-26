@@ -104,10 +104,10 @@ abstract class Class : Node {
         this.outerClassName = cn.outerClass
         this.outerMethodName = cn.outerMethod
         this.outerMethodDesc = cn.outerMethodDesc
-        this.innerClassesMap.putAll(cn.innerClasses.map { it.name to Modifiers(it.access) }.toMutableSet())
     }
 
     internal fun init() {
+        this.innerClassesMap.putAll(cn.innerClasses.map { it.name to Modifiers(it.access) }.toMutableSet())
         for (fieldNode in cn.fields) {
             val field = Field(cm, this, fieldNode)
             innerFields[field.name to field.type] = field
