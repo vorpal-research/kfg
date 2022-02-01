@@ -3,7 +3,7 @@ package org.jetbrains.research.kfg.visitor
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Parameter
-import org.jetbrains.research.kfg.ir.value.UnknownValueInst
+import org.jetbrains.research.kfg.ir.value.instruction.UnknownValueInst
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kthelper.assert.unreachable
 
