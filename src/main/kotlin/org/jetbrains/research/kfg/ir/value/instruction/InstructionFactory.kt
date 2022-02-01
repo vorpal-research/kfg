@@ -255,6 +255,12 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
     fun getReturn(ctx: UsageContext, retval: Value): Instruction = ReturnInst(retval, ctx)
 
     fun getUnreachable(ctx: UsageContext): Instruction = UnreachableInst(types.voidType, ctx)
+
+    fun getUnknownValueInst(ctx: UsageContext, name: String, type : Type) =
+        UnknownValueInst(StringName(name), type, ctx)
+    fun getUnknownValueInst(ctx: UsageContext, name: Name, type : Type) =
+        UnknownValueInst(name, type, ctx)
+
 }
 
 interface InstructionBuilder {
@@ -654,6 +660,11 @@ interface InstructionBuilder {
      * unreachable wrapper
      */
     fun unreachable() = instructions.getUnreachable(ctx)
+
+    /**
+     * unknown value wrapper
+     */
+    fun Value.unknownValue(name : Name, type : Type) = instructions.getUnknownValueInst(ctx, name, type)
 }
 
 class InstructionBuilderImpl(

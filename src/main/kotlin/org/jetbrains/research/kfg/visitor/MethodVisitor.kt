@@ -3,6 +3,7 @@ package org.jetbrains.research.kfg.visitor
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Parameter
+import org.jetbrains.research.kfg.ir.value.instruction.UnknownValueInst
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kthelper.assert.unreachable
 
@@ -41,6 +42,7 @@ interface MethodVisitor : NodeVisitor {
             is PhiInst -> visitPhiInst(inst)
             is UnaryInst -> visitUnaryInst(inst)
             is TerminateInst -> visitTerminateInst(inst)
+            is UnknownValueInst -> visitUnknownValueInst(inst)
             else -> unreachable("Unknown instruction ${inst.print()}")
         }
     }
@@ -82,4 +84,5 @@ interface MethodVisitor : NodeVisitor {
     fun visitTableSwitchInst(inst: TableSwitchInst) {}
     fun visitThrowInst(inst: ThrowInst) {}
     fun visitUnreachableInst(inst: UnreachableInst) {}
+    fun visitUnknownValueInst(inst : UnknownValueInst) {}
 }
