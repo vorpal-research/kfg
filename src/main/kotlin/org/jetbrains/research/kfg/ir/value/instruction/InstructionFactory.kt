@@ -664,7 +664,7 @@ interface InstructionBuilder {
     /**
      * unknown value wrapper
      */
-    fun Value.unknownValue(name : Name, type : Type) = instructions.getUnknownValueInst(ctx, name, type)
+    fun unknownValue(name : Name, type : Type) = instructions.getUnknownValueInst(ctx, name, type)
 }
 
 class InstructionBuilderImpl(
