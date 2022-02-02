@@ -6,12 +6,12 @@ import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kfg.type.TypeFactory
 import org.jetbrains.research.kfg.type.parseMethodDesc
 import org.jetbrains.research.kfg.util.jsrInlined
-import org.jetbrains.research.kthelper.algorithm.GraphView
-import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
-import org.jetbrains.research.kthelper.algorithm.Viewable
 import org.jetbrains.research.kthelper.assert.ktassert
 import org.jetbrains.research.kthelper.collection.queueOf
 import org.jetbrains.research.kthelper.defaultHashCode
+import org.jetbrains.research.kthelper.graph.GraphView
+import org.jetbrains.research.kthelper.graph.PredecessorGraph
+import org.jetbrains.research.kthelper.graph.Viewable
 import org.objectweb.asm.tree.MethodNode
 
 data class MethodDesc(

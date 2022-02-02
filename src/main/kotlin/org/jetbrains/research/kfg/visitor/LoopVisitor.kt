@@ -4,11 +4,11 @@ import org.jetbrains.research.kfg.ClassManager
 import org.jetbrains.research.kfg.ir.BasicBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
-import org.jetbrains.research.kthelper.algorithm.GraphView
-import org.jetbrains.research.kthelper.algorithm.LoopDetector
-import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
-import org.jetbrains.research.kthelper.algorithm.Viewable
 import org.jetbrains.research.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.graph.GraphView
+import org.jetbrains.research.kthelper.graph.LoopDetector
+import org.jetbrains.research.kthelper.graph.PredecessorGraph
+import org.jetbrains.research.kthelper.graph.Viewable
 
 interface LoopVisitor : MethodVisitor {
     val preservesLoopInfo get() = false
