@@ -4,9 +4,9 @@ import org.jetbrains.research.kfg.ir.value.*
 import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
-import org.jetbrains.research.kthelper.algorithm.PredecessorGraph
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.graph.PredecessorGraph
 
 sealed class BasicBlock(
     val name: BlockName
