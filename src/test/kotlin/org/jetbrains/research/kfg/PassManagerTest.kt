@@ -19,7 +19,8 @@ import org.jetbrains.research.kfg.visitor.pass.strategy.topologic.DefaultPassStr
 import org.junit.*
 import java.io.*
 import kotlin.random.Random
-
+/*
+// TODO: add dynamic test class creation
 class PassManagerTest {
     private val START_FROM = 20
 
@@ -233,3 +234,4 @@ data class DependencyNodeWrapper (
 ) : Serializable
 
 class AnalysisResultDummy(val analysisVisitor: String) : AnalysisResult
+*/

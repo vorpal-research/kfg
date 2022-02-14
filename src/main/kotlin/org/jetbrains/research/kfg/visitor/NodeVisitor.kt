@@ -11,7 +11,6 @@ interface NodeVisitor {
     val types get() = cm.type
     val values get() = cm.value
 
-    fun getName(): String = this.javaClass.name
     fun cleanup()
 
     fun visit(node: Node) {
@@ -21,8 +20,6 @@ interface NodeVisitor {
     fun visitVisibleAnnotation(anno: Annotation) {}
     fun visitInvisibleAnnotation(anno: Annotation) {}
 
-    fun getRequiredAnalysisVisitors(): List<String> = emptyList()
-    fun getPersistedAnalysisVisitors(): List<String> = emptyList()
-
-    fun getRequiredPasses(): List<String> = emptyList()
+    fun registerPassDependencies() {}
+    fun registerAnalysisDependencies() {}
 }

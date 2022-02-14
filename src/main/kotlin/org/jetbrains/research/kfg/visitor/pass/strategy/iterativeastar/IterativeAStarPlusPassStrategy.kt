@@ -13,7 +13,7 @@ class IterativeAStarPlusPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
     override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
-        val allPasses = pipeline.getPasses().map { VisitorWrapper(it) }
+        val allPasses = pipeline.getPasses().map { VisitorWrapper(it, pipeline.visitorRegistry) }
 
         var currentIteration = IterationSearchNode(
             passOrder = emptyList(),
@@ -34,9 +34,10 @@ class IterativeAStarPlusPassStrategy : PassStrategy {
                         previousIteration = currentIteration,
                         passOrder = listOf(it),
                         availableAnalysis = availableAnalysis,
-                        closedPasses = setOf(it.name),
+                        closedPasses = setOf(it.nodeVisitor::class.java),
                         analysisComputed = analysisComputed,
-                        openNodesCount = 0
+                        openNodesCount = 0,
+                        pipeline.visitorRegistry
                     )
                 }
 
@@ -51,7 +52,7 @@ class IterativeAStarPlusPassStrategy : PassStrategy {
                     println()
                 }
 
-                val openedNodes = currentNode.openNodes(currentIteration, open)
+                val openedNodes = currentNode.openNodes(currentIteration, open, pipeline.visitorRegistry)
 
                 val suitableForNextIteration = currentNode.getSuitableNode(openedNodes, ITERATIVE_DEPTH)
 
@@ -67,8 +68,8 @@ class IterativeAStarPlusPassStrategy : PassStrategy {
                         passOrder = currentIteration.passOrder.toMutableList().apply { add(first) },
                         availableAnalysis = availableAnalysis,
                         closedPasses = currentIteration.closedPasses.toMutableSet()
-                            .apply { add(first.name) },
-                        passesLeft = currentIteration.passesLeft.filter { it.name != first.name },
+                            .apply { add(first.nodeVisitor::class.java) },
+                        passesLeft = currentIteration.passesLeft.filter { it.nodeVisitor::class.java != first.nodeVisitor::class.java },
                         analysisComputed = analysisComputed
                     )
 

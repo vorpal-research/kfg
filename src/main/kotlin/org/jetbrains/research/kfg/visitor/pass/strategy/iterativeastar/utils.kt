@@ -2,10 +2,13 @@ package org.jetbrains.research.kfg.visitor.pass.strategy.iterativeastar
 
 import org.jetbrains.research.kfg.visitor.NodeVisitor
 import org.jetbrains.research.kfg.visitor.VisitorRegistry
+import org.jetbrains.research.kfg.visitor.pass.AnalysisResult
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 
 internal fun SearchNode.openNodes(
     currentIteration: IterationSearchNode,
-    open: Collection<SearchNode>
+    open: Collection<SearchNode>,
+    visitorRegistry: VisitorRegistry
 ): List<SearchNode> = this.previousIteration.passesLeft
     .filter { it.isAvailableFrom(this) }
     .map {
@@ -16,9 +19,10 @@ internal fun SearchNode.openNodes(
             previousIteration = currentIteration,
             passOrder = this.passOrder.toMutableList().apply { add(it) },
             availableAnalysis = availableAnalysis,
-            closedPasses = this.closedPasses.toMutableSet().apply { add(it.name) },
+            closedPasses = this.closedPasses.toMutableSet().apply { add(it.nodeVisitor::class.java) },
             analysisComputed = analysisComputed,
-            openNodesCount = open.size
+            openNodesCount = open.size,
+            visitorRegistry
         )
     }
 
@@ -41,32 +45,28 @@ internal fun <T> Iterable<T>.merge(other: Iterable<T>): Iterator<T> {
     }
 }
 
-internal data class VisitorWrapper(val nodeVisitor: NodeVisitor) {
-    val name = nodeVisitor.getName()
+internal data class VisitorWrapper(val nodeVisitor: NodeVisitor, private val visitorRegistry: VisitorRegistry) {
+    val requiredPasses = visitorRegistry.getVisitorDependencies(nodeVisitor::class.java)
 
-    val requiredPasses = nodeVisitor.getRequiredPasses()
-    val requiredPassesSet = nodeVisitor.getRequiredPasses().toSet()
+    val requiredAnalysis = visitorRegistry.getAnalysisDependencies(nodeVisitor::class.java)
 
-    val requiredAnalysis = nodeVisitor.getRequiredAnalysisVisitors()
-    val requiredAnalysisSet = nodeVisitor.getRequiredAnalysisVisitors().toSet()
+    val persistedAnalysisSet = visitorRegistry.getAnalysisPersisted(nodeVisitor::class.java)
 
-    val persistedAnalysis = nodeVisitor.getPersistedAnalysisVisitors()
-    val persistedAnalysisSet = nodeVisitor.getPersistedAnalysisVisitors().toSet()
-
-    val availableAnalysisAfterPass = nodeVisitor.getRequiredAnalysisVisitors()
-        .filter { nodeVisitor.getPersistedAnalysisVisitors().contains(it) }
+    val availableAnalysisAfterPass = visitorRegistry.getAnalysisDependencies(nodeVisitor::class.java)
+        .filter { visitorRegistry.getAnalysisPersisted(nodeVisitor::class.java).contains(it) }
 
     fun isAvailableFrom(searchNode: SearchNode) =
-        !searchNode.closedPasses.contains(name) && !searchNode.previousIteration.closedPasses.contains(name) &&
+        !searchNode.closedPasses.contains(nodeVisitor::class.java) &&
+                !searchNode.previousIteration.closedPasses.contains(nodeVisitor::class.java) &&
                 requiredPasses.all {
                     searchNode.closedPasses.contains(it) || searchNode.previousIteration.closedPasses.contains(it)
                 }
 
     fun isAvailableFrom(iterationSearchNode: IterationSearchNode) =
-        !iterationSearchNode.closedPasses.contains(name) &&
+        !iterationSearchNode.closedPasses.contains(nodeVisitor::class.java) &&
                 iterationSearchNode.closedPasses.containsAll(requiredPasses)
 
-    fun updateAnalysis(availableAnalysis: MutableSet<String>): Int {
+    fun updateAnalysis(availableAnalysis: MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>): Int {
         val computedAnalysisCount = requiredAnalysis.count { !availableAnalysis.contains(it) }
 
         availableAnalysis.removeIf { !persistedAnalysisSet.contains(it) }
@@ -78,8 +78,8 @@ internal data class VisitorWrapper(val nodeVisitor: NodeVisitor) {
 
 internal data class IterationSearchNode(
     val passOrder: List<VisitorWrapper>,
-    val availableAnalysis: Set<String>,
-    val closedPasses: Set<String>,
+    val availableAnalysis: Set<Class<out AnalysisVisitor<out AnalysisResult>>>,
+    val closedPasses: Set<Class<out NodeVisitor>>,
     val passesLeft: List<VisitorWrapper>,
     val analysisComputed: Int
 )
@@ -87,16 +87,17 @@ internal data class IterationSearchNode(
 internal data class SearchNode(
     val previousIteration: IterationSearchNode,
     val passOrder: List<VisitorWrapper>,
-    val availableAnalysis: Set<String>,
-    val closedPasses: Set<String>,
+    val availableAnalysis: Set<Class<out AnalysisVisitor<out AnalysisResult>>>,
+    val closedPasses: Set<Class<out NodeVisitor>>,
     val analysisComputed: Int,
-    val openNodesCount: Int
+    val openNodesCount: Int,
+    val visitorRegistry: VisitorRegistry
 ) {
     val depth = closedPasses.size // depth inside the iteration
     val evaluation = evaluate()
 
     private fun evaluate(): Float {
-        val visitorAnalysisRatio = VisitorRegistry.getAnalysisCount().toFloat() / VisitorRegistry.getVisitorsCount()
+        val visitorAnalysisRatio = visitorRegistry.getAnalysisCount().toFloat() / visitorRegistry.getVisitorsCount()
         val varSqr = if (visitorAnalysisRatio > 1) 1.0f else visitorAnalysisRatio * visitorAnalysisRatio
         val passesLeft = previousIteration.passesLeft.size - closedPasses.size
         val analysisComputed = analysisComputed
@@ -109,7 +110,7 @@ internal data class SearchNode(
 
     private fun estimateLeftAnalysis(): Int {
         return previousIteration.passesLeft
-            .filter { !closedPasses.contains(it.name) }
+            .filter { !closedPasses.contains(it.nodeVisitor::class.java) }
             .sumOf { it.requiredAnalysis.size }
     }
 }

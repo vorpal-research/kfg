@@ -14,23 +14,23 @@ class DefaultPassStrategy : PassStrategy {
             throw NotImplementedError("Parallel execution is not supported for this pass order")
         }
 
-        val graphNodes = mutableMapOf<String, GraphNode>()
+        val graphNodes = mutableMapOf<Class<out NodeVisitor>, GraphNode>()
         val passes = pipeline.getPasses()
 
         passes.forEach {
-            graphNodes[it.getName()] = GraphNode(it)
+            graphNodes[it::class.java] = GraphNode(it)
         }
 
         passes.forEach {
-            val graphNode = graphNodes[it.getName()]
-            it.getRequiredPasses().forEach { required ->
+            val graphNode = graphNodes[it::class.java]
+            pipeline.visitorRegistry.getVisitorDependencies(it::class.java).forEach { required ->
                 graphNode!!.parents.add(graphNodes[required]!!)
             }
         }
 
         val passOrder = DefaultPassOrder()
         passes.forEach {
-            passOrder.append(graphNodes[it.getName()]!!)
+            passOrder.append(graphNodes[it::class.java]!!)
         }
 
         return passOrder.apply { build() }

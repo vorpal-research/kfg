@@ -13,7 +13,7 @@ class IterativeAStarPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
     override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
-        val allPasses = pipeline.getPasses().map { VisitorWrapper(it) }
+        val allPasses = pipeline.getPasses().map { VisitorWrapper(it, pipeline.visitorRegistry) }
 
         var currentIteration = IterationSearchNode(
             passOrder = emptyList(),
@@ -34,9 +34,10 @@ class IterativeAStarPassStrategy : PassStrategy {
                         previousIteration = currentIteration,
                         passOrder = listOf(it),
                         availableAnalysis = availableAnalysis,
-                        closedPasses = setOf(it.name),
+                        closedPasses = setOf(it.nodeVisitor::class.java),
                         analysisComputed = analysisComputed,
-                        openNodesCount = 0
+                        openNodesCount = 0,
+                        pipeline.visitorRegistry
                     )
                 }
 
@@ -47,7 +48,7 @@ class IterativeAStarPassStrategy : PassStrategy {
             while (newIteration == null) {
                 val currentNode = open.poll()
 
-                val openedNodes = currentNode.openNodes(currentIteration, open)
+                val openedNodes = currentNode.openNodes(currentIteration, open, pipeline.visitorRegistry)
 
                 val suitableForNextIteration = currentNode.getSuitableNode(openedNodes, ITERATIVE_DEPTH)
 
@@ -62,7 +63,7 @@ class IterativeAStarPassStrategy : PassStrategy {
                             .apply { addAll(suitableForNextIteration.closedPasses) },
                         passesLeft = currentIteration.passesLeft.filter {
                             !suitableForNextIteration.closedPasses.contains(
-                                it.name
+                                it.nodeVisitor::class.java
                             )
                         },
                         analysisComputed = suitableForNextIteration.analysisComputed

@@ -14,32 +14,42 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     val analysisManager: AnalysisManager by lazy {
         AnalysisManager(cm, this@Pipeline)
     }
+    val visitorRegistry = VisitorRegistry()
 
     protected open val pipeline = pipeline.map { it.wrap() }.toMutableList()
+    // List of all scheduled passes. Used to add all passes only single time
+    protected open val scheduled = mutableSetOf<java.lang.Class<*>>()
     protected val passOrder get() = passManager.getPassOrder(this@Pipeline)
 
-    fun <T : NodeVisitor> add(visitor: java.lang.Class<T>, vararg additionalArgs: Any?) {
-        val visitorInstance = visitor.getConstructor(ClassManager::class.java,
-                    Pipeline::class.java,
-                    *additionalArgs.map { it?.javaClass ?: Object::class.java }.toTypedArray()
-                )
+    fun <T : NodeVisitor> schedule(visitor: java.lang.Class<T>) {
+        if (scheduled.contains(visitor)) {
+            return
+        }
+
+        val visitorInstance = visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
                 .apply { isAccessible = true }
-                .newInstance(cm, this@Pipeline, *additionalArgs)
+                .newInstance(cm, this@Pipeline)
+
         add(visitorInstance)
+
+        visitorRegistry.getVisitorDependencies(visitor).forEach {
+            schedule(it)
+        }
     }
 
-    fun add(visitorName: String) {
-        add(VisitorRegistry.getVisitor(visitorName)!!.invoke(cm, this@Pipeline) as NodeVisitor)
+    fun registerProvider(provider: KfgProvider<*>) {
+        visitorRegistry.registerProvider(provider)
     }
 
-    operator fun plus(visitor: NodeVisitor) = add(visitor)
-    operator fun plusAssign(visitor: NodeVisitor) {
-        add(visitor)
-    }
+    open fun add(visitor: NodeVisitor): Boolean {
+        if (!scheduled.add(visitor::class.java)) {
+            return false
+        }
 
-    open fun add(visitor: NodeVisitor) = pipeline.add(visitor.wrap())
-    fun add(vararg visitors: NodeVisitor) {
-        visitors.forEach { add(it) }
+        visitor.registerPassDependencies()
+        visitor.registerAnalysisDependencies()
+
+        return pipeline.add(visitor.wrap())
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -55,18 +65,13 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 visitor.cleanup()
             }
 
-            override fun getName(): String {
-                return visitor.getName()
+            override fun registerPassDependencies() {
+                visitor.registerPassDependencies()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<String> =
-                    visitor.getRequiredAnalysisVisitors()
-
-            override fun getPersistedAnalysisVisitors(): List<String> =
-                    visitor.getPersistedAnalysisVisitors()
-
-            override fun getRequiredPasses(): List<String> =
-                    visitor.getRequiredPasses()
+            override fun registerAnalysisDependencies() {
+                visitor.registerAnalysisDependencies()
+            }
 
             override fun visitMethod(method: Method) {
                 super.visitMethod(method)
@@ -81,18 +86,13 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 visitor.cleanup()
             }
 
-            override fun getName(): String {
-                return visitor.getName()
+            override fun registerPassDependencies() {
+                visitor.registerPassDependencies()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<String> =
-                    visitor.getRequiredAnalysisVisitors()
-
-            override fun getPersistedAnalysisVisitors(): List<String> =
-                    visitor.getPersistedAnalysisVisitors()
-
-            override fun getRequiredPasses(): List<String> =
-                    visitor.getRequiredPasses()
+            override fun registerAnalysisDependencies() {
+                visitor.registerAnalysisDependencies()
+            }
 
             override fun visit(node: Node) {
                 super.visit(node)
@@ -119,7 +119,7 @@ class PackagePipeline(
             for (`class` in classes) {
                 (pass as ClassVisitor).visit(`class`)
                 analysisManager.invalidateAllExcept(
-                        pass.getPersistedAnalysisVisitors(),
+                        pass::class.java,
                         `class`
                 )
             }
@@ -184,18 +184,13 @@ class MethodPipeline(
                 visitor.cleanup()
             }
 
-            override fun getName(): String {
-                return visitor.getName()
+            override fun registerPassDependencies() {
+                visitor.registerPassDependencies()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<String> =
-                    visitor.getRequiredAnalysisVisitors()
-
-            override fun getPersistedAnalysisVisitors(): List<String> =
-                    visitor.getPersistedAnalysisVisitors()
-
-            override fun getRequiredPasses(): List<String> =
-                    visitor.getRequiredPasses()
+            override fun registerAnalysisDependencies() {
+                visitor.registerAnalysisDependencies()
+            }
 
             override fun visit(klass: Class) {
                 super.visit(klass)
@@ -217,18 +212,13 @@ class MethodPipeline(
                 visitor.cleanup()
             }
 
-            override fun getName(): String {
-                return visitor.getName()
+            override fun registerPassDependencies() {
+                visitor.registerPassDependencies()
             }
 
-            override fun getRequiredAnalysisVisitors(): List<String> =
-                    visitor.getRequiredAnalysisVisitors()
-
-            override fun getPersistedAnalysisVisitors(): List<String> =
-                    visitor.getPersistedAnalysisVisitors()
-
-            override fun getRequiredPasses(): List<String> =
-                    visitor.getRequiredPasses()
+            override fun registerAnalysisDependencies() {
+                visitor.registerAnalysisDependencies()
+            }
 
             override fun visitMethod(method: Method) {
                 if (method in targets) {
