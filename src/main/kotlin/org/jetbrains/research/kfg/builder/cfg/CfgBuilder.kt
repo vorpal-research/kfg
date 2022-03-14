@@ -13,6 +13,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
+import org.jetbrains.research.kfg.visitor.Loop
 import org.jetbrains.research.kthelper.`try`
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.collection.queueOf
@@ -73,6 +74,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
     private val stack = ArrayList<Value>()
     private val unmappedBlocks = hashMapOf<BasicBlock, BlockFrame>()
     private var currentLocation = Location()
+    private val loops = mutableSetOf<Loop>()
     private lateinit var lastFrame: FrameState
 
     private fun pop() = stack.removeAt(stack.lastIndex)
@@ -675,7 +677,9 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             is CatchBlock -> block.allPredecessors
             else -> block.predecessors
         }
-        val isCycle = predecessors.any { it !in visitedBlocks }
+        val isLoopHeader = loops.any { it.header == block }
+        val isCatch = predecessors.any { it !in visitedBlocks }
+        val isCycle = isLoopHeader || isCatch
         val predFrames = predecessors.map { frames.getValue(it) }
 
         fun FrameState.copyStackAndLocals(predFrames: List<BlockFrame>) {
@@ -916,11 +920,24 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             for ((index, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.associate { it.bb to it.stack[index] }
 
-                val newPhi = phi(phi.name, phi.type, incomings)
-                phi.replaceAllUsesWith(newPhi)
-                phi.operands.forEach { it.removeUser(phi) }
-                block.replace(phi, newPhi)
-                phi.clearUses()
+                val clearStubs = incomings.filterValues {
+                    if (it !is PhiInst) true
+                    else it.hasParent
+                }
+
+                if (clearStubs.size == 1) {
+                    val actual = clearStubs.values.first()
+                    phi.replaceAllUsesWith(actual)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.remove(phi)
+                    phi.clearUses()
+                } else {
+                    val newPhi = phi(phi.name, phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.replace(phi, newPhi)
+                    phi.clearUses()
+                }
             }
 
             for ((local, phi) in sf.localPhis) {
@@ -929,11 +946,24 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         ?: unreachable("Predecessor frame does not contain a local value $local"))
                 }
 
-                val newPhi = phi(phi.type, incomings)
-                phi.replaceAllUsesWith(newPhi)
-                phi.operands.forEach { it.removeUser(phi) }
-                block.replace(phi, newPhi)
-                phi.clearUses()
+                val clearStubs = incomings.filterValues {
+                    if (it !is PhiInst) true
+                    else it.hasParent
+                }
+
+                if (clearStubs.size == 1) {
+                    val actual = clearStubs.values.first()
+                    phi.replaceAllUsesWith(actual)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.remove(phi)
+                    phi.clearUses()
+                } else {
+                    val newPhi = phi(phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.replace(phi, newPhi)
+                    phi.clearUses()
+                }
             }
         }
     }
@@ -950,6 +980,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             when {
                 incomingsSet.size == 1 -> {
                     val first = incomingsSet.first()
+                    if (first == top) continue
                     top.replaceAllUsesWith(first)
                     top.clearUses()
                     if (first is PhiInst) queue.add(first)
@@ -1091,12 +1122,23 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
+    private fun buildLoops() {
+        val methodLoops = method.getLoopInfo()
+        val queue = queueOf(*methodLoops.toTypedArray())
+        while (queue.isNotEmpty()) {
+            val top = queue.poll()
+            loops.add(top)
+            queue.addAll(top.subLoops)
+        }
+    }
+
     fun build() {
         initFrame()
         buildCFG()
 
         if (method.isEmpty()) return
 
+        buildLoops()
         buildFrames()
         buildInstructions()
 
