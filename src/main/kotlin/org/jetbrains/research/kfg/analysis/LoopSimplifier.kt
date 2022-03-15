@@ -22,6 +22,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(method: Method) {
         if (!method.hasBody) return
+        if (method.toString() == "org/eclipse/jdt/internal/compiler/parser/Scanner::getNextToken0(): int") {
+            val a = 10
+        }
         current = method
         current.usageContext.also { ctx = it }.use {
             super.visit(method)
