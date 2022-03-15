@@ -99,6 +99,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         header.handlers.forEach { mapToCatch(header, preheader, it) }
         preheader += inst(cm) { goto(header) }
         current.addBefore(header, preheader)
+        if (loop.hasParent) {
+            loop.parent.addBlock(preheader)
+        }
     }
 
     private fun buildLatch(loop: Loop) = with(ctx) {
