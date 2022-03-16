@@ -17,9 +17,7 @@ fun main(args: Array<String>) {
 
     classManager.initialize(*jars.toTypedArray())
 
-    println(classManager.concreteClasses.joinToString("\n") { it.fullName })
     val target = Paths.get("instrumented/")
-    jars.forEach { jar -> println(jar.commonPackage) }
     jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
     executePipeline(classManager, Package.defaultPackage) {
         +LoopAnalysis(classManager)

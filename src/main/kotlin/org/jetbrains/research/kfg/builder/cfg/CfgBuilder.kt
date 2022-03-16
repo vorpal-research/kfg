@@ -713,9 +713,6 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         locals[key] = mappedFrame.locals[key]
                             ?: throw InvalidStateException("Invalid local frame info")
                     }
-                    if (mappedFrame !== predFrame) {
-                        mappedFrame.clear()
-                    }
                 }
                 !isCycle -> {
                     createStackPhis(block, predFrames, this.stack)
@@ -1027,6 +1024,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             val actualValue = stack[index]
             value.replaceAllUsesWith(actualValue)
         }
+        mappedFrame.clear()
         unmappedBlocks.remove(block)
     }
 

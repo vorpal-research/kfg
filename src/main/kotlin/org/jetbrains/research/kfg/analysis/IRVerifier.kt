@@ -80,9 +80,6 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
             is CatchBlock -> bb.allPredecessors
         }
 
-        if (inst.predecessors.size != predecessors.size) {
-            val a = 10
-        }
         ktassert(predecessors.size == inst.predecessors.size) {
             "Phi instruction predecessors are different from block predecessors: ${inst.print()}"
         }
