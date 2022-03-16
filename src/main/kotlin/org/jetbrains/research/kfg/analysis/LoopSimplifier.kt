@@ -13,7 +13,6 @@ import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kthelper.KtException
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
-    private lateinit var current: Method
     private lateinit var ctx: MethodUsageContext
 
     override val preservesLoopInfo get() = false
@@ -22,8 +21,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(method: Method) {
         if (!method.hasBody) return
-        current = method
-        current.usageContext.also { ctx = it }.use {
+        method.usageContext.also { ctx = it }.use {
             super.visit(method)
             IRVerifier(cm, it).visit(method)
         }
@@ -94,7 +92,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
         remapPhis(header, loopPredecessors, preheader)
         preheader += inst(cm) { goto(header) }
-        current.addBefore(header, preheader)
+        method.addBefore(header, preheader)
         if (loop.hasParent) {
             loop.parent.addBlock(preheader)
         }
@@ -115,7 +113,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         remapPhis(header, latches, latch)
 
         latch += inst(cm) { goto(header) }
-        current.addAfter(latches.first(), latch)
+        method.addAfter(latches.first(), latch)
         loop.addBlock(latch)
     }
 }
