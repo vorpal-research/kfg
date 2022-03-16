@@ -1150,6 +1150,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         RetvalBuilder(cm, this).visit(method)
         CfgOptimizer(cm, this).visit(method)
         NullTypeAdapter(cm, this).visit(method)
+        ThrowCatchNormalizer(cm, this).visit(method)
 
         method.slotTracker.rerun()
 
