@@ -526,24 +526,27 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    private val AsmHandle.asHandle: Handle get() =
-        Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc))
+    private val AsmHandle.asHandle: Handle
+        get() =
+            Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc))
 
-    private val AsmType.asKfgType: Any get() = when (this.sort) {
-        org.objectweb.asm.Type.VOID -> types.voidType
-        org.objectweb.asm.Type.BOOLEAN -> types.boolType
-        org.objectweb.asm.Type.CHAR -> types.charType
-        org.objectweb.asm.Type.BYTE -> types.byteType
-        org.objectweb.asm.Type.SHORT -> types.shortType
-        org.objectweb.asm.Type.INT -> types.intType
-        org.objectweb.asm.Type.FLOAT -> types.floatType
-        org.objectweb.asm.Type.LONG -> types.longType
-        org.objectweb.asm.Type.DOUBLE -> types.doubleType
-        org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
-        org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
-        org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }.toTypedArray(), this.returnType.asKfgType as Type)
-        else -> unreachable("Unknown type: $this")
-    }
+    private val AsmType.asKfgType: Any
+        get() = when (this.sort) {
+            org.objectweb.asm.Type.VOID -> types.voidType
+            org.objectweb.asm.Type.BOOLEAN -> types.boolType
+            org.objectweb.asm.Type.CHAR -> types.charType
+            org.objectweb.asm.Type.BYTE -> types.byteType
+            org.objectweb.asm.Type.SHORT -> types.shortType
+            org.objectweb.asm.Type.INT -> types.intType
+            org.objectweb.asm.Type.FLOAT -> types.floatType
+            org.objectweb.asm.Type.LONG -> types.longType
+            org.objectweb.asm.Type.DOUBLE -> types.doubleType
+            org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
+            org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
+            org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }
+                .toTypedArray(), this.returnType.asKfgType as Type)
+            else -> unreachable("Unknown type: $this")
+        }
 
     @Suppress("UNUSED_PARAMETER")
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
@@ -802,9 +805,8 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
                         val entry = BodyBlock("entry")
                         addInstruction(entry, goto(bb))
-                        entry.addSuccessor(bb)
                         blockToNode[entry] = arrayListOf()
-                        bb.addPredecessor(entry)
+                        entry.linkForward(bb)
 
                         method.add(entry)
                     }
@@ -814,8 +816,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
                         if (!insn.previous.isTerminate) {
                             val prev = nodeToBlock.getValue(insn.previous)
-                            bb.addPredecessor(prev)
-                            prev.addSuccessor(bb)
+                            bb.linkBackward(prev)
                         }
                     }
                 }
@@ -827,44 +828,37 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                     is JumpInsnNode -> {
                         if (insn.opcode != GOTO) {
                             val falseSuccessor = nodeToBlock.getOrPut(insn.next) { BodyBlock("if.else") }
-                            bb.addSuccessor(falseSuccessor)
-                            falseSuccessor.addPredecessor(bb)
+                            bb.linkForward(falseSuccessor)
                         }
                         val trueSuccessorName = if (insn.opcode == GOTO) "goto" else "if.then"
                         val trueSuccessor = nodeToBlock.getOrPut(insn.label) { BodyBlock(trueSuccessorName) }
-                        bb.addSuccessor(trueSuccessor)
-                        trueSuccessor.addPredecessor(bb)
+                        bb.linkForward(trueSuccessor)
                     }
                     is TableSwitchInsnNode -> {
                         val default = nodeToBlock.getOrPut(insn.dflt) { BodyBlock("tableswitch.default") }
-                        bb.addSuccessors(default)
-                        default.addPredecessor(bb)
+                        bb.linkForward(default)
 
                         val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("tableswitch") }
-                            bb.addSuccessors(lblBB)
-                            lblBB.addPredecessor(bb)
+                            bb.linkForward(lblBB)
                         }
                     }
                     is LookupSwitchInsnNode -> {
                         val default = nodeToBlock.getOrPut(insn.dflt) { BodyBlock("switch.default") }
-                        bb.addSuccessors(default)
-                        default.addPredecessor(bb)
+                        bb.linkForward(default)
 
                         val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("switch") }
-                            bb.addSuccessors(lblBB)
-                            lblBB.addPredecessor(bb)
+                            bb.linkForward(lblBB)
                         }
                     }
                     else -> {
                         if (insn.throwsException && (insn.next != null)) {
                             val next = nodeToBlock.getOrPut(insn.next) { BodyBlock("bb") }
                             if (!insn.isTerminate) {
-                                bb.addSuccessor(next)
-                                next.addPredecessor(bb)
+                                bb.linkForward(next)
                             }
                         }
                     }
@@ -970,6 +964,15 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
     private fun optimizePhis() {
         val queue = queueOf(method.flatten().filterIsInstance<PhiInst>())
+        for ((deps, values) in queue.groupBy { it.users.filter { user -> user is Value } }.toMap()) {
+            if (deps == values) {
+                for (value in values) {
+                    value?.parentUnsafe?.remove(value)
+                    queue.remove(value)
+                    value.clearUses()
+                }
+            }
+        }
         loop@ while (queue.isNotEmpty()) {
             val top = queue.poll()
             val incomings = top.incomingValues
