@@ -108,12 +108,22 @@ sealed class BasicBlock(
         bb.addThrower(current)
     }
 
-    open fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
-        removePredecessor(ctx, bb)
-        removeSuccessor(ctx, bb)
-        if (bb is CatchBlock) {
-            removeHandler(bb)
-        }
+    fun unlinkForward(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        val current = this@BasicBlock
+        current.removeSuccessor(ctx, bb)
+        bb.removePredecessor(ctx, current)
+    }
+
+    fun unlinkBackward(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        val current = this@BasicBlock
+        current.removePredecessor(ctx, bb)
+        bb.removeSuccessor(ctx, current)
+    }
+
+    fun unlinkThrowing(ctx: UsageContext, bb: CatchBlock) = with(ctx) {
+        val current = this@BasicBlock
+        current.removeHandler(bb)
+        bb.removeThrower(current)
     }
 
     fun removeHandler(ctx: BlockUsageContext, handle: CatchBlock) = when {
@@ -269,9 +279,9 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         throwers.forEach { addThrower(ctx, it) }
     }
 
-    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Boolean = with(ctx) {
+    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Unit = with(ctx) {
         bb.removeUser(this@CatchBlock)
-        return innerThrowers.remove(bb)
+        innerThrowers.remove(bb)
     }
 
     fun linkCatching(ctx: UsageContext, thrower: BasicBlock) = with(ctx) {
@@ -280,9 +290,10 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         thrower.addHandler(current)
     }
 
-    override fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
-        super.unlink(ctx, bb)
-        removeThrower(bb)
+    fun unlinkCatching(ctx: UsageContext, thrower: BasicBlock): Unit = with(ctx) {
+        val current = this@CatchBlock
+        current.removeThrower(thrower)
+        thrower.removeHandler(current)
     }
 
     val allPredecessors get() = throwers + entries

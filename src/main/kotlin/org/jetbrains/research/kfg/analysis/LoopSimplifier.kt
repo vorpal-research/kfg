@@ -22,9 +22,6 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(method: Method) {
         if (!method.hasBody) return
-        if (method.toString() == "org/eclipse/jdt/internal/compiler/Compiler::processCompiledUnits(int, bool): void") {
-            val a = 10
-        }
         current = method
         current.usageContext.also { ctx = it }.use {
             super.visit(method)
@@ -42,67 +39,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         buildLatch(loop)
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    private fun remapCatchEntries(
-        target: BasicBlock,
-        from: BasicBlock,
-        to: BasicBlock,
-        fromEntriesBefore: List<CatchBlock>,
-        toEntriesBefore: List<CatchBlock>,
-        fromEntries: List<CatchBlock>,
-        toEntries: List<CatchBlock>
-    ) = with(ctx) {
-        when {
-            toEntriesBefore.isEmpty() && toEntries.isNotEmpty() -> {
-                for (catch in toEntries) {
-                    for (phi in catch.mapNotNull { it as? PhiInst }) {
-                        val incomings = phi.incomings.toMutableMap()
-                        incomings[target] = incomings[to]!!
-                        val newPhi = inst(cm) { phi(phi.type, incomings) }
-                        catch.insertBefore(phi, newPhi)
-                        phi.replaceAllUsesWith(newPhi)
-                        phi.clearUses()
-                        catch -= phi
-                    }
-                }
-            }
-            fromEntriesBefore.isNotEmpty() && fromEntries.isEmpty() -> {
-                for (catch in fromEntriesBefore) {
-                    for (phi in catch.mapNotNull { it as? PhiInst }) {
-                        val incomings = phi.incomings.toMutableMap()
-                        incomings.remove(target)
-                        val newPhi = inst(cm) { phi(phi.type, incomings) }
-                        catch.insertBefore(phi, newPhi)
-                        phi.replaceAllUsesWith(newPhi)
-                        phi.clearUses()
-                        catch -= phi
-                    }
-                }
-            }
-        }
-    }
-
-    private fun BasicBlock.getEntries(target: BasicBlock) = this.handlers.filter { target in it.entries }
-
-    private fun entryMapped(target: BasicBlock, from: BasicBlock, to: BasicBlock, action: () -> Unit) = with(ctx) {
-        val fromEntriesBefore = from.getEntries(target)
-        val toEntriesBefore = to.getEntries(target)
-
-        action()
-
-        val fromEntries = from.getEntries(target)
-        val toEntries = to.getEntries(target)
-
-        remapCatchEntries(target, from, to, fromEntriesBefore, toEntriesBefore, fromEntries, toEntries)
-    }
-
     private fun remapBlocks(target: BasicBlock, from: BasicBlock, to: BasicBlock) = with(ctx) {
-        entryMapped(target, from, to) {
-            target.removeSuccessor(from)
-            from.removePredecessor(target)
-            target.addSuccessor(to)
-            to.addPredecessor(target)
-        }
+        target.unlinkForward(from)
+        target.linkForward(to)
         target.terminator.replaceUsesOf(from, to)
     }
 
@@ -130,8 +69,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     }
 
     private fun mapToCatch(original: BasicBlock, new: BasicBlock, catch: CatchBlock) = with(ctx) {
-        catch.addThrowers(listOf(new))
-        new.addHandler(catch)
+        new.linkThrowing(catch)
 
         for (phi in catch.mapNotNull { it as? PhiInst }) {
             val incomings = phi.incomings.toMutableMap()
@@ -152,8 +90,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         val preheader = BodyBlock("loop.preheader")
         header.handlers.forEach { mapToCatch(header, preheader, it) }
         loopPredecessors.forEach { remapBlocks(it, header, preheader) }
-        preheader.addSuccessor(header)
-        header.addPredecessor(preheader)
+        preheader.linkForward(header)
 
         remapPhis(header, loopPredecessors, preheader)
         preheader += inst(cm) { goto(header) }
@@ -169,18 +106,13 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         if (latches.size == 1) return
 
         val latch = BodyBlock("loop.latch")
-        val catchWithEntry = current.catchEntries.filter { it.entries.containsAll(latches) }
         latches.forEach {
             remapBlocks(it, header, latch)
             it.handlers.forEach { catch -> mapToCatch(it, latch, catch) }
         }
-        latch.addSuccessor(header)
-        header.addPredecessor(latch)
+        latch.linkForward(header)
 
         remapPhis(header, latches, latch)
-        for (catch in catchWithEntry) {
-            remapPhis(catch, latches, latch)
-        }
 
         latch += inst(cm) { goto(header) }
         current.addAfter(latches.first(), latch)
