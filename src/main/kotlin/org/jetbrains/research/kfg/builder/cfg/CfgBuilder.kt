@@ -527,8 +527,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
     }
 
     private val AsmHandle.asHandle: Handle
-        get() =
-            Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc))
+        get() = Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc), this.isInterface)
 
     private val AsmType.asKfgType: Any
         get() = when (this.sort) {

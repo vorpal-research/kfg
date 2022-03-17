@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.ir.value.Slot
 import org.jetbrains.research.kfg.ir.value.UsageContext
 import org.jetbrains.research.kfg.ir.value.Value
 
-data class Handle(val tag: Int, val method: Method) {
+data class Handle(val tag: Int, val method: Method, val isInterface: Boolean) {
     override fun toString() = "@$method"
 }
 

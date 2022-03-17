@@ -387,7 +387,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             method.klass.fullName,
             method.name,
             method.desc.asmDesc,
-            method.klass.isInterface
+            isInterface
         )
 
     private val Type.asAsmType: AsmType get() = getType(this.asmDesc)
