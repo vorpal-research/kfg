@@ -80,6 +80,25 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
+    private fun mapToCatches(originals: Set<BasicBlock>, new: BasicBlock) = with(ctx) {
+        for (catch in originals.flatMap { it.handlers }.toSet()) {
+            for (phi in catch.mapNotNull { it as? PhiInst }) {
+                val incomings = phi.incomings.toMutableMap()
+                val originalIncomings = phi.incomings.filter { (key, _) -> key in originals }.toMap()
+                val newIncoming = new.filterIsInstance<PhiInst>().firstOrNull { newPhi ->
+                    val incs = newPhi.incomings
+                    originalIncomings.all { (key, value) -> incs[key] == value }
+                } ?: continue
+                incomings[new] = newIncoming
+                val newPhi = inst(cm) { phi(phi.type, incomings) }
+                catch.insertBefore(phi, newPhi)
+                phi.replaceAllUsesWith(newPhi)
+                phi.clearUses()
+                catch -= phi
+            }
+        }
+    }
+
     private fun buildPreheader(loop: Loop) = with(ctx) {
         val header = loop.header
         val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
@@ -104,13 +123,12 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         if (latches.size == 1) return
 
         val latch = BodyBlock("loop.latch")
+        remapPhis(header, latches, latch)
         latches.forEach {
             remapBlocks(it, header, latch)
-            it.handlers.forEach { catch -> mapToCatch(it, latch, catch) }
         }
+        mapToCatches(latches, latch)
         latch.linkForward(header)
-
-        remapPhis(header, latches, latch)
 
         latch += inst(cm) { goto(header) }
         method.addAfter(latches.first(), latch)

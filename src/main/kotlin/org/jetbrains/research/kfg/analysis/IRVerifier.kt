@@ -37,7 +37,7 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
             return method to bb
         }
 
-    private fun visitValue(value: Value) = with (usageContext) {
+    private fun visitValue(value: Value) = with(usageContext) {
         if (value.name !is UndefinedName && value !is Constant) {
             ktassert(valueNameRegex.matches("${value.name}"), "Incorrect value name format $value")
             val storedVal = valueNames[value.name.toString()]
@@ -70,9 +70,10 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
         val (method, bb) = inst.parents
 
         for (predecessor in inst.predecessors) {
-            ktassert(predecessor in method) {
+            ktassert(
+                predecessor in method,
                 "Phi ${inst.print()} incoming from unknown block"
-            }
+            )
         }
 
         val predecessors = when (bb) {
@@ -80,9 +81,10 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
             is CatchBlock -> bb.allPredecessors
         }
 
-        ktassert(predecessors.size == inst.predecessors.size) {
+        ktassert(
+            predecessors.size == inst.predecessors.size,
             "Phi instruction predecessors are different from block predecessors: ${inst.print()}"
-        }
+        )
 
         for (predecessor in inst.predecessors) {
             ktassert(predecessor in predecessors, "Phi instruction predecessors are different from block predecessors")
@@ -92,9 +94,10 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     override fun visitTerminateInst(inst: TerminateInst) {
         val (method, bb) = inst.parents
 
-        ktassert(bb.successors.size == inst.successors.toSet().size) {
+        ktassert(
+            bb.successors.size == inst.successors.toSet().size,
             "Terminate inst ${inst.print()} successors are different from block successors"
-        }
+        )
         for (successor in inst.successors) {
             ktassert(successor in method, "Terminate inst to unknown block")
             ktassert(successor in bb.successors, "Terminate instruction successors are different from block successors")

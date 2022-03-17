@@ -23,12 +23,12 @@ sealed class BasicBlock(
     private val innerPredecessors = linkedSetOf<BasicBlock>()
     private val innerSuccessors = linkedSetOf<BasicBlock>()
     private val innerInstructions = arrayListOf<Instruction>()
-    private val innerHandlers = arrayListOf<CatchBlock>()
+    private val innerHandlers = hashSetOf<CatchBlock>()
 
     override val predecessors: Set<BasicBlock> get() = innerPredecessors
     override val successors: Set<BasicBlock> get() = innerSuccessors
     val instructions: List<Instruction> get() = innerInstructions
-    val handlers: List<CatchBlock> get() = innerHandlers
+    val handlers: Set<CatchBlock> get() = innerHandlers
 
     val terminator: TerminateInst
         get() = last() as TerminateInst
