@@ -1130,7 +1130,6 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             loops.add(top)
             queue.addAll(top.subLoops)
         }
-        method.invalidateLoopInfo()
     }
 
     fun build() {

@@ -143,6 +143,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
     fun isNotEmpty() = !isEmpty()
 
     internal fun clear() {
+        invalidateLoopInfo()
         innerBlocks.clear()
         innerCatches.clear()
     }
