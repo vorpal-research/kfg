@@ -6,11 +6,14 @@ import org.jetbrains.research.kfg.ir.BodyBlock
 import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.MethodUsageContext
+import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.usageContext
 import org.jetbrains.research.kfg.visitor.Loop
 import org.jetbrains.research.kfg.visitor.LoopVisitor
 import org.jetbrains.research.kthelper.KtException
+import org.jetbrains.research.kthelper.assert.asserted
+import org.jetbrains.research.kthelper.assert.unreachable
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
@@ -80,15 +83,25 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
+    private fun parseNewIncoming(
+        incomings: Map<BasicBlock, Value>,
+        originals: Set<BasicBlock>,
+        new: BasicBlock
+    ): Value {
+        val originalIncomings = incomings.filter { (key, _) -> key in originals }.toMap()
+        return new.filterIsInstance<PhiInst>().firstOrNull { newPhi ->
+            val incs = newPhi.incomings
+            originalIncomings.all { (key, value) -> incs[key] == value }
+        } ?: asserted(originalIncomings.values.toSet().size == 1) { originalIncomings.values.first() }
+    }
+
     private fun mapToCatches(originals: Set<BasicBlock>, new: BasicBlock) = with(ctx) {
         for (catch in originals.flatMap { it.handlers }.toSet()) {
+            new.linkThrowing(catch)
+
             for (phi in catch.mapNotNull { it as? PhiInst }) {
                 val incomings = phi.incomings.toMutableMap()
-                val originalIncomings = phi.incomings.filter { (key, _) -> key in originals }.toMap()
-                val newIncoming = new.filterIsInstance<PhiInst>().firstOrNull { newPhi ->
-                    val incs = newPhi.incomings
-                    originalIncomings.all { (key, value) -> incs[key] == value }
-                } ?: continue
+                val newIncoming = parseNewIncoming(incomings, originals, new)
                 incomings[new] = newIncoming
                 val newPhi = inst(cm) { phi(phi.type, incomings) }
                 catch.insertBefore(phi, newPhi)
@@ -117,10 +130,56 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
+    private fun mapCatchEntries(
+        originals: Set<BasicBlock>,
+        new: BasicBlock,
+        oldCatchEntries: Map<CatchBlock, Set<BasicBlock>>,
+        newCatchEntries: Map<CatchBlock, Set<BasicBlock>>
+    ) = with(ctx) {
+        for (catch in method.catchEntries) {
+            val newEntries = newCatchEntries[catch]!!
+            val oldEntries = oldCatchEntries[catch]!!
+            if (newEntries != oldEntries) {
+                val newDiff = newEntries - oldEntries
+                val oldDiff = oldEntries - newEntries
+                when {
+                    oldDiff == originals && newDiff == setOf(new) -> {
+                        for (phi in catch.filterIsInstance<PhiInst>()) {
+                            val incomings = phi.incomings.toMutableMap()
+                            val newIncoming = parseNewIncoming(incomings, originals, new)
+                            originals.forEach { incomings.remove(it) }
+                            incomings[new] = newIncoming
+                            val newPhi = inst(cm) { phi(phi.type, incomings) }
+                            catch.insertBefore(phi, newPhi)
+                            phi.replaceAllUsesWith(newPhi)
+                            phi.clearUses()
+                            catch -= phi
+                        }
+                    }
+                    oldDiff.isEmpty() -> {
+                        for (phi in catch.filterIsInstance<PhiInst>()) {
+                            val incomings = phi.incomings.toMutableMap()
+                            val default = cm.value.getZero(phi.type)
+                            newDiff.forEach { incomings[it] = default }
+                            val newPhi = inst(cm) { phi(phi.type, incomings) }
+                            catch.insertBefore(phi, newPhi)
+                            phi.replaceAllUsesWith(newPhi)
+                            phi.clearUses()
+                            catch -= phi
+                        }
+                    }
+                    else -> unreachable("Unexpected combination of catch entries change")
+                }
+            }
+        }
+    }
+
     private fun buildLatch(loop: Loop) = with(ctx) {
         val header = loop.header
         val latches = loop.latches
         if (latches.size == 1) return
+
+        val oldCatchEntries = method.catchEntries.associateWith { it.entries }
 
         val latch = BodyBlock("loop.latch")
         remapPhis(header, latches, latch)
@@ -129,6 +188,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
         mapToCatches(latches, latch)
         latch.linkForward(header)
+
+        val newCatchEntries = method.catchEntries.associateWith { it.entries }
+        mapCatchEntries(latches, latch, oldCatchEntries, newCatchEntries)
 
         latch += inst(cm) { goto(header) }
         method.addAfter(latches.first(), latch)
