@@ -25,9 +25,6 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(method: Method) {
         if (!method.hasBody) return
-        if (method.toString() == "org/eclipse/jdt/internal/core/nd/indexer/Indexer::addElement(org/eclipse/jdt/internal/core/nd/java/NdResourceFile, org/eclipse/jdt/core/IJavaElement, org/eclipse/core/runtime/IProgressMonitor): int") {
-            val a = 10
-        }
         method.usageContext.also { ctx = it }.use {
             super.visit(method)
             IRVerifier(cm, it).visit(method)
