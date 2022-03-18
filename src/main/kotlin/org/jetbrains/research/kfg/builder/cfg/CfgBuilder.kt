@@ -13,6 +13,7 @@ import org.jetbrains.research.kfg.ir.value.Value
 import org.jetbrains.research.kfg.ir.value.instruction.*
 import org.jetbrains.research.kfg.type.*
 import org.jetbrains.research.kfg.util.print
+import org.jetbrains.research.kfg.visitor.Loop
 import org.jetbrains.research.kthelper.`try`
 import org.jetbrains.research.kthelper.assert.unreachable
 import org.jetbrains.research.kthelper.collection.queueOf
@@ -73,6 +74,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
     private val stack = ArrayList<Value>()
     private val unmappedBlocks = hashMapOf<BasicBlock, BlockFrame>()
     private var currentLocation = Location()
+    private val loops = mutableSetOf<Loop>()
     private lateinit var lastFrame: FrameState
 
     private fun pop() = stack.removeAt(stack.lastIndex)
@@ -524,24 +526,26 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    private val AsmHandle.asHandle: Handle get() =
-        Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc))
+    private val AsmHandle.asHandle: Handle
+        get() = Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc), this.isInterface)
 
-    private val AsmType.asKfgType: Any get() = when (this.sort) {
-        org.objectweb.asm.Type.VOID -> types.voidType
-        org.objectweb.asm.Type.BOOLEAN -> types.boolType
-        org.objectweb.asm.Type.CHAR -> types.charType
-        org.objectweb.asm.Type.BYTE -> types.byteType
-        org.objectweb.asm.Type.SHORT -> types.shortType
-        org.objectweb.asm.Type.INT -> types.intType
-        org.objectweb.asm.Type.FLOAT -> types.floatType
-        org.objectweb.asm.Type.LONG -> types.longType
-        org.objectweb.asm.Type.DOUBLE -> types.doubleType
-        org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
-        org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
-        org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }.toTypedArray(), this.returnType.asKfgType as Type)
-        else -> unreachable("Unknown type: $this")
-    }
+    private val AsmType.asKfgType: Any
+        get() = when (this.sort) {
+            org.objectweb.asm.Type.VOID -> types.voidType
+            org.objectweb.asm.Type.BOOLEAN -> types.boolType
+            org.objectweb.asm.Type.CHAR -> types.charType
+            org.objectweb.asm.Type.BYTE -> types.byteType
+            org.objectweb.asm.Type.SHORT -> types.shortType
+            org.objectweb.asm.Type.INT -> types.intType
+            org.objectweb.asm.Type.FLOAT -> types.floatType
+            org.objectweb.asm.Type.LONG -> types.longType
+            org.objectweb.asm.Type.DOUBLE -> types.doubleType
+            org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
+            org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
+            org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }
+                .toTypedArray(), this.returnType.asKfgType as Type)
+            else -> unreachable("Unknown type: $this")
+        }
 
     @Suppress("UNUSED_PARAMETER")
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
@@ -675,7 +679,9 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             is CatchBlock -> block.allPredecessors
             else -> block.predecessors
         }
-        val isCycle = predecessors.any { it !in visitedBlocks }
+        val isLoopHeader = loops.any { it.header == block }
+        val isCatch = predecessors.any { it !in visitedBlocks }
+        val isCycle = isLoopHeader || isCatch
         val predFrames = predecessors.map { frames.getValue(it) }
 
         fun FrameState.copyStackAndLocals(predFrames: List<BlockFrame>) {
@@ -705,9 +711,6 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                     for (key in this.local.keys) {
                         locals[key] = mappedFrame.locals[key]
                             ?: throw InvalidStateException("Invalid local frame info")
-                    }
-                    if (mappedFrame !== predFrame) {
-                        mappedFrame.clear()
                     }
                 }
                 !isCycle -> {
@@ -798,9 +801,8 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
                         val entry = BodyBlock("entry")
                         addInstruction(entry, goto(bb))
-                        entry.addSuccessor(bb)
                         blockToNode[entry] = arrayListOf()
-                        bb.addPredecessor(entry)
+                        entry.linkForward(bb)
 
                         method.add(entry)
                     }
@@ -810,8 +812,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
 
                         if (!insn.previous.isTerminate) {
                             val prev = nodeToBlock.getValue(insn.previous)
-                            bb.addPredecessor(prev)
-                            prev.addSuccessor(bb)
+                            bb.linkBackward(prev)
                         }
                     }
                 }
@@ -823,44 +824,37 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                     is JumpInsnNode -> {
                         if (insn.opcode != GOTO) {
                             val falseSuccessor = nodeToBlock.getOrPut(insn.next) { BodyBlock("if.else") }
-                            bb.addSuccessor(falseSuccessor)
-                            falseSuccessor.addPredecessor(bb)
+                            bb.linkForward(falseSuccessor)
                         }
                         val trueSuccessorName = if (insn.opcode == GOTO) "goto" else "if.then"
                         val trueSuccessor = nodeToBlock.getOrPut(insn.label) { BodyBlock(trueSuccessorName) }
-                        bb.addSuccessor(trueSuccessor)
-                        trueSuccessor.addPredecessor(bb)
+                        bb.linkForward(trueSuccessor)
                     }
                     is TableSwitchInsnNode -> {
                         val default = nodeToBlock.getOrPut(insn.dflt) { BodyBlock("tableswitch.default") }
-                        bb.addSuccessors(default)
-                        default.addPredecessor(bb)
+                        bb.linkForward(default)
 
                         val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("tableswitch") }
-                            bb.addSuccessors(lblBB)
-                            lblBB.addPredecessor(bb)
+                            bb.linkForward(lblBB)
                         }
                     }
                     is LookupSwitchInsnNode -> {
                         val default = nodeToBlock.getOrPut(insn.dflt) { BodyBlock("switch.default") }
-                        bb.addSuccessors(default)
-                        default.addPredecessor(bb)
+                        bb.linkForward(default)
 
                         val labels = insn.labels
                         for (lbl in labels) {
                             val lblBB = nodeToBlock.getOrPut(lbl) { BodyBlock("switch") }
-                            bb.addSuccessors(lblBB)
-                            lblBB.addPredecessor(bb)
+                            bb.linkForward(lblBB)
                         }
                     }
                     else -> {
                         if (insn.throwsException && (insn.next != null)) {
                             val next = nodeToBlock.getOrPut(insn.next) { BodyBlock("bb") }
                             if (!insn.isTerminate) {
-                                bb.addSuccessor(next)
-                                next.addPredecessor(bb)
+                                bb.linkForward(next)
                             }
                         }
                     }
@@ -916,11 +910,24 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             for ((index, phi) in sf.stackPhis.withIndex()) {
                 val incomings = predFrames.associate { it.bb to it.stack[index] }
 
-                val newPhi = phi(phi.name, phi.type, incomings)
-                phi.replaceAllUsesWith(newPhi)
-                phi.operands.forEach { it.removeUser(phi) }
-                block.replace(phi, newPhi)
-                phi.clearUses()
+                val clearStubs = incomings.filterValues {
+                    if (it !is PhiInst) true
+                    else it.hasParent
+                }
+
+                if (clearStubs.size == 1) {
+                    val actual = clearStubs.values.first()
+                    phi.replaceAllUsesWith(actual)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.remove(phi)
+                    phi.clearUses()
+                } else {
+                    val newPhi = phi(phi.name, phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.replace(phi, newPhi)
+                    phi.clearUses()
+                }
             }
 
             for ((local, phi) in sf.localPhis) {
@@ -929,17 +936,39 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         ?: unreachable("Predecessor frame does not contain a local value $local"))
                 }
 
-                val newPhi = phi(phi.type, incomings)
-                phi.replaceAllUsesWith(newPhi)
-                phi.operands.forEach { it.removeUser(phi) }
-                block.replace(phi, newPhi)
-                phi.clearUses()
+                val clearStubs = incomings.filterValues {
+                    if (it !is PhiInst) true
+                    else it.hasParent
+                }
+
+                if (clearStubs.size == 1) {
+                    val actual = clearStubs.values.first()
+                    phi.replaceAllUsesWith(actual)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.remove(phi)
+                    phi.clearUses()
+                } else {
+                    val newPhi = phi(phi.type, incomings)
+                    phi.replaceAllUsesWith(newPhi)
+                    phi.operands.forEach { it.removeUser(phi) }
+                    block.replace(phi, newPhi)
+                    phi.clearUses()
+                }
             }
         }
     }
 
     private fun optimizePhis() {
         val queue = queueOf(method.flatten().filterIsInstance<PhiInst>())
+        for ((deps, values) in queue.groupBy { it.users.filter { user -> user is Value } }.toMap()) {
+            if (deps == values) {
+                for (value in values) {
+                    value?.parentUnsafe?.remove(value)
+                    queue.remove(value)
+                    value.clearUses()
+                }
+            }
+        }
         loop@ while (queue.isNotEmpty()) {
             val top = queue.poll()
             val incomings = top.incomingValues
@@ -950,6 +979,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             when {
                 incomingsSet.size == 1 -> {
                     val first = incomingsSet.first()
+                    if (first == top) continue
                     top.replaceAllUsesWith(first)
                     top.clearUses()
                     if (first is PhiInst) queue.add(first)
@@ -993,6 +1023,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             val actualValue = stack[index]
             value.replaceAllUsesWith(actualValue)
         }
+        mappedFrame.clear()
         unmappedBlocks.remove(block)
     }
 
@@ -1091,12 +1122,23 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
+    private fun buildLoops() {
+        val methodLoops = method.getLoopInfo()
+        val queue = queueOf(*methodLoops.toTypedArray())
+        while (queue.isNotEmpty()) {
+            val top = queue.poll()
+            loops.add(top)
+            queue.addAll(top.subLoops)
+        }
+    }
+
     fun build() {
         initFrame()
         buildCFG()
 
         if (method.isEmpty()) return
 
+        buildLoops()
         buildFrames()
         buildInstructions()
 
@@ -1105,6 +1147,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         RetvalBuilder(cm, this).visit(method)
         CfgOptimizer(cm, this).visit(method)
         NullTypeAdapter(cm, this).visit(method)
+        ThrowCatchNormalizer(cm, this).visit(method)
 
         method.slotTracker.rerun()
 

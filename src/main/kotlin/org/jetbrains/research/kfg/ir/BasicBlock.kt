@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.collection.queueOf
 import org.jetbrains.research.kthelper.graph.PredecessorGraph
 
 sealed class BasicBlock(
@@ -23,12 +24,12 @@ sealed class BasicBlock(
     private val innerPredecessors = linkedSetOf<BasicBlock>()
     private val innerSuccessors = linkedSetOf<BasicBlock>()
     private val innerInstructions = arrayListOf<Instruction>()
-    private val innerHandlers = arrayListOf<CatchBlock>()
+    private val innerHandlers = hashSetOf<CatchBlock>()
 
     override val predecessors: Set<BasicBlock> get() = innerPredecessors
     override val successors: Set<BasicBlock> get() = innerSuccessors
     val instructions: List<Instruction> get() = innerInstructions
-    val handlers: List<CatchBlock> get() = innerHandlers
+    val handlers: Set<CatchBlock> get() = innerHandlers
 
     val terminator: TerminateInst
         get() = last() as TerminateInst
@@ -108,12 +109,22 @@ sealed class BasicBlock(
         bb.addThrower(current)
     }
 
-    open fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
-        removePredecessor(ctx, bb)
-        removeSuccessor(ctx, bb)
-        if (bb is CatchBlock) {
-            removeHandler(bb)
-        }
+    fun unlinkForward(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        val current = this@BasicBlock
+        current.removeSuccessor(ctx, bb)
+        bb.removePredecessor(ctx, current)
+    }
+
+    fun unlinkBackward(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
+        val current = this@BasicBlock
+        current.removePredecessor(ctx, bb)
+        bb.removeSuccessor(ctx, current)
+    }
+
+    fun unlinkThrowing(ctx: UsageContext, bb: CatchBlock) = with(ctx) {
+        val current = this@BasicBlock
+        current.removeHandler(bb)
+        bb.removeThrower(current)
     }
 
     fun removeHandler(ctx: BlockUsageContext, handle: CatchBlock) = when {
@@ -260,6 +271,25 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
             return entries
         }
 
+    val body: Set<BasicBlock>
+        get() {
+            val catchMap = hashMapOf<BasicBlock, Boolean>()
+            val visited = hashSetOf<BasicBlock>()
+            val result = hashSetOf<BasicBlock>()
+            val queue = queueOf<BasicBlock>(this)
+            while (queue.isNotEmpty()) {
+                val top = queue.poll()
+                val isCatch = top.predecessors.fold(true) { acc, bb -> acc && catchMap.getOrPut(bb) { false } }
+                if (isCatch && top !in visited) {
+                    result.add(top)
+                    queue.addAll(top.successors)
+                    catchMap[top] = true
+                    visited += top
+                }
+            }
+            return result
+        }
+
     fun addThrower(ctx: BlockUsageContext, thrower: BasicBlock) = with(ctx) {
         innerThrowers.add(thrower)
         thrower.addUser(this@CatchBlock)
@@ -269,9 +299,9 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         throwers.forEach { addThrower(ctx, it) }
     }
 
-    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Boolean = with(ctx) {
+    fun removeThrower(ctx: BlockUsageContext, bb: BasicBlock): Unit = with(ctx) {
         bb.removeUser(this@CatchBlock)
-        return innerThrowers.remove(bb)
+        innerThrowers.remove(bb)
     }
 
     fun linkCatching(ctx: UsageContext, thrower: BasicBlock) = with(ctx) {
@@ -280,9 +310,10 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
         thrower.addHandler(current)
     }
 
-    override fun unlink(ctx: UsageContext, bb: BasicBlock): Unit = with(ctx) {
-        super.unlink(ctx, bb)
-        removeThrower(bb)
+    fun unlinkCatching(ctx: UsageContext, thrower: BasicBlock): Unit = with(ctx) {
+        val current = this@CatchBlock
+        current.removeThrower(thrower)
+        thrower.removeHandler(current)
     }
 
     val allPredecessors get() = throwers + entries

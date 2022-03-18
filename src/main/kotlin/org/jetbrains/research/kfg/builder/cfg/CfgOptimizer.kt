@@ -56,6 +56,10 @@ class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : Metho
             }
 
             method.remove(block)
+            for (inst in block.toList()) {
+                block.remove(inst)
+                inst.clearUses()
+            }
             predecessor.removeSuccessor(block)
             block.removeSuccessor(successor)
             predecessor.addSuccessor(successor)
