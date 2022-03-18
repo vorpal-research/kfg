@@ -6,6 +6,7 @@ import org.jetbrains.research.kfg.ir.value.instruction.TerminateInst
 import org.jetbrains.research.kfg.type.Type
 import org.jetbrains.research.kthelper.assert.asserted
 import org.jetbrains.research.kthelper.assert.ktassert
+import org.jetbrains.research.kthelper.collection.queueOf
 import org.jetbrains.research.kthelper.graph.PredecessorGraph
 
 sealed class BasicBlock(
@@ -268,6 +269,25 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
                     if (pred !in throwers) entries.add(pred)
             }
             return entries
+        }
+
+    val body: Set<BasicBlock>
+        get() {
+            val catchMap = hashMapOf<BasicBlock, Boolean>()
+            val visited = hashSetOf<BasicBlock>()
+            val result = hashSetOf<BasicBlock>()
+            val queue = queueOf<BasicBlock>(this)
+            while (queue.isNotEmpty()) {
+                val top = queue.poll()
+                val isCatch = top.predecessors.fold(true) { acc, bb -> acc && catchMap.getOrPut(bb) { false } }
+                if (isCatch && top !in visited) {
+                    result.add(top)
+                    queue.addAll(top.successors)
+                    catchMap[top] = true
+                    visited += top
+                }
+            }
+            return result
         }
 
     fun addThrower(ctx: BlockUsageContext, thrower: BasicBlock) = with(ctx) {

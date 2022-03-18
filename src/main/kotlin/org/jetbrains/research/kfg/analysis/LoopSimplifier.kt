@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.ir.CatchBlock
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.value.MethodUsageContext
 import org.jetbrains.research.kfg.ir.value.Value
+import org.jetbrains.research.kfg.ir.value.instruction.Instruction
 import org.jetbrains.research.kfg.ir.value.instruction.PhiInst
 import org.jetbrains.research.kfg.ir.value.usageContext
 import org.jetbrains.research.kfg.visitor.Loop
@@ -24,6 +25,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     override fun visit(method: Method) {
         if (!method.hasBody) return
+        if (method.toString() == "org/eclipse/jdt/internal/core/nd/indexer/Indexer::addElement(org/eclipse/jdt/internal/core/nd/java/NdResourceFile, org/eclipse/jdt/core/IJavaElement, org/eclipse/core/runtime/IProgressMonitor): int") {
+            val a = 10
+        }
         method.usageContext.also { ctx = it }.use {
             super.visit(method)
             IRVerifier(cm, it).visit(method)
@@ -130,6 +134,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
+    // this is fucking hell, never look at this code
     private fun mapCatchEntries(
         originals: Set<BasicBlock>,
         new: BasicBlock,
@@ -139,10 +144,14 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         for (catch in method.catchEntries) {
             val newEntries = newCatchEntries[catch]!!
             val oldEntries = oldCatchEntries[catch]!!
+            // if there is a difference --- we have changed the catch entries, and
+            // we need to normalize all phis
             if (newEntries != oldEntries) {
                 val newDiff = newEntries - oldEntries
                 val oldDiff = oldEntries - newEntries
                 when {
+                    // first case --- all of old latches were entries of catch block,
+                    // and they are replaced with single latch
                     oldDiff == originals && newDiff == setOf(new) -> {
                         for (phi in catch.filterIsInstance<PhiInst>()) {
                             val incomings = phi.incomings.toMutableMap()
@@ -156,7 +165,64 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             catch -= phi
                         }
                     }
+                    // second case --- some of old latches became new entries because
+                    // the new latch became thrower of the catch;
+                    // some fucked up ship awaits you ahead
                     oldDiff.isEmpty() -> {
+                        // first we need to find all values from old throwers that are used in catch body
+                        // without phis
+                        val catchBody = catch.body
+                        val catchExits = catchBody.flatMap { it.successors }.filter { it !in catchBody }.toSet()
+                        val bodyOperands = catchBody
+                            .asSequence()
+                            .flatten()
+                            .filter { it !is PhiInst }
+                            .flatten()
+                            .filterIsInstance<Instruction>()
+                            .filter { it.parent !in catchBody }
+                            .toSet()
+
+                        // for each external operand we need to manually add phi instruction
+                        // with default mappings for new entries
+                        for (operand in bodyOperands) {
+                            // build incomings map for the new operand phi
+                            val incomings = catch.allPredecessors.associateWith {
+                                when (it) {
+                                    // if this is new entry, map it to default
+                                    in newDiff -> cm.value.getZero(operand.type)
+
+                                    // if this is latch, we need to find (or create) corresponding phi for the operand
+                                    new -> new.filterIsInstance<PhiInst>()
+                                        .firstOrNull { phi -> operand in phi.incomingValues }
+                                        ?: run {
+                                            val newIncomings = new.predecessors.associateWith { pred ->
+                                                if (pred in newDiff) cm.value.getZero(operand.type)
+                                                else operand
+                                            }
+                                            val newPhiOperand = inst(cm) { phi(operand.type, newIncomings) }
+                                            if (new.isEmpty) new.add(newPhiOperand)
+                                            else new.insertBefore(new.first(), newPhiOperand)
+                                            newPhiOperand
+                                        }
+                                    else -> operand
+                                }
+                            }
+                            val newPhi = inst(cm) { phi(operand.type, incomings) }
+                            catch.insertBefore(catch.first(), newPhi)
+
+                            // replace all uses of operand in catch body and it's exits with the new phi
+                            for (user in operand.users.toSet()) {
+                                if (
+                                    user is Instruction
+                                    && (user.parent in catchBody || user.parent in catchExits)
+                                    && user != newPhi
+                                ) {
+                                    user.replaceUsesOf(operand, newPhi)
+                                }
+                            }
+                        }
+
+                        // for each phi in catch add default mappings
                         for (phi in catch.filterIsInstance<PhiInst>()) {
                             val incomings = phi.incomings.toMutableMap()
                             val default = cm.value.getZero(phi.type)
