@@ -12,6 +12,12 @@ internal class LoopManager(val cm: ClassManager) {
 
     private val loopInfo = mutableMapOf<Method, LoopInfo>()
 
+    fun invalidate() {
+        for ((_, info) in loopInfo) {
+            info.valid = false
+        }
+    }
+
     fun setInvalid(method: Method) {
         loopInfo.getOrPut(method, LoopManager::LoopInfo).valid = false
     }

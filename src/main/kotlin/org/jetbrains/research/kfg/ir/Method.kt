@@ -137,6 +137,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
     val hasLoops get() = cm.loopManager.getMethodLoopInfo(this).isNotEmpty()
 
     fun getLoopInfo() = cm.loopManager.getMethodLoopInfo(this)
+    fun invalidateLoopInfo() = cm.loopManager.setInvalid(this)
 
     fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
