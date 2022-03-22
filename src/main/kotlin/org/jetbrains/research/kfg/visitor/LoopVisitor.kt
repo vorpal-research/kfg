@@ -133,7 +133,7 @@ fun performLoopAnalysis(method: Method): List<Loop> {
 
 class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

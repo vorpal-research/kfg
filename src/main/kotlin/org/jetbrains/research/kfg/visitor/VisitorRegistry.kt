@@ -29,7 +29,7 @@ class VisitorRegistry {
         analysisDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addInvalidatesAnalysis(visitor: Class<out NodeVisitor>, dependency: Class<out AnalysisVisitor<out AnalysisResult>>) {
+    fun addPersistedAnalysis(visitor: Class<out NodeVisitor>, dependency: Class<out AnalysisVisitor<out AnalysisResult>>) {
         analysisPersistedResults.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 

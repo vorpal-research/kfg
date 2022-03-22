@@ -23,7 +23,7 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
 
 
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

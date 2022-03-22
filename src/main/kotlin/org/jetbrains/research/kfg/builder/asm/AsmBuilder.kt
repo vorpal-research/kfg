@@ -44,7 +44,7 @@ private val Type.shortInt
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

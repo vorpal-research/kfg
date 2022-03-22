@@ -12,7 +12,7 @@ import org.objectweb.asm.tree.InnerClassNode
 
 class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVisitor {
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

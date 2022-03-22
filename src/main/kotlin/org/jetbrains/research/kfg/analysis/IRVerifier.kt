@@ -22,7 +22,7 @@ class InvalidIRException(reason: Throwable) : KfgException(reason)
 class IRVerifier(classManager: ClassManager) : MethodVisitor {
     override val cm: ClassManager = classManager
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

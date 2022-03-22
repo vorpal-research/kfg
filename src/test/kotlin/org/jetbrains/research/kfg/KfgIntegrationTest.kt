@@ -96,7 +96,7 @@ class KfgIntegrationTest {
             override fun cleanup() {}
             override fun visit(klass: Class) {
                 super.visit(klass)
-                pipeline.visitorRegistry.getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
+                getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
             }
         }
 
@@ -134,7 +134,7 @@ class KfgIntegrationTest {
             override fun cleanup() {}
             override fun visit(klass: Class) {
                 super.visit(klass)
-                pipeline.visitorRegistry.getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
+                getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
             }
         }
 
@@ -168,7 +168,7 @@ class KfgIntegrationTest {
             override fun cleanup() {}
             override fun visitMethod(method: Method) {
                 super.visitMethod(method)
-                pipeline.visitorRegistry.getProvider<ProviderTest, MutableSet<Method>>().provide().add(method)
+                getProvider<ProviderTest, MutableSet<Method>>().provide().add(method)
             }
         }
 

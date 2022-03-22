@@ -13,7 +13,7 @@ class TypeMergeFailedException(val types: Set<Type>) : KfgException()
 
 class NullTypeAdapter(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

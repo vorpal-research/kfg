@@ -6,7 +6,8 @@ import org.jetbrains.research.kfg.visitor.pass.strategy.PassOrder
 import org.jetbrains.research.kfg.visitor.pass.strategy.PassStrategy
 import java.util.*
 
-// Use iterative way - limit the depth by 10 (for example) and try our best at this depth
+// Use iterative way - limit the depth by 10 (for example) and try our best at this dept
+// Make step only to depth 1
 private const val ITERATIVE_DEPTH = 10
 
 class IterativeAStarPlusPassStrategy : PassStrategy {

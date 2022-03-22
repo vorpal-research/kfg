@@ -7,7 +7,7 @@ import org.jetbrains.research.kfg.visitor.Pipeline
 
 class InnerClassNormalizer(override val cm: ClassManager) : ClassVisitor {
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

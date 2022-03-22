@@ -21,7 +21,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
 
     private val _pipeline = object : Pipeline(cm) {
-        override fun run() {
+        override fun runInternal() {
             // Do nothing
         }
     }

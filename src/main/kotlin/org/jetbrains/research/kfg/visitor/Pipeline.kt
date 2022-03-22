@@ -16,7 +16,8 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     }
     val visitorRegistry = VisitorRegistry()
 
-    protected open val pipeline = pipeline.map { it.wrap() }.toMutableList()
+    protected val pipeline: MutableList<NodeVisitor> = pipeline.toMutableList()
+    protected open var runnablePipeline = listOf<NodeVisitor>()
     // List of all scheduled passes. Used to add all passes only single time
     protected open val scheduled = mutableSetOf<java.lang.Class<*>>()
     protected val passOrder get() = passManager.getPassOrder(this@Pipeline)
@@ -41,7 +42,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         visitorRegistry.registerProvider(provider)
     }
 
-    open fun add(visitor: NodeVisitor): Boolean {
+    fun add(visitor: NodeVisitor): Boolean {
         if (!scheduled.add(visitor::class.java)) {
             return false
         }
@@ -49,7 +50,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         visitor.registerPassDependencies()
         visitor.registerAnalysisDependencies()
 
-        return pipeline.add(visitor.wrap())
+        return pipeline.add(visitor)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -57,7 +58,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
 
     protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> visitor
-        is MethodVisitor -> object : ClassVisitor {
+        is MethodVisitor -> object : ClassVisitor, VisitorWrapper {
             override val cm get() = this@Pipeline.cm
             override val pipeline get() = this@Pipeline
 
@@ -77,8 +78,11 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 super.visitMethod(method)
                 visitor.visit(method)
             }
+
+            override val wrapped: NodeVisitor
+                get() = visitor
         }
-        else -> object : ClassVisitor {
+        else -> object : ClassVisitor, VisitorWrapper {
             override val cm get() = this@Pipeline.cm
             override val pipeline get() = this@Pipeline
 
@@ -98,14 +102,26 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 super.visit(node)
                 visitor.visit(node)
             }
+
+            override val wrapped: NodeVisitor
+                get() = visitor
         }
     }
 
     operator fun NodeVisitor.unaryPlus() {
-        add(this)
+        schedule(this.javaClass)
     }
 
-    abstract fun run()
+    protected open fun buildRunnablePipeline(): List<NodeVisitor> {
+        return passOrder.map { it.wrap() }
+    }
+
+    fun run() {
+        runnablePipeline = buildRunnablePipeline()
+        runInternal()
+    }
+
+    protected abstract fun runInternal()
 }
 
 class PackagePipeline(
@@ -113,15 +129,11 @@ class PackagePipeline(
     val target: Package,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
-    override fun run() {
+    override fun runInternal() {
         val classes = cm.getByPackage(target)
-        for (pass in passOrder) {
+        for (pass in runnablePipeline) {
             for (`class` in classes) {
                 (pass as ClassVisitor).visit(`class`)
-                analysisManager.invalidateAllExcept(
-                        pass::class.java,
-                        `class`
-                )
             }
         }
     }
@@ -132,9 +144,9 @@ class MultiplePackagePipeline(
     val targets: List<Package>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
-    override fun run() {
+    override fun runInternal() {
         val classes = targets.flatMap { cm.getByPackage(it) }
-        for (pass in passOrder) {
+        for (pass in runnablePipeline) {
             for (`class` in classes) {
                 (pass as ClassVisitor).visit(`class`)
             }
@@ -158,8 +170,8 @@ class ClassPipeline(
         }
     }
 
-    override fun run() {
-        for (pass in passOrder) {
+    override fun runInternal() {
+        for (pass in runnablePipeline) {
             for (`class` in targets) {
                 (pass as ClassVisitor).visit(`class`)
             }
@@ -173,10 +185,9 @@ class MethodPipeline(
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     private val classTargets = targets.map { it.klass }.toMutableSet()
-    override val pipeline = pipeline.map { it.methodWrap() }.toMutableList()
 
     protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
-        is ClassVisitor -> object : ClassVisitor {
+        is ClassVisitor -> object : ClassVisitor, VisitorWrapper {
             override val cm get() = this@MethodPipeline.cm
             override val pipeline get() = this@MethodPipeline
 
@@ -203,8 +214,11 @@ class MethodPipeline(
                     visitor.visitMethod(method)
                 }
             }
+
+            override val wrapped: NodeVisitor
+                get() = visitor
         }
-        is MethodVisitor -> object : ClassVisitor {
+        is MethodVisitor -> object : ClassVisitor, VisitorWrapper {
             override val cm get() = this@MethodPipeline.cm
             override val pipeline get() = this@MethodPipeline
 
@@ -226,14 +240,19 @@ class MethodPipeline(
                     visitor.visit(method)
                 }
             }
+
+            override val wrapped: NodeVisitor
+                get() = visitor
         }
         else -> this.wrap()
     }
 
-    override fun add(visitor: NodeVisitor) = pipeline.add(visitor.methodWrap())
+    override fun buildRunnablePipeline(): List<NodeVisitor> {
+        return passOrder.map { it.methodWrap() }.toList()
+    }
 
-    override fun run() {
-        for (pass in passOrder) {
+    override fun runInternal() {
+        for (pass in runnablePipeline) {
             for (`class` in classTargets) {
                 (pass as ClassVisitor).visit(`class`)
             }
