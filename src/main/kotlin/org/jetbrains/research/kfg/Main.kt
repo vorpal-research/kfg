@@ -51,7 +51,8 @@ fun main(args: Array<String>) {
             Flags.readAll,
             useCachingLoopManager = false,
             failOnError = false,
-            verifyIR = true
+            verifyIR = false,
+            checkClasses = false
         )
     )
 

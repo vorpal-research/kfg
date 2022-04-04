@@ -29,13 +29,14 @@ val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = File(this.name).classLoader
 
-val ClassNode.hasFrameInfo: Boolean get() {
-    var hasInfo = false
-    for (mn in methods) {
-        hasInfo = hasInfo || mn.instructions.any { it is FrameNode }
+val ClassNode.hasFrameInfo: Boolean
+    get() {
+        var hasInfo = false
+        for (mn in methods) {
+            hasInfo = hasInfo || mn.instructions.any { it is FrameNode }
+        }
+        return hasInfo
     }
-    return hasInfo
-}
 
 internal fun ClassNode.inlineJsrs() {
     this.methods = methods.map { it.jsrInlined }
@@ -164,28 +165,41 @@ private fun ByteArray.toClassNode(): ClassNode {
     return classNode
 }
 
-private fun ClassNode.toByteArray(loader: ClassLoader, flags: Flags = Flags.writeComputeAll): ByteArray {
+private fun ClassNode.toByteArray(
+    loader: ClassLoader,
+    flags: Flags = Flags.writeComputeAll,
+    checkClass: Boolean = false
+): ByteArray {
     this.inlineJsrs()
     val cw = KfgClassWriter(loader, flags)
-    val cca = CheckClassAdapter(cw)
-    this.accept(cca)
+    val adapter = when {
+        checkClass -> CheckClassAdapter(cw)
+        else -> cw
+    }
+    this.accept(adapter)
     return cw.toByteArray()
 }
 
-internal fun ClassNode.write(loader: ClassLoader,
-                             path: Path,
-                             flags: Flags = Flags.writeComputeAll): File =
-        path.toFile().apply {
-            parentFile?.mkdirs()
-            FileOutputStream(this).use { fos ->
-                fos.write(this@write.toByteArray(loader, flags))
-            }
+internal fun ClassNode.write(
+    loader: ClassLoader,
+    path: Path,
+    flags: Flags = Flags.writeComputeAll,
+    checkClass: Boolean = false
+): File =
+    path.toFile().apply {
+        parentFile?.mkdirs()
+        FileOutputStream(this).use { fos ->
+            fos.write(this@write.toByteArray(loader, flags, checkClass))
         }
+    }
 
-fun Class.write(cm: ClassManager, loader: ClassLoader,
-                path: Path = Paths.get("$fullName.class"),
-                flags: Flags = Flags.writeComputeFrames): File = `try` {
-    ClassBuilder(cm, this).build().write(loader, path, flags)
+fun Class.write(
+    cm: ClassManager, loader: ClassLoader,
+    path: Path = Paths.get("$fullName.class"),
+    flags: Flags = Flags.writeComputeFrames,
+    checkClass: Boolean = false
+): File = `try` {
+    ClassBuilder(cm, this).build().write(loader, path, flags, checkClass)
 }.also {
     this.restoreMethodNodes()
 }.getOrThrow()
