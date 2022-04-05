@@ -2,10 +2,7 @@ package org.jetbrains.research.kfg.pm.passes
 
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
-import org.jetbrains.research.kfg.visitor.KfgProvider
-import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.jetbrains.research.kfg.visitor.getProvider
-import org.jetbrains.research.kfg.visitor.invalidateAnalysisCache
+import org.jetbrains.research.kfg.visitor.*
 import org.jetbrains.research.kfg.visitor.pass.AnalysisResult
 import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 
@@ -87,13 +84,14 @@ abstract class TestPass : MethodVisitor {
 
     override fun registerPassDependencies() {
         for (clazz in passDependencies()) {
-            this.pipeline.visitorRegistry.addRequiresPass(this::class.java, clazz)
+            this.pipeline.visitorRegistry.addRequiredPass(this::class.java, clazz)
         }
+        addRequiredProvider<TestProvider>()
     }
 
     override fun registerAnalysisDependencies() {
         for (clazz in analysisDependencies()) {
-            this.pipeline.visitorRegistry.addRequiresAnalysis(this::class.java, clazz)
+            this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, clazz)
         }
         for (clazz in analysisDependenciesPersisted()) {
             this.pipeline.visitorRegistry.addPersistedAnalysis(this::class.java, clazz)

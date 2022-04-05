@@ -6,24 +6,24 @@ import org.jetbrains.research.kfg.ir.Class
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.ir.Node
 import org.jetbrains.research.kfg.visitor.pass.AnalysisManager
+import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 import org.jetbrains.research.kfg.visitor.pass.PassManager
 import java.util.*
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
     var passManager = PassManager()
-    val analysisManager: AnalysisManager by lazy {
-        AnalysisManager(cm, this@Pipeline)
-    }
+    val analysisManager: AnalysisManager by lazy { AnalysisManager(cm, this@Pipeline) }
     val visitorRegistry = VisitorRegistry()
 
-    protected val pipeline: MutableList<NodeVisitor> = pipeline.toMutableList()
-    protected open var runnablePipeline = listOf<NodeVisitor>()
+    protected open val runnablePipeline: List<NodeVisitor>
+        get() = passManager.getPassOrder(this).map { it.wrap() }
+
     // List of all scheduled passes. Used to add all passes only single time
-    protected open val scheduled = mutableSetOf<java.lang.Class<*>>()
-    protected val passOrder get() = passManager.getPassOrder(this@Pipeline)
+    private val scheduled = mutableSetOf<java.lang.Class<*>>()
+    private val passesToRun: MutableList<NodeVisitor> = pipeline.toMutableList()
 
     fun <T : NodeVisitor> schedule(visitor: java.lang.Class<T>) {
-        if (scheduled.contains(visitor)) {
+        if (!scheduled.add(visitor)) {
             return
         }
 
@@ -31,30 +31,29 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 .apply { isAccessible = true }
                 .newInstance(cm, this@Pipeline)
 
-        add(visitorInstance)
+        visitorInstance.registerPassDependencies()
+        visitorInstance.registerAnalysisDependencies()
 
-        visitorRegistry.getVisitorDependencies(visitor).forEach {
-            schedule(it)
+        passesToRun.add(visitorInstance)
+
+        visitorRegistry.getVisitorDependencies(visitor).forEach { schedule(it) }
+
+        fun registerAnalysisDependencies(analysis: java.lang.Class<out AnalysisVisitor<*>>) {
+            if (visitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
+
+            analysisManager.getVisitorInstance(analysis).registerAnalysisDependencies()
+            visitorRegistry.getAnalysisDependencies(analysis).forEach {
+                registerAnalysisDependencies(it)
+            }
         }
+        visitorRegistry.getAnalysisDependencies(visitor).forEach { registerAnalysisDependencies(it) }
     }
 
     fun registerProvider(provider: KfgProvider<*>) {
         visitorRegistry.registerProvider(provider)
     }
 
-    fun add(visitor: NodeVisitor): Boolean {
-        if (!scheduled.add(visitor::class.java)) {
-            return false
-        }
-
-        visitor.registerPassDependencies()
-        visitor.registerAnalysisDependencies()
-
-        return pipeline.add(visitor)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun getPasses() = pipeline.map { it }
+    fun getPasses() = passesToRun.map { it }
 
     protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> visitor
@@ -112,12 +111,16 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         schedule(this.javaClass)
     }
 
+    operator fun KfgProvider<*>.unaryPlus() {
+        registerProvider(this)
+    }
+
     protected open fun buildRunnablePipeline(): List<NodeVisitor> {
-        return passOrder.map { it.wrap() }
+        return passManager.getPassOrder(this).map { it.wrap() }
     }
 
     fun run() {
-        runnablePipeline = buildRunnablePipeline()
+        passManager.verify(this)
         runInternal()
     }
 
@@ -184,6 +187,9 @@ class MethodPipeline(
     val targets: Collection<Method>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
+    override val runnablePipeline: List<NodeVisitor>
+        get() = passManager.getPassOrder(this).map { it.methodWrap() }.toList()
+
     private val classTargets = targets.map { it.klass }.toMutableSet()
 
     protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
@@ -245,10 +251,6 @@ class MethodPipeline(
                 get() = visitor
         }
         else -> this.wrap()
-    }
-
-    override fun buildRunnablePipeline(): List<NodeVisitor> {
-        return passOrder.map { it.methodWrap() }.toList()
     }
 
     override fun runInternal() {

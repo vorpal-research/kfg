@@ -47,8 +47,6 @@ class PassManagerTest {
 
     @Test
     fun passManagerPipelineTest() {
-        val pm = PassManager(IterativeAStarPlusPassStrategy())
-
         val klass = run {
             var temp = cm.concreteClasses.random()
             while (temp.methods.isEmpty())
@@ -57,6 +55,7 @@ class PassManagerTest {
         }
         val targetMethod = klass.getMethods(klass.methods.random().name).filterIndexed {index, _ -> index < 1}
 
+        val pm = PassManager(IterativeAStarPlusPassStrategy())
         val provider = TestProvider()
 
         executePipeline(cm, targetMethod) {

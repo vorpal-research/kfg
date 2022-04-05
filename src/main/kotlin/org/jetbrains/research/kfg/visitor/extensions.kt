@@ -4,12 +4,16 @@ import org.jetbrains.research.kfg.ir.Node
 import org.jetbrains.research.kfg.visitor.pass.AnalysisResult
 import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 
-inline fun <reified Dependency : NodeVisitor> NodeVisitor.addRequiresPass() {
-    this.pipeline.visitorRegistry.addRequiresPass(this::class.java, Dependency::class.java)
+inline fun <reified Dependency : NodeVisitor> NodeVisitor.addRequiredPass() {
+    this.pipeline.visitorRegistry.addRequiredPass(this::class.java, Dependency::class.java)
 }
 
-inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addRequiresAnalysis() {
-    this.pipeline.visitorRegistry.addRequiresAnalysis(this::class.java, Dependency::class.java)
+inline fun <reified Dependency : KfgProvider<*>> NodeVisitor.addRequiredProvider() {
+    this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
+}
+
+inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addRequiredAnalysis() {
+    this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, Dependency::class.java)
 }
 
 inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addPersistedAnalysis() {

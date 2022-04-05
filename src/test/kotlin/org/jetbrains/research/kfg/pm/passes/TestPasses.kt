@@ -1,8 +1,7 @@
 package org.jetbrains.research.kfg.pm.passes
 
 import org.jetbrains.research.kfg.ClassManager
-import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.*
 import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
 
 class P1(override val cm: ClassManager, override val pipeline: Pipeline) : TestPass() {

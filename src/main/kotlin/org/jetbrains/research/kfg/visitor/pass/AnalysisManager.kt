@@ -12,6 +12,10 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
     private val cache = ReferenceMap<VisitorNodePair, AnalysisResult>()
 
     fun invalidateAllExcept(visitor: Class<out NodeVisitor>, node: Node) {
+        if (visitor is AnalysisVisitor<*>) {
+            return
+        }
+
         cache.iterator().apply {
             val persistedSet = pipeline.visitorRegistry.getAnalysisPersisted(visitor)
             while (hasNext()) {
@@ -28,7 +32,7 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
                 (getVisitorInstance(visitor) as AnalysisVisitor<*>).analyse(node)
             } as R
 
-    private fun <T : AnalysisVisitor<out AnalysisResult>> getVisitorInstance(visitor: Class<T>): T =
+    internal fun <T : AnalysisVisitor<out AnalysisResult>> getVisitorInstance(visitor: Class<T>): T =
             visitors.computeIfAbsent(visitor) {
                 visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
                     .apply { isAccessible = true }
