@@ -48,8 +48,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         for ((bb, returnInst) in returnValues) {
             bb.remove(returnInst)
             returnInst.clearUses()
-            bb.addSuccessor(returnBlock)
-            returnBlock.addPredecessor(bb)
+            bb.linkForward(returnBlock)
             if (returnInst.hasReturnValue)
                 incomings[bb] = returnInst.returnValue
 

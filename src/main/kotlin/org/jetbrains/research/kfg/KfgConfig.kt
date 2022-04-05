@@ -13,8 +13,10 @@ class InvalidKfgConfigException(msg: String) : KtException(msg) {
 
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
+        val useCachingLoopManager: Boolean = false,
         val failOnError: Boolean = true,
-        val verifyIR: Boolean = false
+        val verifyIR: Boolean = false,
+        val checkClasses: Boolean = false
 ) {
 
     init {
@@ -28,6 +30,8 @@ class KfgConfigBuilder private constructor(private val current: KfgConfig) {
     fun flags(flags: Flags) = KfgConfigBuilder(current.copy(flags = flags))
     fun failOnError(value: Boolean) = KfgConfigBuilder(current.copy(failOnError = value))
     fun verifyIR(value: Boolean) = KfgConfigBuilder(current.copy(verifyIR = value))
+    fun checkClasses(value: Boolean) = KfgConfigBuilder(current.copy(checkClasses = value))
+    fun useCachingLoopManager(value: Boolean) = KfgConfigBuilder(current.copy(useCachingLoopManager = value))
 
     fun build() = current
 }

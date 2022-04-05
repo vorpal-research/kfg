@@ -36,6 +36,8 @@ class KfgIntegrationTest {
         cm = ClassManager(
             KfgConfigBuilder()
                 .failOnError(false)
+                .verifyIR(true)
+                .checkClasses(true)
                 .build()
         )
         cm.initialize(jar)

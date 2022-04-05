@@ -6,7 +6,6 @@ import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.isJar
 import org.objectweb.asm.tree.ClassNode
 import java.io.File
-import java.nio.file.Files
 import java.nio.file.Path
 
 interface Container {
@@ -18,7 +17,15 @@ interface Container {
     val commonPackage: Package
 
     fun parse(flags: Flags, failOnError: Boolean = false, loader: ClassLoader = classLoader): Map<String, ClassNode>
-    fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean = false, failOnError: Boolean = false, loader: ClassLoader = classLoader)
+    fun unpack(
+        cm: ClassManager,
+        target: Path,
+        unpackAllClasses: Boolean = false,
+        failOnError: Boolean = false,
+        checkClass: Boolean = false,
+        loader: ClassLoader = classLoader
+    )
+
     fun update(cm: ClassManager, target: Path, loader: ClassLoader = classLoader): Container
 }
 

@@ -89,6 +89,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
         target: Path,
         unpackAllClasses: Boolean,
         failOnError: Boolean,
+        checkClass: Boolean,
         loader: ClassLoader
     ) {
         val absolutePath = target.toAbsolutePath()
@@ -107,12 +108,12 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
                     when {
                         pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                             val path = absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
-                            `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                            `class`.write(cm, loader, path, Flags.writeComputeFrames, checkClass)
                         }
                         unpackAllClasses -> {
                             val path = absolutePath.resolve(entry.name)
                             val classNode = readClassNode(file.getInputStream(entry))
-                            classNode.write(loader, path, Flags.writeComputeNone)
+                            classNode.write(loader, path, Flags.writeComputeNone, checkClass)
                         }
                         else -> Unit
                     }
@@ -131,7 +132,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     }
 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
-        unpack(cm, target, false, false, loader)
+        unpack(cm, target, false, false, false, loader)
 
         val absolutePath = target.toAbsolutePath()
         val jarName = file.name.substringAfterLast(File.separator).removeSuffix(".jar")

@@ -46,7 +46,15 @@ fun main(args: Array<String>) {
 
     val jars = cfg.getStringValue("jar").split(System.getProperty("path.separator")).map { Paths.get(it).asContainer()!! }
 
-    val classManager = ClassManager(KfgConfig(Flags.readAll, false, verifyIR = true))
+    val classManager = ClassManager(
+        KfgConfig(
+            Flags.readAll,
+            useCachingLoopManager = false,
+            failOnError = false,
+            verifyIR = false,
+            checkClasses = false
+        )
+    )
 
     classManager.initialize(*jars.toTypedArray())
 

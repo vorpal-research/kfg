@@ -63,7 +63,14 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
         return classes
     }
 
-    override fun unpack(cm: ClassManager, target: Path, unpackAllClasses: Boolean, failOnError: Boolean, loader: ClassLoader) {
+    override fun unpack(
+        cm: ClassManager,
+        target: Path,
+        unpackAllClasses: Boolean,
+        failOnError: Boolean,
+        checkClass: Boolean,
+        loader: ClassLoader
+    ) {
         val absolutePath = target.toAbsolutePath()
         val allClasses = cm.getContainerClasses(this)
         val visitedClasses = mutableSetOf<Class>()
@@ -77,12 +84,12 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
                         pkg.isParent(entry.pkg) && `class` is ConcreteClass -> {
                             val path =
                                 absolutePath.resolve(Paths.get(`class`.pkg.fileSystemPath, "${`class`.name}.class"))
-                            `class`.write(cm, loader, path, Flags.writeComputeFrames)
+                            `class`.write(cm, loader, path, Flags.writeComputeFrames, checkClass)
                         }
                         unpackAllClasses -> {
                             val path = absolutePath.resolve(entry.fullClassName)
                             val classNode = readClassNode(entry.inputStream())
-                            classNode.write(loader, path, Flags.writeComputeNone)
+                            classNode.write(loader, path, Flags.writeComputeNone, checkClass)
                         }
                         else -> Unit
                     }

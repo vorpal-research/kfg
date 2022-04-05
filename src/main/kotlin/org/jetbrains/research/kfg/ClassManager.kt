@@ -89,7 +89,12 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
-    internal val loopManager: LoopManager by lazy { LoopManager(this) }
+    internal val loopManager: LoopManager by lazy {
+        when {
+            config.useCachingLoopManager -> CachingLoopManager(this)
+            else -> DefaultLoopManager()
+        }
+    }
 
     val flags: Flags get() = config.flags
     val failOnError: Boolean get() = config.failOnError
