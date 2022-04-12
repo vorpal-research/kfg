@@ -87,6 +87,11 @@
             <version>${apache-commons-collections.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.github.tschuchortdev</groupId>
+            <artifactId>kotlin-compile-testing</artifactId>
+            <version>1.4.8</version>
+        </dependency>
     </dependencies>
 
     <build>

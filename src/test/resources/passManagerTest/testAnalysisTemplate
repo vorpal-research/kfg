@@ -1,0 +1,1 @@
+class %s(override val cm: ClassManager, override val pipeline: Pipeline) : TestAnalysis()
