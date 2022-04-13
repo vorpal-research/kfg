@@ -7,6 +7,7 @@ import org.jetbrains.research.kfg.util.Flags
 import org.jetbrains.research.kfg.util.write
 import org.jetbrains.research.kfg.visitor.ClassVisitor
 import org.jetbrains.research.kfg.visitor.LoopAnalysis
+import org.jetbrains.research.kfg.visitor.Pipeline
 import org.jetbrains.research.kfg.visitor.executePipeline
 import org.jetbrains.research.kthelper.tryOrNull
 import java.net.URLClassLoader
@@ -26,6 +27,13 @@ private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader
             println("Failed to write $klass")
         }
     }
+
+    private val _pipeline = object : Pipeline(cm) {
+        override fun runInternal() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
 }
 
 private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
@@ -39,6 +47,13 @@ private class ClassChecker(override val cm: ClassManager, val loader: ClassLoade
             println("Failed to load written class: $klass: ${e.message}")
         }
     }
+
+    private val _pipeline = object : Pipeline(cm) {
+        override fun runInternal() {
+            // Do nothing
+        }
+    }
+    override val pipeline: Pipeline get() = _pipeline
 }
 
 fun main(args: Array<String>) {
