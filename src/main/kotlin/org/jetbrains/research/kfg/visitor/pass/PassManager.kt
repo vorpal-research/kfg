@@ -2,12 +2,24 @@ package org.jetbrains.research.kfg.visitor.pass
 
 import org.jetbrains.research.kfg.visitor.NodeVisitor
 import org.jetbrains.research.kfg.visitor.Pipeline
+import org.jetbrains.research.kfg.visitor.pass.strategy.PassOrder
 import org.jetbrains.research.kfg.visitor.pass.strategy.PassStrategy
 import org.jetbrains.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
 
 class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()) {
-    fun getPassOrder(pipeline: Pipeline, parallel: Boolean = false) =
-            passStrategy.createPassOrder(pipeline, parallel)
+    fun getPassOrder(pipeline: Pipeline, parallel: Boolean = false): PassOrder {
+        // Add existing soft dependencies to real one
+        val registry = pipeline.visitorRegistry
+        val passes = pipeline.getPasses()
+        val passesAsClass = passes.map { it::class.java }.toSet()
+        for (pass in passes) {
+            registry.getVisitorSoftDependencies(pass.javaClass)
+                .filter { passesAsClass.contains(it) }
+                .forEach { registry.addRequiredPass(pass.javaClass, it) }
+        }
+
+        return passStrategy.createPassOrder(pipeline, parallel)
+    }
 
     fun verify(pipeline: Pipeline) {
         verifyDependencyInstances(pipeline)
@@ -50,7 +62,14 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
                 return
             }
 
-            val dependentsOn = registry.getVisitorDependencies(pass)
+            val dependentsOn =
+                if (pass is AnalysisVisitor<*> )
+                    registry.getVisitorDependencies(pass)
+                        .toMutableSet()
+                        .apply { addAll(registry.getVisitorSoftDependencies(pass)) }
+                else
+                    registry.getAnalysisDependencies(pass)
+
 
             for (p in dependentsOn) {
                 if (dependants.contains(p)) exception(pass, p)

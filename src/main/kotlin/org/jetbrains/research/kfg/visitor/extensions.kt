@@ -8,6 +8,10 @@ inline fun <reified Dependency : NodeVisitor> NodeVisitor.addRequiredPass() {
     this.pipeline.visitorRegistry.addRequiredPass(this::class.java, Dependency::class.java)
 }
 
+inline fun <reified Dependency : NodeVisitor> NodeVisitor.addSoftDependencyPass() {
+    this.pipeline.visitorRegistry.addSoftDependencyPass(this::class.java, Dependency::class.java)
+}
+
 inline fun <reified Dependency : KfgProvider<*>> NodeVisitor.addRequiredProvider() {
     this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
 }
