@@ -135,6 +135,18 @@ class TypeFactory internal constructor(val cm: ClassManager) {
         else -> unreachable("Unknown primary type $type")
     }
 
+    fun getUnwrapped(type: Type): PrimaryType? = when (type) {
+        boolWrapper -> boolType
+        byteWrapper -> byteType
+        charWrapper -> charType
+        shortWrapper -> shortType
+        intWrapper -> intType
+        longWrapper -> longType
+        floatWrapper -> floatType
+        doubleWrapper -> doubleType
+        else -> null
+    }
+
     fun get(klass: JClass<*>): Type = when {
         klass.isPrimitive -> when (klass) {
             Void::class.java -> voidType
