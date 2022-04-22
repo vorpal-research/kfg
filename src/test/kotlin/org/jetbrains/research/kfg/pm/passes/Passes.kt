@@ -112,5 +112,13 @@ abstract class TestAnalysis : AnalysisVisitor<TestAnalysisResult> {
 
         return TestAnalysisResult()
     }
+
+    override fun registerAnalysisDependencies() {
+        for (clazz in analysisDependencies()) {
+            this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, clazz)
+        }
+    }
+
+    abstract fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>>
 }
 

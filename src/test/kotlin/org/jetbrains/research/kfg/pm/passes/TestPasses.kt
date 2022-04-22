@@ -99,3 +99,21 @@ class P16(override val cm: ClassManager, override val pipeline: Pipeline) : Test
     override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf(A2::class.java, A13::class.java, A15::class.java)
     override fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>> = listOf(A2::class.java, A13::class.java, A15::class.java)
 }
+
+class P10Circular(override val cm: ClassManager, override val pipeline: Pipeline) : TestPass() {
+    override fun passDependencies(): List<Class<out MethodVisitor>> = listOf(P5::class.java, P7Circular::class.java)
+    override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf(A3::class.java, A2::class.java, A12::class.java)
+    override fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>> = listOf(A4::class.java, A6::class.java, A9::class.java, A13::class.java, A14::class.java)
+}
+
+class P7Circular(override val cm: ClassManager, override val pipeline: Pipeline) : TestPass() {
+    override fun passDependencies(): List<Class<out MethodVisitor>> = listOf(P4::class.java, P10Circular::class.java)
+    override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf(A2::class.java, A7::class.java, A8::class.java)
+    override fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>> = listOf(A2::class.java, A3::class.java, A8::class.java, A10::class.java, A11::class.java)
+}
+
+class P3CircularAnalysis(override val cm: ClassManager, override val pipeline: Pipeline) : TestPass() {
+    override fun passDependencies(): List<Class<out MethodVisitor>> = listOf()
+    override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf(A3::class.java, A7Circular::class.java)
+    override fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>> = listOf(A1::class.java, A6::class.java, A7Circular::class.java, A10::class.java)
+}

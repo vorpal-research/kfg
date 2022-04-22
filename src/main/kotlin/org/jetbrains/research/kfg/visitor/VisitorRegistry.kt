@@ -50,5 +50,5 @@ class VisitorRegistry {
         providers[provider::class.java] = provider
     }
 
-    internal fun getRegisteredAnalysis() = analysisDependencies.keys.toSet()
+    internal fun getRegisteredAnalysis() = analysisDependencies.values.flatten().distinct()
 }

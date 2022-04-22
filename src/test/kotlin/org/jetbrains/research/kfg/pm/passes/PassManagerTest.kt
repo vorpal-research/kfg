@@ -8,6 +8,7 @@ import org.jetbrains.research.kfg.Package
 import org.jetbrains.research.kfg.container.JarContainer
 import org.jetbrains.research.kfg.ir.Method
 import org.jetbrains.research.kfg.visitor.executePipeline
+import org.jetbrains.research.kfg.visitor.pass.IllegalPipelineException
 import org.jetbrains.research.kfg.visitor.pass.PassManager
 import org.jetbrains.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPlusPassStrategy
 import org.jetbrains.research.kfg.visitor.schedule
@@ -26,8 +27,8 @@ class PassManagerTest {
 
     private val START_FROM = 20
     private val DATASET_COUNT = 25
-    private val PASSES_COUNT = 100
-    private val ANALYSIS_COUNT = 200
+    private val PASSES_COUNT = 10
+    private val ANALYSIS_COUNT = 20
     private val ROOT_CHANCE = 0.2f
     private val CONNECTEDNESS = 1f
     private val ANALYSIS_REQUIRED = 0.6f
@@ -112,6 +113,64 @@ class PassManagerTest {
 
         assertEquals(16, context.executedPasses.size)
         println(context.executedAnalysis.size)
+    }
+
+    @Test(IllegalPipelineException::class)
+    fun passManagerCheckProviderIsMissing() {
+        val klass = run {
+            var temp = cm.concreteClasses.random()
+            while (temp.methods.isEmpty())
+                temp = cm.concreteClasses.random()
+            temp
+        }
+        val targetMethod = klass.getMethods(klass.methods.random().name).filterIndexed {index, _ -> index < 1}
+
+        val pm = PassManager(IterativeAStarPlusPassStrategy())
+
+        executePipeline(cm, targetMethod) {
+            passManager = pm
+            schedule<P2>()
+        }
+    }
+
+    @Test(IllegalPipelineException::class)
+    fun passManagerCheckCircularDependency() {
+        val klass = run {
+            var temp = cm.concreteClasses.random()
+            while (temp.methods.isEmpty())
+                temp = cm.concreteClasses.random()
+            temp
+        }
+        val targetMethod = klass.getMethods(klass.methods.random().name).filterIndexed {index, _ -> index < 1}
+
+        val pm = PassManager(IterativeAStarPlusPassStrategy())
+
+        val provider = TestProvider()
+        executePipeline(cm, targetMethod) {
+            passManager = pm
+            schedule<P7Circular>()
+            registerProvider(provider)
+        }
+    }
+
+    @Test(IllegalPipelineException::class)
+    fun passManagerCheckCircularAnalysisDependency() {
+        val klass = run {
+            var temp = cm.concreteClasses.random()
+            while (temp.methods.isEmpty())
+                temp = cm.concreteClasses.random()
+            temp
+        }
+        val targetMethod = klass.getMethods(klass.methods.random().name).filterIndexed {index, _ -> index < 1}
+
+        val pm = PassManager(IterativeAStarPlusPassStrategy())
+
+        val provider = TestProvider()
+        executePipeline(cm, targetMethod) {
+            passManager = pm
+            schedule<P3CircularAnalysis>()
+            registerProvider(provider)
+        }
     }
 
     private fun generateTestData(): List<DependencyNodeWrapper> {

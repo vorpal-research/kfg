@@ -57,37 +57,40 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
             throw IllegalPipelineException("Circular dependency: ${dependant.name} and ${pass.name}")
         }
 
-        fun verifyPass(pass: Class<out NodeVisitor>, dependants: MutableSet<Class<out NodeVisitor>>) {
+        fun verifyPass(
+            pass: Class<out NodeVisitor>,
+            dependants: MutableSet<Class<out NodeVisitor>>,
+            getDependsOn: (p: Class<out NodeVisitor>) -> Set<Class<out NodeVisitor>>
+        ) {
             if (!checkedPasses.add(pass)) {
                 return
             }
 
-            val dependentsOn =
-                if (pass is AnalysisVisitor<*> )
-                    registry.getVisitorDependencies(pass)
-                        .toMutableSet()
-                        .apply { addAll(registry.getVisitorSoftDependencies(pass)) }
-                else
-                    registry.getAnalysisDependencies(pass)
+            val dependsOn = getDependsOn(pass)
 
-
-            for (p in dependentsOn) {
+            for (p in dependsOn) {
                 if (dependants.contains(p)) exception(pass, p)
             }
 
-            for (p in dependentsOn) {
-                dependants.add(p)
-                verifyPass(p, dependants)
-                dependants.remove(p)
+            dependants.add(pass)
+            for (p in dependsOn) {
+                verifyPass(p, dependants, getDependsOn)
             }
+            dependants.remove(pass)
         }
 
         for (pass in passesAsClass) {
-            verifyPass(pass, mutableSetOf())
+            verifyPass(pass, mutableSetOf()) {
+                registry.getVisitorDependencies(it)
+                    .toMutableSet()
+                    .apply { addAll(registry.getVisitorSoftDependencies(it)) }
+            }
         }
 
         for (analysis in analysisAsClass) {
-            verifyPass(analysis, mutableSetOf())
+            verifyPass(analysis, mutableSetOf()) {
+                registry.getAnalysisDependencies(it)
+            }
         }
     }
 }
