@@ -28,7 +28,7 @@ Add the link to the repository to your `pom.xml`:
 Include:
 ```xml
 <dependency>
-	<groupId>org.jetbrains.research</groupId>
+	<groupId>org.vorpal.research</groupId>
 	<artifactId>kfg</artifactId>
 	<version>${kfg.version}</version>
 </dependency>
