@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.builder.cfg
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.ValueFactory
 import org.vorpal.research.kfg.ir.value.instruction.*
@@ -10,7 +11,7 @@ import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 
-class BoolValueAdapter(override val cm: org.vorpal.research.kfg.ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
+class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
     override val instructions: InstructionFactory
         get() = cm.instruction
     override val types: TypeFactory

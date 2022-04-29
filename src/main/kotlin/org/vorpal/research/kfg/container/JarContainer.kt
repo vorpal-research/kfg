@@ -1,6 +1,8 @@
 package org.vorpal.research.kfg.container
 
 import org.objectweb.asm.tree.ClassNode
+import org.vorpal.research.kfg.Package
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.UnsupportedCfgException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
@@ -14,20 +16,20 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 
-class JarContainer(override val path: Path, pkg: org.vorpal.research.kfg.Package? = null) : Container {
+class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     private val file = JarFile(path.toFile())
     private val manifest = Manifest()
 
-    constructor(path: String, `package`: org.vorpal.research.kfg.Package?) : this(Paths.get(path), `package`)
-    constructor(path: String, `package`: String) : this(Paths.get(path), org.vorpal.research.kfg.Package.parse(`package`))
+    constructor(path: String, `package`: Package?) : this(Paths.get(path), `package`)
+    constructor(path: String, `package`: String) : this(Paths.get(path), Package.parse(`package`))
 
     override fun toString(): String = path.toString()
 
-    override val pkg: org.vorpal.research.kfg.Package = pkg ?: commonPackage
+    override val pkg: Package = pkg ?: commonPackage
     override val name: String get() = file.name
     override val classLoader get() = file.classLoader
 
-    override val commonPackage: org.vorpal.research.kfg.Package
+    override val commonPackage: Package
         get() {
             val klasses = mutableListOf<String>()
             val enumeration = file.entries()
@@ -39,8 +41,8 @@ class JarContainer(override val path: Path, pkg: org.vorpal.research.kfg.Package
                 }
 
             }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != org.vorpal.research.kfg.Package.SEPARATOR }
-            return org.vorpal.research.kfg.Package.parse("$commonSubstring*")
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
+            return Package.parse("$commonSubstring*")
         }
 
     init {
@@ -83,7 +85,7 @@ class JarContainer(override val path: Path, pkg: org.vorpal.research.kfg.Package
     }
 
     override fun unpack(
-        cm: org.vorpal.research.kfg.ClassManager,
+        cm: ClassManager,
         target: Path,
         unpackAllClasses: Boolean,
         failOnError: Boolean,
@@ -129,7 +131,7 @@ class JarContainer(override val path: Path, pkg: org.vorpal.research.kfg.Package
         }
     }
 
-    override fun update(cm: org.vorpal.research.kfg.ClassManager, target: Path, loader: ClassLoader): JarContainer {
+    override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
         unpack(cm, target, false, false, false, loader)
 
         val absolutePath = target.toAbsolutePath()

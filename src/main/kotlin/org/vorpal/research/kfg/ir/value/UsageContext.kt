@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.ir.value
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.CatchBlock
 import org.vorpal.research.kfg.ir.Method
@@ -75,7 +76,7 @@ interface UsageContext : ValueUsageContext, BlockUsageContext {
     /**
      * instruction factory wrappers
      */
-    fun inst(cm: org.vorpal.research.kfg.ClassManager, body: InstructionBuilder.() -> Instruction): Instruction = inst(cm, this, body)
+    fun inst(cm: ClassManager, body: InstructionBuilder.() -> Instruction): Instruction = inst(cm, this, body)
 }
 
 abstract class AbstractUsageContext : UsageContext {

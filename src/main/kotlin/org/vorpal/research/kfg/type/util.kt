@@ -7,7 +7,7 @@ import org.vorpal.research.kfg.InvalidStateException
 import org.vorpal.research.kfg.InvalidTypeException
 import java.util.regex.Pattern
 
-val FrameNode.frameType get() = org.vorpal.research.kfg.type.FrameNodeHelper.getFrameType(this)
+val FrameNode.frameType get() = FrameNodeHelper.getFrameType(this)
 
 val Type.internalDesc: String
     get() = when {

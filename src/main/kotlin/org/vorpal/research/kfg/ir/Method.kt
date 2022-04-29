@@ -1,6 +1,7 @@
 package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.tree.MethodNode
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
@@ -51,7 +52,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
     }
 
     constructor(
-        cm: org.vorpal.research.kfg.ClassManager,
+        cm: ClassManager,
         klass: Class,
         node: MethodNode
     ) : super(cm, node.name, Modifiers(node.access)) {
@@ -67,7 +68,7 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
     }
 
     constructor(
-        cm: org.vorpal.research.kfg.ClassManager,
+        cm: ClassManager,
         klass: Class,
         name: String,
         desc: MethodDesc,

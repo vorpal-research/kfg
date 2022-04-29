@@ -1,5 +1,7 @@
 package org.vorpal.research.kfg.type
 
+import org.vorpal.research.kfg.Package
+
 interface Type {
     companion object {
         const val WORD = 32
@@ -28,7 +30,7 @@ interface Type {
         get() = false
 
     val canonicalDesc
-        get() = asmDesc.replace(org.vorpal.research.kfg.Package.SEPARATOR, org.vorpal.research.kfg.Package.CANONICAL_SEPARATOR)
+        get() = asmDesc.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
     val bitSize: Int
 

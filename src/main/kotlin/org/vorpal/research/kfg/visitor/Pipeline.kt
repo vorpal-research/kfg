@@ -1,11 +1,13 @@
 package org.vorpal.research.kfg.visitor
 
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.Node
-import java.util.*
+import org.vorpal.research.kthelper.collection.dequeOf
 
-abstract class Pipeline(val cm: org.vorpal.research.kfg.ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
+abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
     protected open val pipeline = pipeline.map { it.wrap() }.toMutableList()
 
     operator fun plus(visitor: NodeVisitor) = add(visitor)
@@ -54,8 +56,8 @@ abstract class Pipeline(val cm: org.vorpal.research.kfg.ClassManager, pipeline: 
 }
 
 class PackagePipeline(
-    cm: org.vorpal.research.kfg.ClassManager,
-    val target: org.vorpal.research.kfg.Package,
+    cm: ClassManager,
+    val target: Package,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     override fun run() {
@@ -69,8 +71,8 @@ class PackagePipeline(
 }
 
 class MultiplePackagePipeline(
-    cm: org.vorpal.research.kfg.ClassManager,
-    val targets: List<org.vorpal.research.kfg.Package>,
+    cm: ClassManager,
+    val targets: List<Package>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     override fun run() {
@@ -84,14 +86,14 @@ class MultiplePackagePipeline(
 }
 
 class ClassPipeline(
-    cm: org.vorpal.research.kfg.ClassManager,
+    cm: ClassManager,
     target: Class,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     private val targets = mutableSetOf<Class>()
 
     init {
-        val classQueue = ArrayDeque<Class>(listOf(target))
+        val classQueue = dequeOf(target)
         while (classQueue.isNotEmpty()) {
             val top = classQueue.pollFirst()
             targets += top
@@ -108,8 +110,8 @@ class ClassPipeline(
     }
 }
 
-class MethodPipeline(
-    cm: org.vorpal.research.kfg.ClassManager,
+open class MethodPipeline(
+    cm: ClassManager,
     val targets: Collection<Method>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
@@ -164,34 +166,34 @@ class MethodPipeline(
     }
 }
 
-fun buildPipeline(cm: org.vorpal.research.kfg.ClassManager, target: org.vorpal.research.kfg.Package, init: Pipeline.() -> Unit): Pipeline =
+fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline =
     PackagePipeline(cm, target).also {
         it.init()
     }
 
-fun buildPipeline(cm: org.vorpal.research.kfg.ClassManager, targets: List<org.vorpal.research.kfg.Package>, init: Pipeline.() -> Unit): Pipeline =
+fun buildPipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit): Pipeline =
     MultiplePackagePipeline(cm, targets).also {
         it.init()
     }
 
-fun buildPipeline(cm: org.vorpal.research.kfg.ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline =
+fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline =
     ClassPipeline(cm, target).also {
         it.init()
     }
 
-fun buildPipeline(cm: org.vorpal.research.kfg.ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline =
+fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline =
     MethodPipeline(cm, targets).also {
         it.init()
     }
 
-fun executePipeline(cm: org.vorpal.research.kfg.ClassManager, target: org.vorpal.research.kfg.Package, init: Pipeline.() -> Unit) =
+fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
     buildPipeline(cm, target, init).run()
 
-fun executePipeline(cm: org.vorpal.research.kfg.ClassManager, targets: List<org.vorpal.research.kfg.Package>, init: Pipeline.() -> Unit) =
+fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
     buildPipeline(cm, targets, init).run()
 
-fun executePipeline(cm: org.vorpal.research.kfg.ClassManager, target: Class, init: Pipeline.() -> Unit) =
+fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
     buildPipeline(cm, target, init).run()
 
-fun executePipeline(cm: org.vorpal.research.kfg.ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
+fun executePipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
     buildPipeline(cm, targets, init).run()

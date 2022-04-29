@@ -20,9 +20,9 @@ class KfgIntegrationTest {
     private val out = ByteArrayOutputStream()
     private val err = ByteArrayOutputStream()
 
-    val pkg = org.vorpal.research.kfg.Package.parse("org.vorpal.research.kfg.*")
+    val pkg = Package.parse("org.vorpal.research.kfg.*")
     lateinit var jar: JarContainer
-    lateinit var cm: org.vorpal.research.kfg.ClassManager
+    lateinit var cm: ClassManager
 
     @BeforeTest
     fun setUp() {
@@ -33,7 +33,7 @@ class KfgIntegrationTest {
         val jarPath = "target/kfg-$version-jar-with-dependencies.jar"
 
         jar = JarContainer(jarPath, pkg)
-        cm = org.vorpal.research.kfg.ClassManager(
+        cm = ClassManager(
             KfgConfigBuilder()
                 .failOnError(false)
                 .verifyIR(true)
@@ -66,7 +66,7 @@ class KfgIntegrationTest {
         val targetDirPath = Paths.get("./target/classes")
 
         val container = DirectoryContainer(targetDirPath, pkg)
-        val cm = org.vorpal.research.kfg.ClassManager(
+        val cm = ClassManager(
             KfgConfigBuilder()
                 .failOnError(false)
                 .build()
@@ -89,7 +89,7 @@ class KfgIntegrationTest {
         val visitedClasses = mutableSetOf<Class>()
         executePipeline(cm, pkg) {
             +object : ClassVisitor {
-                override val cm: org.vorpal.research.kfg.ClassManager
+                override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
 
                 override fun cleanup() {}
@@ -122,7 +122,7 @@ class KfgIntegrationTest {
         val visitedClasses = mutableSetOf<Class>()
         executePipeline(cm, klass) {
             +object : ClassVisitor {
-                override val cm: org.vorpal.research.kfg.ClassManager
+                override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
 
                 override fun cleanup() {}
@@ -151,7 +151,7 @@ class KfgIntegrationTest {
         val visitedMethods = mutableSetOf<Method>()
         executePipeline(cm, targetMethods) {
             +object : ClassVisitor {
-                override val cm: org.vorpal.research.kfg.ClassManager
+                override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
 
                 override fun cleanup() {}

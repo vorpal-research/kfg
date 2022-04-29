@@ -1,6 +1,8 @@
 package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.tree.ClassNode
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.InvalidStateException
 import org.vorpal.research.kfg.UnknownInstanceException
 import org.vorpal.research.kfg.type.Type
@@ -22,7 +24,7 @@ abstract class Class : Node {
     protected infix fun String.to(type: Type) = FieldKey(this, type)
 
     internal val cn: ClassNode
-    val pkg: org.vorpal.research.kfg.Package
+    val pkg: Package
     protected val innerMethods = mutableMapOf<MethodKey, Method>()
     protected val innerFields = mutableMapOf<FieldKey, Field>()
     protected var superClassName: String? = null
@@ -40,10 +42,10 @@ abstract class Class : Node {
     internal val failingMethods = mutableSetOf<Method>()
 
     val fullName
-        get() = if (pkg == org.vorpal.research.kfg.Package.emptyPackage) name else "$pkg${org.vorpal.research.kfg.Package.SEPARATOR}$name"
+        get() = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
 
     val canonicalDesc
-        get() = fullName.replace(org.vorpal.research.kfg.Package.SEPARATOR, org.vorpal.research.kfg.Package.CANONICAL_SEPARATOR)
+        get() = fullName.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
     var superClass
         get() = superClassName?.let { cm[it] }
@@ -77,8 +79,8 @@ abstract class Class : Node {
         get() = "L$fullName;"
 
     constructor(
-        cm: org.vorpal.research.kfg.ClassManager,
-        pkg: org.vorpal.research.kfg.Package,
+        cm: ClassManager,
+        pkg: Package,
         name: String,
         modifiers: Modifiers = Modifiers(0)
     ) : super(cm, name, modifiers) {
@@ -90,12 +92,12 @@ abstract class Class : Node {
     }
 
     constructor(
-        cm: org.vorpal.research.kfg.ClassManager,
+        cm: ClassManager,
         cn: ClassNode
-    ) : super(cm, cn.name.substringAfterLast(org.vorpal.research.kfg.Package.SEPARATOR), Modifiers(cn.access)) {
+    ) : super(cm, cn.name.substringAfterLast(Package.SEPARATOR), Modifiers(cn.access)) {
         this.cn = cn
-        this.pkg = org.vorpal.research.kfg.Package.parse(
-            cn.name.substringBeforeLast(org.vorpal.research.kfg.Package.SEPARATOR, "")
+        this.pkg = Package.parse(
+            cn.name.substringBeforeLast(Package.SEPARATOR, "")
         )
         this.superClassName = cn.superName
         this.interfaceNames.addAll(cn.interfaces.toMutableSet())
@@ -176,10 +178,10 @@ abstract class Class : Node {
 }
 
 class ConcreteClass : Class {
-    constructor(cm: org.vorpal.research.kfg.ClassManager, cn: ClassNode) : super(cm, cn)
+    constructor(cm: ClassManager, cn: ClassNode) : super(cm, cn)
     constructor(
-        cm: org.vorpal.research.kfg.ClassManager,
-        pkg: org.vorpal.research.kfg.Package,
+        cm: ClassManager,
+        pkg: Package,
         name: String,
         modifiers: Modifiers = Modifiers(0)
     ) : super(cm, pkg, name, modifiers)
@@ -243,8 +245,8 @@ class ConcreteClass : Class {
 }
 
 class OuterClass(
-    cm: org.vorpal.research.kfg.ClassManager,
-    pkg: org.vorpal.research.kfg.Package,
+    cm: ClassManager,
+    pkg: Package,
     name: String,
     modifiers: Modifiers = Modifiers(0)
 ) : Class(cm, pkg, name, modifiers) {

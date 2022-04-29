@@ -3,10 +3,7 @@ package org.vorpal.research.kfg.builder.cfg
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.tree.*
-import org.vorpal.research.kfg.InvalidOpcodeException
-import org.vorpal.research.kfg.InvalidOperandException
-import org.vorpal.research.kfg.InvalidStateException
-import org.vorpal.research.kfg.UnsupportedOperationException
+import org.vorpal.research.kfg.*
 import org.vorpal.research.kfg.analysis.IRVerifier
 import org.vorpal.research.kfg.analysis.NullTypeAdapter
 import org.vorpal.research.kfg.builder.cfg.impl.FrameStack
@@ -46,7 +43,7 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
-class CfgBuilder(override val cm: org.vorpal.research.kfg.ClassManager, val method: Method) : AbstractUsageContext(), InstructionBuilder,
+class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUsageContext(), InstructionBuilder,
     Opcodes {
     override val ctx: UsageContext
         get() = this

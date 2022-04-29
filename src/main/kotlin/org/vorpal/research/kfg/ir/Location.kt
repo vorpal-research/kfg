@@ -1,8 +1,10 @@
 package org.vorpal.research.kfg.ir
 
-data class Location(val pkg: org.vorpal.research.kfg.Package, val file: String, val line: Int) {
+import org.vorpal.research.kfg.Package
+
+data class Location(val pkg: Package, val file: String, val line: Int) {
     companion object {
-        val UNKNOWN_PACKAGE = org.vorpal.research.kfg.Package.defaultPackage
+        val UNKNOWN_PACKAGE = Package.defaultPackage
         const val UNKNOWN_SOURCE = "unknown"
         const val UNKNOWN_LINE = -1
     }

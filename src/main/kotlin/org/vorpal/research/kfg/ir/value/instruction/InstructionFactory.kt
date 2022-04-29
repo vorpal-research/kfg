@@ -1,12 +1,13 @@
 package org.vorpal.research.kfg.ir.value.instruction
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.*
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kthelper.collection.ListBuilder
 
-class InstructionFactory internal constructor(val cm: org.vorpal.research.kfg.ClassManager) {
+class InstructionFactory internal constructor(val cm: ClassManager) {
     private val types get() = cm.type
 
     fun getNewArray(ctx: UsageContext, name: String, componentType: Type, count: Value): Instruction =
@@ -263,7 +264,7 @@ class InstructionFactory internal constructor(val cm: org.vorpal.research.kfg.Cl
 }
 
 interface InstructionBuilder {
-    val cm: org.vorpal.research.kfg.ClassManager
+    val cm: ClassManager
     val ctx: UsageContext
 
     val values get() = cm.value
@@ -667,17 +668,17 @@ interface InstructionBuilder {
 }
 
 class InstructionBuilderImpl(
-    override val cm: org.vorpal.research.kfg.ClassManager,
+    override val cm: ClassManager,
     override val ctx: UsageContext
 ) : InstructionBuilder
 
 class InstructionListBuilderImpl(
-    override val cm: org.vorpal.research.kfg.ClassManager,
+    override val cm: ClassManager,
     override val ctx: UsageContext
 ) : ListBuilder<Instruction>(), InstructionBuilder
 
-fun inst(cm: org.vorpal.research.kfg.ClassManager, ctx: UsageContext, body: InstructionBuilder.() -> Instruction): Instruction =
+fun inst(cm: ClassManager, ctx: UsageContext, body: InstructionBuilder.() -> Instruction): Instruction =
     InstructionBuilderImpl(cm, ctx).body()
 
-fun insts(cm: org.vorpal.research.kfg.ClassManager, ctx: UsageContext, body: InstructionListBuilderImpl.() -> List<Instruction>): List<Instruction> =
+fun insts(cm: ClassManager, ctx: UsageContext, body: InstructionListBuilderImpl.() -> List<Instruction>): List<Instruction> =
     InstructionListBuilderImpl(cm, ctx).body()

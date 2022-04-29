@@ -3,10 +3,7 @@ package org.vorpal.research.kfg.builder.asm
 import org.objectweb.asm.Opcodes.*
 import org.objectweb.asm.Type.getType
 import org.objectweb.asm.tree.*
-import org.vorpal.research.kfg.InvalidOpcodeException
-import org.vorpal.research.kfg.InvalidOperandException
-import org.vorpal.research.kfg.InvalidStateException
-import org.vorpal.research.kfg.UnknownInstanceException
+import org.vorpal.research.kfg.*
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.MethodDesc
@@ -43,7 +40,7 @@ private val Type.shortInt
         else -> unreachable("Unexpected type for conversion: $name")
     }
 
-class AsmBuilder(override val cm: org.vorpal.research.kfg.ClassManager, val method: Method) : MethodVisitor {
+class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = method.basicBlocks.associateWith { LabelNode() }

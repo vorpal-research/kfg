@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.analysis
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.instruction.PhiInst
@@ -9,7 +10,7 @@ import org.vorpal.research.kfg.visitor.MethodVisitor
 
 class TypeMergeFailedException(val types: Set<Type>) : KfgException()
 
-class NullTypeAdapter(override val cm: org.vorpal.research.kfg.ClassManager, val ctx: UsageContext) : MethodVisitor {
+class NullTypeAdapter(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
     override fun cleanup() {}
 
     override fun visitPhiInst(inst: PhiInst) = with(ctx) {

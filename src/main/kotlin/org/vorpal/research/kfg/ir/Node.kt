@@ -1,6 +1,7 @@
 package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.Opcodes
+import org.vorpal.research.kfg.ClassManager
 
 @JvmInline
 value class Modifiers(val value: Int) {
@@ -185,7 +186,7 @@ value class Modifiers(val value: Int) {
     )
 }
 
-abstract class Node(val cm: org.vorpal.research.kfg.ClassManager, val name: String, modifiers: Modifiers) {
+abstract class Node(val cm: ClassManager, val name: String, modifiers: Modifiers) {
     var modifiers: Modifiers = modifiers
         protected set
 

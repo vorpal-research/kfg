@@ -1,11 +1,12 @@
 package org.vorpal.research.kfg.ir.value
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kthelper.assert.unreachable
 
-class ValueFactory internal constructor(val cm: org.vorpal.research.kfg.ClassManager) {
+class ValueFactory internal constructor(val cm: ClassManager) {
     val types get() = cm.type
 
     fun getThis(type: Type): Value = ThisRef(type)

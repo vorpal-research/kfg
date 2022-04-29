@@ -1,9 +1,10 @@
 package org.vorpal.research.kfg.ir
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.type.Type
 
 class Parameter(
-    cm: org.vorpal.research.kfg.ClassManager,
+    cm: ClassManager,
     val index: Int,
     name: String,
     val type: Type,

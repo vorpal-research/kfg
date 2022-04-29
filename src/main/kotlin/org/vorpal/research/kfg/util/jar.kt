@@ -7,6 +7,8 @@ import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.builder.asm.ClassBuilder
 import org.vorpal.research.kfg.builder.cfg.LabelFilterer
@@ -22,7 +24,7 @@ import java.util.jar.Manifest
 
 val JarEntry.isClass get() = this.name.endsWith(".class")
 val JarEntry.fullName get() = this.name.removeSuffix(".class")
-val JarEntry.pkg get() = org.vorpal.research.kfg.Package(fullName.dropLastWhile { it != org.vorpal.research.kfg.Package.SEPARATOR })
+val JarEntry.pkg get() = Package(fullName.dropLastWhile { it != Package.SEPARATOR })
 val JarEntry.isManifest get() = this.name == "META-INF/MANIFEST.MF"
 
 val JarFile.classLoader get() = File(this.name).classLoader
@@ -75,7 +77,7 @@ data class Flags(val value: Int) : Comparable<Flags> {
 class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWriter(flags.value) {
 
     private fun readClass(type: String) = try {
-        java.lang.Class.forName(type.replace(org.vorpal.research.kfg.Package.SEPARATOR, org.vorpal.research.kfg.Package.CANONICAL_SEPARATOR), false, loader)
+        java.lang.Class.forName(type.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR), false, loader)
     } catch (e: Throwable) {
         throw ClassReadError(e.toString())
     }
@@ -92,7 +94,7 @@ class KfgClassWriter(private val loader: ClassLoader, flags: Flags) : ClassWrite
                 do {
                     class1 = class1.superclass
                 } while (!class1.isAssignableFrom(class2))
-                class1.name.replace(org.vorpal.research.kfg.Package.CANONICAL_SEPARATOR, org.vorpal.research.kfg.Package.SEPARATOR)
+                class1.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)
             }
         }
     } catch (e: Throwable) {
@@ -192,7 +194,7 @@ internal fun ClassNode.write(
     }
 
 fun Class.write(
-    cm: org.vorpal.research.kfg.ClassManager, loader: ClassLoader,
+    cm: ClassManager, loader: ClassLoader,
     path: Path = Paths.get("$fullName.class"),
     flags: Flags = Flags.writeComputeFrames,
     checkClass: Boolean = false

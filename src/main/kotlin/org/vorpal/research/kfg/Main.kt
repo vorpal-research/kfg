@@ -14,7 +14,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 
-private class ClassWriter(override val cm: org.vorpal.research.kfg.ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
+private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
 
     override fun cleanup() {}
 
@@ -28,7 +28,7 @@ private class ClassWriter(override val cm: org.vorpal.research.kfg.ClassManager,
     }
 }
 
-private class ClassChecker(override val cm: org.vorpal.research.kfg.ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
+private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
@@ -46,7 +46,7 @@ fun main(args: Array<String>) {
 
     val jars = cfg.getStringValue("jar").split(System.getProperty("path.separator")).map { Paths.get(it).asContainer()!! }
 
-    val classManager = org.vorpal.research.kfg.ClassManager(
+    val classManager = ClassManager(
         KfgConfig(
             Flags.readAll,
             useCachingLoopManager = false,
@@ -62,7 +62,7 @@ fun main(args: Array<String>) {
     val target = Paths.get("instrumented/")
     val writeTarget = Paths.get("written/")
     jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
-    executePipeline(classManager, org.vorpal.research.kfg.Package.defaultPackage) {
+    executePipeline(classManager, Package.defaultPackage) {
         +LoopAnalysis(classManager)
         +LoopSimplifier(classManager)
         +ClassWriter(classManager, loader, writeTarget)

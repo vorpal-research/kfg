@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.visitor
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.CatchBlock
 import org.vorpal.research.kfg.ir.Method
@@ -127,7 +128,7 @@ fun performLoopAnalysis(method: Method): List<Loop> {
     return la.invoke(method)
 }
 
-class LoopAnalysis(override val cm: org.vorpal.research.kfg.ClassManager) : MethodVisitor {
+class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
     private val loops = arrayListOf<Loop>()
 
     override fun cleanup() {

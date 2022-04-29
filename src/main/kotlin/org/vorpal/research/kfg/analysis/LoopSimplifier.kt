@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.analysis
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.BodyBlock
 import org.vorpal.research.kfg.ir.CatchBlock
@@ -15,7 +16,7 @@ import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.assert.unreachable
 
-class LoopSimplifier(override val cm: org.vorpal.research.kfg.ClassManager) : LoopVisitor {
+class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
 
     override val preservesLoopInfo get() = false

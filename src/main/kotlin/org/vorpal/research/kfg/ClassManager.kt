@@ -20,46 +20,46 @@ import java.io.File
 data class Package(val components: List<String>, val isConcrete: Boolean) {
     companion object {
         const val SEPARATOR = '/'
-        const val SEPARATOR_STR = org.vorpal.research.kfg.Package.Companion.SEPARATOR.toString()
+        const val SEPARATOR_STR = SEPARATOR.toString()
         const val EXPANSION = '*'
-        const val EXPANSION_STR = org.vorpal.research.kfg.Package.Companion.EXPANSION.toString()
+        const val EXPANSION_STR = EXPANSION.toString()
         const val CANONICAL_SEPARATOR = '.'
-        const val CANONICAL_SEPARATOR_STR = org.vorpal.research.kfg.Package.Companion.CANONICAL_SEPARATOR.toString()
-        val defaultPackage = org.vorpal.research.kfg.Package(org.vorpal.research.kfg.Package.Companion.EXPANSION_STR)
-        val emptyPackage = org.vorpal.research.kfg.Package("")
-        fun parse(string: String) = org.vorpal.research.kfg.Package(
+        const val CANONICAL_SEPARATOR_STR = CANONICAL_SEPARATOR.toString()
+        val defaultPackage = Package(EXPANSION_STR)
+        val emptyPackage = Package("")
+        fun parse(string: String) = Package(
             string.replace(
-                org.vorpal.research.kfg.Package.Companion.CANONICAL_SEPARATOR,
-                org.vorpal.research.kfg.Package.Companion.SEPARATOR
+                CANONICAL_SEPARATOR,
+                SEPARATOR
             )
         )
     }
 
     constructor(name: String) : this(
-        name.removeSuffix(org.vorpal.research.kfg.Package.Companion.EXPANSION_STR)
-            .removeSuffix(org.vorpal.research.kfg.Package.Companion.EXPANSION_STR)
-            .split(org.vorpal.research.kfg.Package.Companion.SEPARATOR)
+        name.removeSuffix(EXPANSION_STR)
+            .removeSuffix(EXPANSION_STR)
+            .split(SEPARATOR)
             .filter { it.isNotBlank() },
-        name.lastOrNull() != org.vorpal.research.kfg.Package.Companion.EXPANSION
+        name.lastOrNull() != EXPANSION
     )
 
-    val concretePackage get() = if (isConcrete) this else org.vorpal.research.kfg.Package(concreteName)
-    val concreteName get() = components.joinToString(org.vorpal.research.kfg.Package.Companion.SEPARATOR_STR)
-    val canonicalName get() = components.joinToString(org.vorpal.research.kfg.Package.Companion.CANONICAL_SEPARATOR_STR)
+    val concretePackage get() = if (isConcrete) this else Package(concreteName)
+    val concreteName get() = components.joinToString(SEPARATOR_STR)
+    val canonicalName get() = components.joinToString(CANONICAL_SEPARATOR_STR)
     val fileSystemPath get() = components.joinToString(File.separator)
 
-    val concretized: org.vorpal.research.kfg.Package
+    val concretized: Package
         get() = when {
             isConcrete -> this
             else -> copy(isConcrete = true)
         }
-    val expanded: org.vorpal.research.kfg.Package
+    val expanded: Package
         get() = when {
             isConcrete -> copy(isConcrete = false)
             else -> this
         }
 
-    fun isParent(other: org.vorpal.research.kfg.Package) = when {
+    fun isParent(other: Package): Boolean = when {
         isConcrete -> this.components == other.components
         this.components.size > other.components.size -> false
         else -> this.components.indices.fold(true) { acc, i ->
@@ -69,15 +69,15 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
 
     operator fun get(i: Int) = components[i]
 
-    fun isChild(other: org.vorpal.research.kfg.Package) = other.isParent(this)
-    fun isParent(name: String) = isParent(org.vorpal.research.kfg.Package(name))
-    fun isChild(name: String) = isChild(org.vorpal.research.kfg.Package(name))
+    fun isChild(other: Package) = other.isParent(this)
+    fun isParent(name: String) = isParent(Package(name))
+    fun isChild(name: String) = isChild(Package(name))
 
     override fun toString() = buildString {
-        append(components.joinToString(org.vorpal.research.kfg.Package.Companion.SEPARATOR_STR))
+        append(components.joinToString(SEPARATOR_STR))
         if (!isConcrete) {
-            if (components.isNotEmpty()) append(org.vorpal.research.kfg.Package.Companion.SEPARATOR)
-            append(org.vorpal.research.kfg.Package.Companion.EXPANSION)
+            if (components.isNotEmpty()) append(SEPARATOR)
+            append(EXPANSION)
         }
     }
 
@@ -85,19 +85,19 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
-        other as org.vorpal.research.kfg.Package
+        other as Package
         return this.components == other.components && this.isConcrete == other.isConcrete
     }
 }
 
-class ClassManager(val config: org.vorpal.research.kfg.KfgConfig = org.vorpal.research.kfg.KfgConfigBuilder().build()) {
+class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     val value = ValueFactory(this)
     val instruction = InstructionFactory(this)
     val type = TypeFactory(this)
-    internal val loopManager: org.vorpal.research.kfg.LoopManager by lazy {
+    internal val loopManager: LoopManager by lazy {
         when {
-            config.useCachingLoopManager -> org.vorpal.research.kfg.CachingLoopManager(this)
-            else -> org.vorpal.research.kfg.DefaultLoopManager()
+            config.useCachingLoopManager -> CachingLoopManager(this)
+            else -> DefaultLoopManager()
         }
     }
 
@@ -221,7 +221,7 @@ class ClassManager(val config: org.vorpal.research.kfg.KfgConfig = org.vorpal.re
             for (method in klass.allMethods) {
                 try {
                     if (!method.isAbstract) CfgBuilder(this, method).build()
-                } catch (e: org.vorpal.research.kfg.KfgException) {
+                } catch (e: KfgException) {
                     if (failOnError) throw e
                     klass.failingMethods += method
                     method.clear()
@@ -235,13 +235,12 @@ class ClassManager(val config: org.vorpal.research.kfg.KfgConfig = org.vorpal.re
     }
 
     operator fun get(name: String): Class = classes[name] ?: outerClasses.getOrPut(name) {
-        val pkg =
-            org.vorpal.research.kfg.Package.Companion.parse(name.substringBeforeLast(org.vorpal.research.kfg.Package.Companion.SEPARATOR))
-        val klassName = name.substringAfterLast(org.vorpal.research.kfg.Package.Companion.SEPARATOR)
+        val pkg = Package.parse(name.substringBeforeLast(Package.SEPARATOR))
+        val klassName = name.substringAfterLast(Package.SEPARATOR)
         OuterClass(this, pkg, klassName)
     }
 
-    fun getByPackage(`package`: org.vorpal.research.kfg.Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
+    fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
 
     fun getSubtypesOf(klass: Class): Set<Class> =
         concreteClasses.filter { it.isInheritorOf(klass) && it != klass }.toSet()
@@ -262,7 +261,7 @@ class ClassManager(val config: org.vorpal.research.kfg.KfgConfig = org.vorpal.re
 
     fun createClass(
         container: Container,
-        pkg: org.vorpal.research.kfg.Package,
+        pkg: Package,
         name: String,
         modifiers: Modifiers = Modifiers(0)
     ): Class {

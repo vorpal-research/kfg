@@ -21,7 +21,7 @@ internal class DefaultLoopManager : LoopManager {
     override fun getMethodLoopInfo(method: Method) = performLoopAnalysis(method)
 }
 
-internal class CachingLoopManager(val cm: org.vorpal.research.kfg.ClassManager) : LoopManager {
+internal class CachingLoopManager(val cm: ClassManager) : LoopManager {
     private val loopInfo = mutableMapOf<Method, LoopInfo>()
 
     override fun invalidate() {

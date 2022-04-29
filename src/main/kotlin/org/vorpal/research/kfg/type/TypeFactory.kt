@@ -1,10 +1,12 @@
 package org.vorpal.research.kfg.type
 
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kthelper.assert.unreachable
 import java.lang.Class as JClass
 
-class TypeFactory internal constructor(val cm: org.vorpal.research.kfg.ClassManager) {
+class TypeFactory internal constructor(val cm: ClassManager) {
     private val klassTypeHash = mutableMapOf<Class, Type>()
     private val arrayTypeHash = mutableMapOf<Type, Type>()
 
@@ -47,6 +49,9 @@ class TypeFactory internal constructor(val cm: org.vorpal.research.kfg.ClassMana
             doubleType
         )
     }
+
+    val primaryWrapperTypes: Set<Type>
+        get() = primaryTypes.map { getWrapper(it) }.toSet()
 
     val nullType: Type
         get() = NullType
@@ -159,7 +164,7 @@ class TypeFactory internal constructor(val cm: org.vorpal.research.kfg.ClassMana
             else -> unreachable("Unknown primary type $klass")
         }
         klass.isArray -> getArrayType(get(klass.componentType))
-        else -> getRefType(cm[klass.name.replace(org.vorpal.research.kfg.Package.CANONICAL_SEPARATOR, org.vorpal.research.kfg.Package.SEPARATOR)])
+        else -> getRefType(cm[klass.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)])
     }
 
 }

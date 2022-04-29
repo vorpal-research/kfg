@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.builder.cfg
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.BodyBlock
 import org.vorpal.research.kfg.ir.Method
@@ -18,7 +19,7 @@ import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.ktassert
 import kotlin.math.abs
 
-class RetvalBuilder(override val cm: org.vorpal.research.kfg.ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
+class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
     private val returnValues = hashMapOf<BasicBlock, ReturnInst>()
     override val instructions: InstructionFactory
         get() = cm.instruction

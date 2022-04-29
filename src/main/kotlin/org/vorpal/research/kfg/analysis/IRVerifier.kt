@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.analysis
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.BodyBlock
@@ -16,8 +17,8 @@ import org.vorpal.research.kthelper.assert.ktassert
 
 class InvalidIRException(reason: Throwable) : KfgException(reason)
 
-class IRVerifier(classManager: org.vorpal.research.kfg.ClassManager) : MethodVisitor {
-    override val cm: org.vorpal.research.kfg.ClassManager = classManager
+class IRVerifier(classManager: ClassManager) : MethodVisitor {
+    override val cm: ClassManager = classManager
     private val valueNameRegex = "(%([_\\-\$a-zA-Z]+[\\w.]*|\$|\\d+)|arg\\$\\d+|this)".toRegex()
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
@@ -25,7 +26,7 @@ class IRVerifier(classManager: org.vorpal.research.kfg.ClassManager) : MethodVis
     private var current: Method? = null
     private var usageContext: UsageContext = EmptyUsageContext
 
-    constructor(classManager: org.vorpal.research.kfg.ClassManager, ctx: UsageContext) : this(classManager) {
+    constructor(classManager: ClassManager, ctx: UsageContext) : this(classManager) {
         this.usageContext = ctx
     }
 

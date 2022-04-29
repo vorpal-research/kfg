@@ -1,6 +1,8 @@
 package org.vorpal.research.kfg.container
 
 import org.objectweb.asm.tree.ClassNode
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnsupportedCfgException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
@@ -10,8 +12,8 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class DirectoryContainer(private val file: File, pkg: org.vorpal.research.kfg.Package? = null) : Container {
-    override val pkg: org.vorpal.research.kfg.Package = pkg ?: commonPackage
+class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
+    override val pkg: Package = pkg ?: commonPackage
     override val path: Path = file.toPath()
 
     override val name: String
@@ -20,21 +22,21 @@ class DirectoryContainer(private val file: File, pkg: org.vorpal.research.kfg.Pa
     override val classLoader: ClassLoader
         get() = file.classLoader
 
-    override val commonPackage: org.vorpal.research.kfg.Package
+    override val commonPackage: Package
         get() {
             val klasses = file.allEntries.filter { it.isClass }.map { it.fullClassName }
-            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != org.vorpal.research.kfg.Package.SEPARATOR }
-            return org.vorpal.research.kfg.Package.parse("$commonSubstring*")
+            val commonSubstring = longestCommonPrefix(klasses).dropLastWhile { it != Package.SEPARATOR }
+            return Package.parse("$commonSubstring*")
         }
 
-    constructor(path: Path, pkg: org.vorpal.research.kfg.Package?) : this(path.toFile(), pkg)
-    constructor(path: String, pkg: org.vorpal.research.kfg.Package?) : this(Paths.get(path), pkg)
-    constructor(path: String, pkg: String) : this(Paths.get(path), org.vorpal.research.kfg.Package.parse(pkg))
+    constructor(path: Path, pkg: Package?) : this(path.toFile(), pkg)
+    constructor(path: String, pkg: Package?) : this(Paths.get(path), pkg)
+    constructor(path: String, pkg: String) : this(Paths.get(path), Package.parse(pkg))
 
     override fun toString(): String = path.toString()
 
     private val File.fullClassName: String get() = this.relativeTo(file).path.removeSuffix(".class")
-    private val File.pkg: org.vorpal.research.kfg.Package get() = org.vorpal.research.kfg.Package(fullClassName.dropLastWhile { it != org.vorpal.research.kfg.Package.SEPARATOR })
+    private val File.pkg: Package get() = Package(fullClassName.dropLastWhile { it != Package.SEPARATOR })
 
     private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
         action()
@@ -62,7 +64,7 @@ class DirectoryContainer(private val file: File, pkg: org.vorpal.research.kfg.Pa
     }
 
     override fun unpack(
-        cm: org.vorpal.research.kfg.ClassManager,
+        cm: ClassManager,
         target: Path,
         unpackAllClasses: Boolean,
         failOnError: Boolean,
@@ -105,7 +107,7 @@ class DirectoryContainer(private val file: File, pkg: org.vorpal.research.kfg.Pa
         }
     }
 
-    override fun update(cm: org.vorpal.research.kfg.ClassManager, target: Path, loader: ClassLoader): Container {
+    override fun update(cm: ClassManager, target: Path, loader: ClassLoader): Container {
         val absolutePath = target.toAbsolutePath()
         unpack(cm, target)
 
