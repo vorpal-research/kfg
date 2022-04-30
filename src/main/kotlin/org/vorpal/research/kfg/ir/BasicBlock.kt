@@ -20,7 +20,7 @@ sealed class BasicBlock(
 
     val hasParent get() = parentUnsafe != null
     val parent: MethodBody get() = asserted(hasParent) { parentUnsafe!! }
-    internal var methodUnsafe: Method? = parentUnsafe?.method
+    internal val methodUnsafe: Method? get() = parentUnsafe?.method
     val method: Method get() = parent.method
 
     private val innerPredecessors = linkedSetOf<BasicBlock>()
