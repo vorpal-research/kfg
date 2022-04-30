@@ -12,6 +12,7 @@ import org.vorpal.research.kthelper.tryOrNull
 import java.net.URLClassLoader
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.system.measureTimeMillis
 
 
 private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
@@ -51,12 +52,15 @@ fun main(args: Array<String>) {
             Flags.readAll,
             useCachingLoopManager = false,
             failOnError = false,
-            verifyIR = false,
+            verifyIR = true,
             checkClasses = false
         )
     )
 
-    classManager.initialize(*jars.toTypedArray())
+    val time = measureTimeMillis {
+        classManager.initialize(*jars.toTypedArray())
+    }
+    println(time)
 
     val loader = URLClassLoader(jars.map { it.path.toUri().toURL() }.toTypedArray())
     val target = Paths.get("instrumented/")
