@@ -3,7 +3,7 @@ package org.vorpal.research.kfg.builder.cfg
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.BodyBlock
-import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.ir.value.ValueFactory
@@ -37,10 +37,9 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         returnValues[bb] = inst
     }
 
-    override fun visit(method: Method) = with(ctx) {
-        super.visit(method)
+    override fun visitBody(body: MethodBody): Unit = with(ctx) {
+        super.visitBody(body)
         if (returnValues.size <= 1) return
-
 
         val returnBlock = BodyBlock("bb.return")
 
@@ -58,24 +57,24 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         }
 
         val instructions = arrayListOf<Instruction>()
+        val returnType = body.method.returnType
         val returnInstruction = when {
-            method.returnType.isVoid -> `return`()
+            returnType.isVoid -> `return`()
             else -> {
-                val type = mergeTypes(types, incomings.values.map { it.type }.toSet()) ?: method.returnType
+                val type = mergeTypes(types, incomings.values.map { it.type }.toSet()) ?: returnType
 
                 val retval = phi("retval", type, incomings)
                 instructions.add(retval)
 
                 val returnValue = when (type) {
-                    method.returnType -> retval
+                    returnType -> retval
                     is Integral -> {
-                        val methodRetType = method.returnType
-                        ktassert(methodRetType is Integral, "Return value type is integral and method return type is ${method.returnType}")
+                        ktassert(returnType is Integral, "Return value type is integral and method return type is $returnType")
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine
-                        if (abs(type.bitSize - methodRetType.bitSize) >= Type.WORD) {
-                            val retvalCasted = retval.cast("retval.casted", method.returnType)
+                        if (abs(type.bitSize - returnType.bitSize) >= Type.WORD) {
+                            val retvalCasted = retval.cast("retval.casted", returnType)
                             instructions.add(retvalCasted)
                             retvalCasted
                         } else {
@@ -83,7 +82,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
                         }
                     }
                     else -> {
-                        val retvalCasted = retval.cast("retval.casted", method.returnType)
+                        val retvalCasted = retval.cast("retval.casted", returnType)
                         instructions.add(retvalCasted)
                         retvalCasted
                     }
@@ -94,6 +93,6 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         }
         instructions.add(returnInstruction)
         returnBlock.addAll(*instructions.toTypedArray())
-        method.add(returnBlock)
+        body.add(returnBlock)
     }
 }

@@ -1,7 +1,6 @@
 package org.vorpal.research.kfg
 
 import org.objectweb.asm.tree.ClassNode
-import org.vorpal.research.kfg.builder.cfg.CfgBuilder
 import org.vorpal.research.kfg.builder.cfg.InnerClassNormalizer
 import org.vorpal.research.kfg.container.Container
 import org.vorpal.research.kfg.ir.Class
@@ -13,7 +12,6 @@ import org.vorpal.research.kfg.ir.value.instruction.InstructionFactory
 import org.vorpal.research.kfg.type.SystemTypeNames
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.util.Flags
-import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.defaultHashCode
 import java.io.File
 
@@ -216,22 +214,6 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
             InnerClassNormalizer(this).visit(klass)
         }
         classes.values.forEach { it.init() }
-
-        for (klass in classes.values) {
-            for (method in klass.allMethods) {
-                try {
-                    if (!method.isAbstract) CfgBuilder(this, method).build()
-                } catch (e: KfgException) {
-                    if (failOnError) throw e
-                    klass.failingMethods += method
-                    method.clear()
-                } catch (e: KtException) {
-                    if (failOnError) throw e
-                    klass.failingMethods += method
-                    method.clear()
-                }
-            }
-        }
     }
 
     operator fun get(name: String): Class = classes[name] ?: outerClasses.getOrPut(name) {

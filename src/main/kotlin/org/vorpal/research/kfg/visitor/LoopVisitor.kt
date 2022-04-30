@@ -54,7 +54,7 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Predecess
         get() = body.map { LoopNode(this, it) }.toSet()
 
     val method: Method?
-        get() = header.parentUnsafe
+        get() = header.methodUnsafe
 
     val allEntries: Set<BasicBlock>
         get() = body.filterNot {
@@ -143,7 +143,7 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
     override fun visit(method: Method) {
         cleanup()
 
-        val allLoops = LoopDetector(method).search().map { Loop(it.key, it.value.toMutableSet()) }
+        val allLoops = LoopDetector(method.body).search().map { Loop(it.key, it.value.toMutableSet()) }
 
         val parents = hashMapOf<Loop, MutableSet<Loop>>()
         for (loop in allLoops) {

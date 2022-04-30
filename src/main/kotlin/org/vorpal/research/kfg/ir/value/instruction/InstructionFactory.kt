@@ -221,30 +221,30 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         ctx: UsageContext,
         name: Name,
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = InvokeDynamicInst(name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
+    ) = InvokeDynamicInst(name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     fun getInvokeDynamic(
         ctx: UsageContext,
         name: String,
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = getInvokeDynamic(ctx, StringName(name), methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+    ) = getInvokeDynamic(ctx, StringName(name), methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 
     fun getInvokeDynamic(
         ctx: UsageContext,
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = InvokeDynamicInst(methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
+    ) = InvokeDynamicInst(methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     fun getCatch(ctx: UsageContext, name: String, type: Type): Instruction = getCatch(ctx, StringName(name), type)
     fun getCatch(ctx: UsageContext, name: Name, type: Type): Instruction = CatchInst(name, type, ctx)
@@ -618,28 +618,28 @@ interface InstructionBuilder {
     fun invokeDynamic(
         name: Name,
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 
     fun invokeDynamic(
         name: String,
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 
     fun invokeDynamic(
         methodName: String,
-        methodDesc: MethodDesc,
+        methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
         bootstrapMethodArgs: Array<Any>,
         operands: Array<Value>
-    ) = instructions.getInvokeDynamic(ctx, methodName, methodDesc, bootstrapMethod, bootstrapMethodArgs, operands)
+    ) = instructions.getInvokeDynamic(ctx, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 
     /**
      * catch/throw wrappers

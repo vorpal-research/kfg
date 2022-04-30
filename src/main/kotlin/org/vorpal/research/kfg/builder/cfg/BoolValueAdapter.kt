@@ -46,7 +46,7 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
 
     override fun visitReturnInst(inst: ReturnInst) {
         val bb = inst.parent
-        val method = bb.parent
+        val method = bb.method
 
         if (method.returnType is BoolType && inst.returnValue.type !is BoolType) {
             val cast = inst.returnValue `as` types.boolType

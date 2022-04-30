@@ -2,11 +2,17 @@ package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.tree.MethodNode
 import org.vorpal.research.kfg.ClassManager
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.KfgException
+import org.vorpal.research.kfg.builder.cfg.CfgBuilder
+import org.vorpal.research.kfg.ir.value.BlockUsageContext
+import org.vorpal.research.kfg.ir.value.BlockUser
+import org.vorpal.research.kfg.ir.value.SlotTracker
+import org.vorpal.research.kfg.ir.value.UsableBlock
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.type.parseMethodDesc
 import org.vorpal.research.kfg.util.jsrInlined
+import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.ktassert
 import org.vorpal.research.kthelper.collection.queueOf
 import org.vorpal.research.kthelper.defaultHashCode
@@ -14,14 +20,14 @@ import org.vorpal.research.kthelper.graph.GraphView
 import org.vorpal.research.kthelper.graph.PredecessorGraph
 import org.vorpal.research.kthelper.graph.Viewable
 
-data class MethodDesc(
+data class MethodDescriptor(
     val args: Array<out Type>,
     val returnType: Type
 ) {
     companion object {
-        fun fromDesc(tf: TypeFactory, desc: String): MethodDesc {
+        fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
             val (args, retval) = parseMethodDesc(tf, desc)
-            return MethodDesc(args, retval)
+            return MethodDescriptor(args, retval)
         }
     }
 
@@ -32,74 +38,22 @@ data class MethodDesc(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
-        other as MethodDesc
+        other as MethodDescriptor
         return this.args.contentEquals(other.args) && this.returnType == other.returnType
     }
 
     override fun toString() = "(${args.joinToString { it.name }}): ${returnType.name}"
 }
 
-class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
-    val klass: Class
-    internal val mn: MethodNode
-    val desc: MethodDesc
-    private var innerParameters = mutableListOf<Parameter>()
-    private var innerExceptions = mutableSetOf<Class>()
-
-    companion object {
-        const val CONSTRUCTOR_NAME = "<init>"
-        const val STATIC_INIT_NAME = "<clinit>"
-    }
-
-    constructor(
-        cm: ClassManager,
-        klass: Class,
-        node: MethodNode
-    ) : super(cm, node.name, Modifiers(node.access)) {
-        this.klass = klass
-        this.mn = node.jsrInlined
-        this.desc = MethodDesc.fromDesc(cm.type, node.desc)
-        this.innerParameters.addAll(
-            mn.parameters?.withIndex()?.map { (index, param) ->
-                Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access))
-            } ?: listOf()
-        )
-        this.innerExceptions.addAll(mn.exceptions.map { cm[it] })
-    }
-
-    constructor(
-        cm: ClassManager,
-        klass: Class,
-        name: String,
-        desc: MethodDesc,
-        modifiers: Modifiers = Modifiers(0)
-    ) : super(cm, name, modifiers) {
-        this.klass = klass
-        this.mn = MethodNode(modifiers.value, name, desc.asmDesc, null, null)
-        this.desc = desc
-    }
-
-    val argTypes get() = desc.args
-    val returnType get() = desc.returnType
+class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
     private val innerBlocks = arrayListOf<BasicBlock>()
     private val innerCatches = hashSetOf<CatchBlock>()
-    val parameters get() = innerParameters
-    val exceptions get() = innerExceptions
     val basicBlocks: List<BasicBlock> get() = innerBlocks
     val catchEntries: Set<CatchBlock> get() = innerCatches
     val slotTracker = SlotTracker(this)
 
     override val entry: BasicBlock
         get() = innerBlocks.first { it is BodyBlock && it.predecessors.isEmpty() }
-
-    val prototype: String
-        get() = "$klass::$name$desc"
-
-    val isConstructor: Boolean
-        get() = name == CONSTRUCTOR_NAME
-
-    val isStaticInitializer: Boolean
-        get() = name == STATIC_INIT_NAME
 
     val bodyBlocks: List<BasicBlock>
         get() {
@@ -127,23 +81,13 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
             return result
         }
 
-    override val asmDesc
-        get() = desc.asmDesc
-
     override val nodes: Set<BasicBlock>
         get() = innerBlocks.toSet()
-
-    val hasBody get() = this !in klass.failingMethods && isNotEmpty()
-    val hasLoops get() = cm.loopManager.getMethodLoopInfo(this).isNotEmpty()
-
-    fun getLoopInfo() = cm.loopManager.getMethodLoopInfo(this)
-    fun invalidateLoopInfo() = cm.loopManager.setInvalid(this)
 
     fun isEmpty() = innerBlocks.isEmpty()
     fun isNotEmpty() = !isEmpty()
 
     internal fun clear() {
-        invalidateLoopInfo()
         innerBlocks.clear()
         innerCatches.clear()
     }
@@ -153,8 +97,8 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
             ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             innerBlocks.add(bb)
             slotTracker.addBlock(bb)
-            bb.addUser(this@Method)
-            bb.parentUnsafe = this@Method
+            bb.addUser(this@MethodBody)
+            bb.parentUnsafe = this@MethodBody
         }
     }
 
@@ -162,12 +106,12 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(before)
-            ktassert(index >= 0, "Block ${before.name} does not belong to method $prototype")
+            ktassert(index >= 0, "Block ${before.name} does not belong to method ${method.prototype}")
 
             innerBlocks.add(index, bb)
             slotTracker.addBlock(bb)
-            bb.addUser(this@Method)
-            bb.parentUnsafe = this@Method
+            bb.addUser(this@MethodBody)
+            bb.parentUnsafe = this@MethodBody
         }
     }
 
@@ -175,25 +119,25 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
         if (bb !in innerBlocks) {
             ktassert(!bb.hasParent, "Block ${bb.name} already belongs to other method")
             val index = basicBlocks.indexOf(after)
-            ktassert(index >= 0, "Block ${after.name} does not belong to method $prototype")
+            ktassert(index >= 0, "Block ${after.name} does not belong to method ${method.prototype}")
 
             innerBlocks.add(index + 1, bb)
             slotTracker.addBlock(bb)
-            bb.addUser(this@Method)
-            bb.parentUnsafe = this@Method
+            bb.addUser(this@MethodBody)
+            bb.parentUnsafe = this@MethodBody
         }
     }
 
     fun remove(ctx: BlockUsageContext, block: BasicBlock) = with(ctx) {
         if (innerBlocks.contains(block)) {
-            ktassert(block.parentUnsafe == this@Method, "Block ${block.name} don't belong to $prototype")
+            ktassert(block.parentUnsafe == this@MethodBody, "Block ${block.name} don't belong to ${method.prototype}")
             innerBlocks.remove(block)
 
             if (block in innerCatches) {
                 innerCatches.remove(block)
             }
 
-            block.removeUser(this@Method)
+            block.removeUser(this@MethodBody)
             block.parentUnsafe = null
             slotTracker.removeBlock(block)
         }
@@ -213,35 +157,34 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
     fun getBlockByName(name: String) = innerBlocks.find { it.name.toString() == name }
 
     fun print() = buildString {
-        appendLine(prototype)
-        append(basicBlocks.joinToString(separator = "\n\n") { "$it" })
+        append(innerBlocks.joinToString(separator = "\n\n") { "$it" })
     }
 
-    override fun toString() = prototype
+    override fun toString() = print()
     override fun iterator() = innerBlocks.iterator()
 
-    override fun hashCode() = defaultHashCode(name, klass, desc)
+    override fun hashCode() = method.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
-        other as Method
-        return this.name == other.name && this.klass == other.klass && this.desc == other.desc
+        other as MethodBody
+        return this.method == other.method
     }
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
         (0 until innerBlocks.size)
             .filter { basicBlocks[it] == from }
             .forEach {
-                innerBlocks[it].removeUser(this@Method)
+                innerBlocks[it].removeUser(this@MethodBody)
                 innerBlocks[it] = to.get()
-                to.addUser(this@Method)
+                to.addUser(this@MethodBody)
             }
     }
 
     override val graphView: List<GraphView>
         get() {
             val nodes = hashMapOf<String, GraphView>()
-            nodes[name] = GraphView(name, prototype)
+            nodes[method.name] = GraphView(method.name, method.prototype)
 
             for (bb in basicBlocks) {
                 val label = StringBuilder()
@@ -250,9 +193,9 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
                 nodes[bb.name.toString()] = GraphView(bb.name.toString(), label.toString())
             }
 
-            if (!isAbstract) {
+            if (!method.isAbstract) {
                 val entryNode = nodes.getValue(entry.name.toString())
-                nodes.getValue(name).addSuccessor(entryNode)
+                nodes.getValue(method.name).addSuccessor(entryNode)
             }
 
             for (it in basicBlocks) {
@@ -264,11 +207,103 @@ class Method : Node, PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUs
 
             return nodes.values.toList()
         }
-
-    fun view(dot: String, viewer: String) {
-        view(name, dot, viewer)
-    }
 }
 
+class Method : Node {
+    val klass: Class
+    internal val mn: MethodNode
+    val desc: MethodDescriptor
+    var bodyInitialized: Boolean = false
+        private set
 
-val Method.allValues: Set<Value> get() = flatten().flatMap { it.operands + it }.toSet()
+    val body: MethodBody by lazy {
+        bodyInitialized = true
+        try {
+            if (!isAbstract) CfgBuilder(cm, this).build()
+            else MethodBody(this)
+        } catch (e: KfgException) {
+            if (cm.failOnError) throw e
+            MethodBody(this)
+        } catch (e: KtException) {
+            if (cm.failOnError) throw e
+            MethodBody(this)
+        }
+    }
+    private var innerParameters = mutableListOf<Parameter>()
+    private var innerExceptions = mutableSetOf<Class>()
+
+    companion object {
+        const val CONSTRUCTOR_NAME = "<init>"
+        const val STATIC_INIT_NAME = "<clinit>"
+    }
+
+    constructor(
+        cm: ClassManager,
+        klass: Class,
+        node: MethodNode
+    ) : super(cm, node.name, Modifiers(node.access)) {
+        this.klass = klass
+        this.mn = node.jsrInlined
+        this.desc = MethodDescriptor.fromDesc(cm.type, node.desc)
+        this.innerParameters.addAll(
+            mn.parameters?.withIndex()?.map { (index, param) ->
+                Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access))
+            } ?: listOf()
+        )
+        this.innerExceptions.addAll(mn.exceptions.map { cm[it] })
+    }
+
+    constructor(
+        cm: ClassManager,
+        klass: Class,
+        name: String,
+        desc: MethodDescriptor,
+        modifiers: Modifiers = Modifiers(0)
+    ) : super(cm, name, modifiers) {
+        this.klass = klass
+        this.mn = MethodNode(modifiers.value, name, desc.asmDesc, null, null)
+        this.desc = desc
+    }
+
+    val argTypes get() = desc.args
+    val returnType get() = desc.returnType
+    val parameters get() = innerParameters
+    val exceptions get() = innerExceptions
+
+    val prototype: String
+        get() = "$klass::$name$desc"
+
+    val isConstructor: Boolean
+        get() = name == CONSTRUCTOR_NAME
+
+    val isStaticInitializer: Boolean
+        get() = name == STATIC_INIT_NAME
+
+    override val asmDesc
+        get() = desc.asmDesc
+
+    val hasBody get() = body.isNotEmpty()
+    val hasLoops get() = cm.loopManager.getMethodLoopInfo(this).isNotEmpty()
+
+    fun getLoopInfo() = cm.loopManager.getMethodLoopInfo(this)
+    fun invalidateLoopInfo() = cm.loopManager.setInvalid(this)
+
+    fun print() = buildString {
+        appendLine(prototype)
+        if (bodyInitialized) append(body.print())
+    }
+
+    override fun toString() = prototype
+
+    override fun hashCode() = defaultHashCode(name, klass, desc)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != this.javaClass) return false
+        other as Method
+        return this.name == other.name && this.klass == other.klass && this.desc == other.desc
+    }
+
+    fun view(dot: String, viewer: String) {
+        body.view(name, dot, viewer)
+    }
+}

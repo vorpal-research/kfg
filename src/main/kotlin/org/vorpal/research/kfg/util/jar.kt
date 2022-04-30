@@ -8,8 +8,8 @@ import org.objectweb.asm.tree.FrameNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.util.CheckClassAdapter
 import org.vorpal.research.kfg.ClassManager
-import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.KfgException
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.builder.asm.ClassBuilder
 import org.vorpal.research.kfg.builder.cfg.LabelFilterer
 import org.vorpal.research.kfg.ir.Class
@@ -48,7 +48,7 @@ internal fun Class.restoreMethodNodes() {
 
 internal val MethodNode.jsrInlined: MethodNode
     get() {
-        val temp = JSRInlinerAdapter(this, access, name, desc, signature, exceptions?.toTypedArray())
+        val temp = JSRInlinerAdapter(null, access, name, desc, signature, exceptions?.toTypedArray())
         this.accept(temp)
         return LabelFilterer(temp).build()
     }

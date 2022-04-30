@@ -12,14 +12,16 @@ import org.vorpal.research.kthelper.graph.PredecessorGraph
 sealed class BasicBlock(
     val name: BlockName
 ) : UsableBlock(), Iterable<Instruction>, PredecessorGraph.PredecessorVertex<BasicBlock>, BlockUser {
-    internal var parentUnsafe: Method? = null
+    internal var parentUnsafe: MethodBody? = null
         internal set(value) {
             field = value
             instructions.forEach { addValueToParent(it) }
         }
 
     val hasParent get() = parentUnsafe != null
-    val parent get() = asserted(hasParent) { parentUnsafe!! }
+    val parent: MethodBody get() = asserted(hasParent) { parentUnsafe!! }
+    internal var methodUnsafe: Method? = parentUnsafe?.method
+    val method: Method get() = parent.method
 
     private val innerPredecessors = linkedSetOf<BasicBlock>()
     private val innerSuccessors = linkedSetOf<BasicBlock>()
