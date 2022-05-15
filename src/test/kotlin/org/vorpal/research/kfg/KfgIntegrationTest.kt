@@ -6,8 +6,7 @@ import org.vorpal.research.kfg.ir.BodyBlock
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.usageContext
-import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.*
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files

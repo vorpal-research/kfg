@@ -1,6 +1,6 @@
-package org.jetbrains.research.kfg
+package org.vorpal.research.kfg
 
-import org.jetbrains.research.kfg.pm.passes.*
-import org.jetbrains.research.kfg.visitor.MethodVisitor
-import org.jetbrains.research.kfg.visitor.Pipeline
-import org.jetbrains.research.kfg.visitor.pass.AnalysisVisitor
+import org.vorpal.research.kfg.pm.passes.*
+import org.vorpal.research.kfg.visitor.MethodVisitor
+import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
