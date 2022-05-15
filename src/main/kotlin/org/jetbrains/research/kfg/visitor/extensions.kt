@@ -36,8 +36,8 @@ inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisRes
     return this.pipeline.analysisManager.getAnalysisResult(Analysis::class.java, node)
 }
 
-fun NodeVisitor.invalidateAnalysisCache(node: Node) {
-    this.pipeline.analysisManager.invalidateAllExcept(this::class.java, node)
+fun NodeVisitor.invalidateAnalysisCache(node: Node, persistedAdditional: List<Class<out AnalysisVisitor<*>>> = emptyList()) {
+    this.pipeline.analysisManager.invalidateAllExcept(this::class.java, node, persistedAdditional)
 }
 
 interface VisitorWrapper {

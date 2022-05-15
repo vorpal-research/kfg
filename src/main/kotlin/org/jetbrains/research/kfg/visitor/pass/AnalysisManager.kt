@@ -11,7 +11,11 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
     private val visitors = mutableMapOf<Class<out AnalysisVisitor<out AnalysisResult>>, AnalysisVisitor<out AnalysisResult>>()
     private val cache = ReferenceMap<VisitorNodePair, AnalysisResult>()
 
-    fun invalidateAllExcept(visitor: Class<out NodeVisitor>, node: Node) {
+    fun invalidateAllExcept(
+        visitor: Class<out NodeVisitor>,
+        node: Node,
+        persistedAdditional: List<Class<out AnalysisVisitor<*>>>
+    ) {
         if (visitor is AnalysisVisitor<*>) {
             return
         }
@@ -20,7 +24,9 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
             val persistedSet = pipeline.visitorRegistry.getAnalysisPersisted(visitor)
             while (hasNext()) {
                 val current = next()
-                if (current.key.node === node && !persistedSet.contains(current.key.visitor)) {
+                if (current.key.node === node &&
+                    !persistedSet.contains(current.key.visitor) &&
+                    !persistedAdditional.contains(current.key.visitor)) {
                     remove()
                 }
             }
