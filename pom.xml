@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jetbrains.research</groupId>
+    <groupId>org.vorpal.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.1.9</version>
+    <version>0.2.0</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -16,13 +16,13 @@
         <maven.compiler.source>${jvm.version}</maven.compiler.source>
         <maven.compiler.target>${jvm.version}</maven.compiler.target>
 
-        <kotlin.version>1.6.10</kotlin.version>
+        <kotlin.version>1.6.21</kotlin.version>
         <compiler-plugin.version>3.5.1</compiler-plugin.version>
 
-        <exec.main>org.jetbrains.research.kfg.MainKt</exec.main>
+        <exec.main>org.vorpal.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.0.17</kt-helper.version>
-        <asm.version>9.2</asm.version>
+        <kt-helper.version>0.1.0</kt-helper.version>
+        <asm.version>9.3</asm.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>
 
@@ -49,7 +49,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jetbrains.research</groupId>
+            <groupId>org.vorpal.research</groupId>
             <artifactId>kt-helper</artifactId>
             <version>${kt-helper.version}</version>
         </dependency>
