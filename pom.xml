@@ -6,7 +6,7 @@
 
     <groupId>org.vorpal.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.3.0-alpha</version>
+    <version>0.3.0</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
