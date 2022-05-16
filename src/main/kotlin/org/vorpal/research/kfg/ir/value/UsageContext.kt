@@ -4,6 +4,7 @@ import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.CatchBlock
 import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.instruction.Instruction
 import org.vorpal.research.kfg.ir.value.instruction.InstructionBuilder
 import org.vorpal.research.kfg.ir.value.instruction.inst
@@ -37,10 +38,10 @@ interface UsageContext : ValueUsageContext, BlockUsageContext {
     /**
      * method wrappers
      */
-    fun Method.add(block: BasicBlock) = this.add(this@UsageContext, block)
-    fun Method.remove(block: BasicBlock) = this.remove(this@UsageContext, block)
-    fun Method.addBefore(before: BasicBlock, bb: BasicBlock) = this.addBefore(this@UsageContext, before, bb)
-    fun Method.addAfter(after: BasicBlock, bb: BasicBlock) = this.addAfter(this@UsageContext, after, bb)
+    fun MethodBody.add(block: BasicBlock) = this.add(this@UsageContext, block)
+    fun MethodBody.remove(block: BasicBlock) = this.remove(this@UsageContext, block)
+    fun MethodBody.addBefore(before: BasicBlock, bb: BasicBlock) = this.addBefore(this@UsageContext, before, bb)
+    fun MethodBody.addAfter(after: BasicBlock, bb: BasicBlock) = this.addAfter(this@UsageContext, after, bb)
 
     /**
      * basic block wrappers
@@ -160,8 +161,8 @@ object EmptyUsageContext : UsageContext {
 
 class MethodUsageContext(val method: Method) : AbstractUsageContext(), Closeable {
     init {
-        for (block in method) {
-            block.addUser(method)
+        for (block in method.body) {
+            block.addUser(method.body)
             for (successor in block.successors) {
                 block.addUser(successor)
             }
@@ -169,7 +170,7 @@ class MethodUsageContext(val method: Method) : AbstractUsageContext(), Closeable
                 block.addUser(predecessor)
             }
         }
-        for (inst in method.flatten()) {
+        for (inst in method.body.flatten()) {
             for (value in inst.operands) {
                 value.addUser(inst)
             }
@@ -183,8 +184,8 @@ open class ExtendableUsageContext(vararg method: Method) : AbstractUsageContext(
     protected val methods = method.toMutableSet()
 
     private fun Method.computeUsages() {
-        for (block in this) {
-            block.addUser(this)
+        for (block in body) {
+            block.addUser(body)
             for (successor in block.successors) {
                 block.addUser(successor)
             }
@@ -192,7 +193,7 @@ open class ExtendableUsageContext(vararg method: Method) : AbstractUsageContext(
                 block.addUser(predecessor)
             }
         }
-        for (inst in this.flatten()) {
+        for (inst in body.flatten()) {
             for (value in inst.operands) {
                 value.addUser(inst)
             }

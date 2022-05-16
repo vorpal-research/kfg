@@ -2,6 +2,7 @@ package org.vorpal.research.kfg.ir.value
 
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
 
 sealed class Name {
     internal var index: Int = -1
@@ -46,11 +47,13 @@ class UndefinedName() : Name() {
     }
 }
 
-class SlotTracker(val method: Method) {
+class SlotTracker(private val methodBody: MethodBody) {
     private val blocks = hashMapOf<String, Int>()
     private val strings = hashMapOf<String, Int>()
     private var slots: Int = 0
     private var undefs: Int = 0
+
+    constructor(method: Method) : this(method.body)
 
     fun addBlock(block: BasicBlock) {
         val name = block.name
@@ -87,7 +90,7 @@ class SlotTracker(val method: Method) {
         slots = 0
         blocks.clear()
         undefs = 0
-        for (bb in method) {
+        for (bb in methodBody) {
             addBlock(bb)
             for (inst in bb) {
                 for (value in inst.operands.plus(inst.get())) {
@@ -129,7 +132,7 @@ class NameMapper(val method: Method) {
     fun getValue(name: Name) = nameToValue[name]
 
     private fun init() {
-        for (bb in method) {
+        for (bb in method.body) {
             nameToBlock[bb.name] = bb
             for (inst in bb) {
                 for (value in inst.operands.plus(inst.get())) {
