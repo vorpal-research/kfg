@@ -9,6 +9,7 @@ import org.vorpal.research.kfg.visitor.pass.AnalysisManager
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 import org.vorpal.research.kfg.visitor.pass.PassManager
 import org.vorpal.research.kthelper.collection.dequeOf
+import org.vorpal.research.kthelper.logging.log
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
     var passManager = PassManager()
@@ -21,22 +22,46 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     // List of all scheduled passes. Used to add all passes only single time
     private val scheduled = mutableSetOf<java.lang.Class<*>>()
     private val passesToRun: MutableList<NodeVisitor> = pipeline.toMutableList()
+    private var previousDirectlyAddedVisitor: NodeVisitor? = null
 
     fun <T : NodeVisitor> schedule(visitor: java.lang.Class<T>) {
         if (!scheduled.add(visitor)) {
             return
         }
 
-        val visitorInstance = visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
+        val visitorInstance = try {visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
                 .apply { isAccessible = true }
                 .newInstance(cm, this@Pipeline)
+        } catch (e: NoSuchMethodException) {
+            log.warn("Tried to schedule visitor ${visitor.name}, but not required constructor found. Assuming user will add an instance manually")
+            return
+        }
 
+        processScheduledInstance(visitorInstance)
+    }
+
+    fun schedule(visitorInstance: NodeVisitor, shouldPersistOrder: Boolean) {
+        if (!scheduled.add(visitorInstance::class.java)) {
+            return
+        }
+
+        if (shouldPersistOrder && previousDirectlyAddedVisitor != null) {
+            visitorRegistry.addRequiredPass(visitorInstance::class.java, previousDirectlyAddedVisitor!!::class.java)
+        }
+        if (shouldPersistOrder) {
+            previousDirectlyAddedVisitor = visitorInstance
+        }
+
+        processScheduledInstance(visitorInstance)
+    }
+
+    private fun processScheduledInstance(visitorInstance: NodeVisitor) {
         visitorInstance.registerPassDependencies()
         visitorInstance.registerAnalysisDependencies()
 
         passesToRun.add(visitorInstance)
 
-        visitorRegistry.getVisitorDependencies(visitor).forEach { schedule(it) }
+        visitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it) }
 
         fun registerAnalysisDependencies(analysis: java.lang.Class<out AnalysisVisitor<*>>) {
             if (visitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
@@ -46,7 +71,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 registerAnalysisDependencies(it)
             }
         }
-        visitorRegistry.getAnalysisDependencies(visitor).forEach { registerAnalysisDependencies(it) }
+        visitorRegistry.getAnalysisDependencies(visitorInstance::class.java).forEach { registerAnalysisDependencies(it) }
     }
 
     fun registerProvider(provider: KfgProvider<*>) {
@@ -108,15 +133,11 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     }
 
     operator fun NodeVisitor.unaryPlus() {
-        schedule(this.javaClass)
+        schedule(this, true)
     }
 
     operator fun KfgProvider<*>.unaryPlus() {
         registerProvider(this)
-    }
-
-    protected open fun buildRunnablePipeline(): List<NodeVisitor> {
-        return passManager.getPassOrder(this).map { it.wrap() }
     }
 
     fun run() {
@@ -262,6 +283,12 @@ open class MethodPipeline(
     }
 }
 
+class PipelineStub : Pipeline(ClassManager()) {
+    override fun runInternal() {
+        // Do nothing
+    }
+}
+
 fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline =
     PackagePipeline(cm, target).also {
         it.init()
@@ -283,13 +310,13 @@ fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.
     }
 
 fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, target, init).run()
+    buildPipeline(cm, target, init).apply { run() }
 
 fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, targets, init).run()
+    buildPipeline(cm, targets, init).apply { run() }
 
 fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, target, init).run()
+    buildPipeline(cm, target, init).apply { run() }
 
 fun executePipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, targets, init).run()
+    buildPipeline(cm, targets, init).apply { run() }

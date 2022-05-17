@@ -7,15 +7,10 @@ import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Field
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 
 class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVisitor {
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
 
     override fun cleanup() {}
 

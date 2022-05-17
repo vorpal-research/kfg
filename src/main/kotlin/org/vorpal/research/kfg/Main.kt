@@ -5,10 +5,7 @@ import org.vorpal.research.kfg.container.asContainer
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.util.Flags
 import org.vorpal.research.kfg.util.write
-import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.LoopAnalysis
-import org.vorpal.research.kfg.visitor.Pipeline
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.*
 import org.vorpal.research.kthelper.tryOrNull
 import java.net.URLClassLoader
 import java.nio.file.Path
@@ -16,6 +13,7 @@ import java.nio.file.Paths
 
 
 private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
+    override val pipeline = PipelineStub()
 
     override fun cleanup() {}
 
@@ -27,16 +25,11 @@ private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader
             println("Failed to write $klass")
         }
     }
-
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
 }
 
 private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
+    override val pipeline = PipelineStub()
+
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
@@ -47,13 +40,6 @@ private class ClassChecker(override val cm: ClassManager, val loader: ClassLoade
             println("Failed to load written class: $klass: ${e.message}")
         }
     }
-
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
 }
 
 fun main(args: Array<String>) {
@@ -78,8 +64,7 @@ fun main(args: Array<String>) {
     val writeTarget = Paths.get("written/")
     jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
     executePipeline(classManager, Package.defaultPackage) {
-        +LoopAnalysis(classManager)
-        +LoopSimplifier(classManager)
+        +LoopSimplifier(classManager, this@executePipeline)
         +ClassWriter(classManager, loader, writeTarget)
         +ClassChecker(classManager, loader, writeTarget)
     }

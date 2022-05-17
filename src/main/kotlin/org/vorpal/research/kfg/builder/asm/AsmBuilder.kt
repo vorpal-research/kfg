@@ -11,7 +11,7 @@ import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 import org.vorpal.research.kthelper.assert.unreachable
 import java.util.*
 import org.objectweb.asm.Handle as AsmHandle
@@ -42,12 +42,7 @@ private val Type.shortInt
     }
 
 class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
 
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()

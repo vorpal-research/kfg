@@ -3,15 +3,10 @@ package org.vorpal.research.kfg.builder.cfg
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 
 class InnerClassNormalizer(override val cm: ClassManager) : ClassVisitor {
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
     override fun cleanup() {}
 
     override fun visit(klass: Class) {

@@ -9,7 +9,7 @@ import org.vorpal.research.kfg.type.BoolType
 import org.vorpal.research.kfg.type.Integral
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 import org.vorpal.research.kthelper.assert.unreachable
 
 class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
@@ -20,13 +20,7 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
     override val values: ValueFactory
         get() = cm.value
 
-
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
 
     override fun cleanup() {}
 

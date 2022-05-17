@@ -7,17 +7,12 @@ import org.vorpal.research.kfg.ir.value.instruction.PhiInst
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.mergeTypes
 import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 
 class TypeMergeFailedException(val types: Set<Type>) : KfgException()
 
 class NullTypeAdapter(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
 
     override fun cleanup() {}
 

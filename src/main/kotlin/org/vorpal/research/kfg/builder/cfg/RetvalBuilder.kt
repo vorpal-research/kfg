@@ -16,17 +16,12 @@ import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.type.mergeTypes
 import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
+import org.vorpal.research.kfg.visitor.PipelineStub
 import org.vorpal.research.kthelper.assert.ktassert
 import kotlin.math.abs
 
 class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
-    private val _pipeline = object : Pipeline(cm) {
-        override fun runInternal() {
-            // Do nothing
-        }
-    }
-    override val pipeline: Pipeline get() = _pipeline
+    override val pipeline = PipelineStub()
     private val returnValues = hashMapOf<BasicBlock, ReturnInst>()
     override val instructions: InstructionFactory
         get() = cm.instruction

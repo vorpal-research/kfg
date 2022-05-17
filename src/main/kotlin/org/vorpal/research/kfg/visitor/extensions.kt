@@ -36,6 +36,14 @@ inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisRes
     return this.pipeline.analysisManager.getAnalysisResult(Analysis::class.java, node)
 }
 
+inline fun <reified Provider : KfgProvider<DataType>, DataType> Pipeline.getProvider(): KfgProvider<DataType> {
+    return this.visitorRegistry.getProvider(Provider::class.java) as KfgProvider<DataType>
+}
+
+inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> Pipeline.getAnalysis(node: Node): DataType {
+    return this.analysisManager.getAnalysisResult(Analysis::class.java, node)
+}
+
 fun NodeVisitor.invalidateAnalysisCache(node: Node, persistedAdditional: List<Class<out AnalysisVisitor<*>>> = emptyList()) {
     this.pipeline.analysisManager.invalidateAllExcept(this::class.java, node, persistedAdditional)
 }
