@@ -2,6 +2,7 @@ package org.vorpal.research.kfg.visitor
 
 import org.vorpal.research.kfg.visitor.pass.AnalysisResult
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
+import org.vorpal.research.kfg.visitor.pass.IllegalPipelineException
 
 class VisitorRegistry {
 
@@ -44,7 +45,11 @@ class VisitorRegistry {
 
     fun getProviderNullable(provider: Class<out KfgProvider<*>>): KfgProvider<*>? = providers[provider]
 
-    fun getProvider(provider: Class<out KfgProvider<*>>): KfgProvider<*> = providers[provider]!!
+    fun getProvider(provider: Class<out KfgProvider<*>>): KfgProvider<*> = try {
+        providers[provider]!!
+    } catch (e: NullPointerException) {
+        throw IllegalPipelineException("Required provider ${provider.name} but it is not registered. Try registering provider before scheduling a pass")
+    }
 
     fun registerProvider(provider: KfgProvider<*>) {
         providers[provider::class.java] = provider

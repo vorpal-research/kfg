@@ -283,6 +283,8 @@ open class MethodPipeline(
     }
 }
 
+fun pipelineStub() = PipelineStub()
+
 class PipelineStub : Pipeline(ClassManager()) {
     override fun runInternal() {
         // Do nothing
