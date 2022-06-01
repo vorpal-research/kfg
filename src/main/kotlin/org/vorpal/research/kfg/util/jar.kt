@@ -188,9 +188,7 @@ internal fun ClassNode.write(
 ): File =
     path.toFile().apply {
         parentFile?.mkdirs()
-        FileOutputStream(this).use { fos ->
-            fos.write(this@write.toByteArray(loader, flags, checkClass))
-        }
+        this.writeBytes(this@write.toByteArray(loader, flags, checkClass))
     }
 
 fun Class.write(

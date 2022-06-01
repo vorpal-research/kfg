@@ -37,7 +37,7 @@ private class ClassChecker(override val cm: ClassManager, val loader: ClassLoade
             val writeLoader = URLClassLoader(arrayOf(target.toUri().toURL()))
             writeLoader.loadClass(klass.canonicalDesc)
         } catch (e: Throwable) {
-            println("Failed to load written class: $klass: ${e.message}")
+            println("Failed to load written class: $klass: ${e.message ?: e}")
         }
     }
 }
