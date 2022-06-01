@@ -1,8 +1,8 @@
 package org.vorpal.research.kfg.container
 
 import org.objectweb.asm.tree.ClassNode
-import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnsupportedCfgException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
@@ -15,6 +15,7 @@ import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.jar.Manifest
+import kotlin.io.path.writeBytes
 
 class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     private val file = JarFile(path.toFile())
@@ -164,4 +165,19 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
         return JarContainer(builder.name, pkg)
     }
 
+    override fun extract(target: Path) {
+        val enumeration = file.entries()
+
+        while (enumeration.hasMoreElements()) {
+            val entry = enumeration.nextElement() as JarEntry
+
+            if (entry.isClass) {
+                val bytes = file.getInputStream(entry).readBytes()
+                val copyFile = target.resolve(entry.name).also {
+                    it.toFile().parentFile?.mkdirs()
+                }
+                copyFile.writeBytes(bytes)
+            }
+        }
+    }
 }

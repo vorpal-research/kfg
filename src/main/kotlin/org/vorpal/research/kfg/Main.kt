@@ -73,4 +73,11 @@ fun main(args: Array<String>) {
         +ClassChecker(classManager, loader, writeTarget)
     }
     jars.forEach { jar -> jar.update(classManager, target) }
+
+
+    jars.forEach { jar ->
+        jar.extract(Paths.get("extracted").also {
+            it.toFile().mkdirs()
+        })
+    }
 }
