@@ -3,6 +3,7 @@ package org.vorpal.research.kfg
 import org.vorpal.research.kfg.analysis.LoopSimplifier
 import org.vorpal.research.kfg.container.asContainer
 import org.vorpal.research.kfg.ir.Class
+import org.vorpal.research.kfg.ir.OuterClass
 import org.vorpal.research.kfg.util.Flags
 import org.vorpal.research.kfg.util.write
 import org.vorpal.research.kfg.visitor.ClassVisitor
@@ -37,7 +38,13 @@ private class ClassChecker(override val cm: ClassManager, val loader: ClassLoade
             val writeLoader = URLClassLoader(arrayOf(target.toUri().toURL()))
             writeLoader.loadClass(klass.canonicalDesc)
         } catch (e: Throwable) {
-            println("Failed to load written class: $klass: ${e.message}")
+            e.message?.apply {
+                if (cm[this] !is OuterClass) {
+                    println("Failed to load written class: $klass: ${e.message}")
+                } else {
+                    println("Failed to load written class: $klass: not all required classes are accessible")
+                }
+            } ?: println("Failed to load written class: $klass: $e")
         }
     }
 }
