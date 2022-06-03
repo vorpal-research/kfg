@@ -11,6 +11,7 @@ import org.vorpal.research.kthelper.`try`
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.writeBytes
 
 class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
     override val pkg: Package = pkg ?: commonPackage
@@ -125,4 +126,14 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
         return DirectoryContainer(target.toFile(), pkg)
     }
 
+    override fun extract(target: Path) {
+        for (entry in file.allEntries) {
+
+            if (entry.isClass) {
+                val bytes = entry.readBytes()
+                val copyFile = target.resolve(entry.name)
+                copyFile.writeBytes(bytes)
+            }
+        }
+    }
 }
