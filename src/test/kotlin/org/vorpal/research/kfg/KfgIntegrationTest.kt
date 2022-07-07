@@ -86,21 +86,17 @@ class KfgIntegrationTest {
     @Test
     fun packagePipelineTest() {
         val visitedClasses = mutableSetOf<Class>()
-        class ProviderTest : KfgProvider<MutableSet<Class>> {
-            override fun provide(): MutableSet<Class> {
-                return visitedClasses
-            }
-        }
+        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
         class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
 
             override fun cleanup() {}
             override fun visit(klass: Class) {
                 super.visit(klass)
-                getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
+                getProvider<ProviderTest>().visitedClasses.add(klass)
             }
         }
 
-        val provider = ProviderTest()
+        val provider = ProviderTest(visitedClasses)
         executePipeline(cm, pkg) {
             schedule<ClassVisitorTest>()
             registerProvider(provider)
@@ -125,20 +121,16 @@ class KfgIntegrationTest {
         }
 
         val visitedClasses = mutableSetOf<Class>()
-        class ProviderTest : KfgProvider<MutableSet<Class>> {
-            override fun provide(): MutableSet<Class> {
-                return visitedClasses
-            }
-        }
+        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
         class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
             override fun cleanup() {}
             override fun visit(klass: Class) {
                 super.visit(klass)
-                getProvider<ProviderTest, MutableSet<Class>>().provide().add(klass)
+                getProvider<ProviderTest>().visitedClasses.add(klass)
             }
         }
 
-        val provider = ProviderTest()
+        val provider = ProviderTest(visitedClasses)
         executePipeline(cm, klass) {
             schedule<ClassVisitorTest>()
             registerProvider(provider)
@@ -159,20 +151,16 @@ class KfgIntegrationTest {
         val targetMethods = klass.getMethods(klass.methods.random().name)
 
         val visitedMethods = mutableSetOf<Method>()
-        class ProviderTest : KfgProvider<MutableSet<Method>> {
-            override fun provide(): MutableSet<Method> {
-                return visitedMethods
-            }
-        }
+        data class ProviderTest(val visitedMethods: MutableSet<Method>) : KfgProvider
         class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
             override fun cleanup() {}
             override fun visitMethod(method: Method) {
                 super.visitMethod(method)
-                getProvider<ProviderTest, MutableSet<Method>>().provide().add(method)
+                getProvider<ProviderTest>().visitedMethods.add(method)
             }
         }
 
-        val provider = ProviderTest()
+        val provider = ProviderTest(visitedMethods)
         executePipeline(cm, targetMethods) {
             schedule<ClassVisitorTest>()
             registerProvider(provider)

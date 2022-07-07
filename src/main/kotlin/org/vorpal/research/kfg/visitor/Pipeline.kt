@@ -74,7 +74,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         visitorRegistry.getAnalysisDependencies(visitorInstance::class.java).forEach { registerAnalysisDependencies(it) }
     }
 
-    fun registerProvider(provider: KfgProvider<*>) {
+    fun registerProvider(provider: KfgProvider) {
         visitorRegistry.registerProvider(provider)
     }
 
@@ -136,7 +136,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         schedule(this, true)
     }
 
-    operator fun KfgProvider<*>.unaryPlus() {
+    operator fun KfgProvider.unaryPlus() {
         registerProvider(this)
     }
 

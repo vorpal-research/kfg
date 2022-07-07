@@ -48,13 +48,7 @@ data class TestPipelineContext(
     val executedAnalysis: MutableList<Class<out AnalysisVisitor<*>>> = mutableListOf()
 )
 
-class TestProvider : KfgProvider<TestPipelineContext> {
-    private val context = TestPipelineContext()
-
-    override fun provide(): TestPipelineContext {
-        return context
-    }
-}
+data class TestProvider(val context: TestPipelineContext = TestPipelineContext()) : KfgProvider
 
 class TestAnalysisResult : AnalysisResult
 
@@ -62,7 +56,7 @@ abstract class TestPass : MethodVisitor {
     override fun cleanup() {}
 
     override fun visit(method: Method) {
-        val context = getProvider<TestProvider, TestPipelineContext>().provide()
+        val context = getProvider<TestProvider>().context
 
         if (context.executedPasses.contains(this.javaClass)) {
             throw IllegalStateException("Pass ${javaClass.name} executed second time.")
@@ -105,8 +99,8 @@ abstract class TestPass : MethodVisitor {
 
 abstract class TestAnalysis : AnalysisVisitor<TestAnalysisResult> {
     override fun analyse(node: Node): TestAnalysisResult {
-        getProvider<TestProvider, TestPipelineContext>()
-            .provide()
+        getProvider<TestProvider>()
+            .context
             .executedAnalysis
             .add(this.javaClass)
 

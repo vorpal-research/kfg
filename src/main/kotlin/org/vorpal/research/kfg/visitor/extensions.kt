@@ -12,7 +12,7 @@ inline fun <reified Dependency : NodeVisitor> NodeVisitor.addSoftDependencyPass(
     this.pipeline.visitorRegistry.addSoftDependencyPass(this::class.java, Dependency::class.java)
 }
 
-inline fun <reified Dependency : KfgProvider<*>> NodeVisitor.addRequiredProvider() {
+inline fun <reified Dependency : KfgProvider> NodeVisitor.addRequiredProvider() {
     this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
 }
 
@@ -28,16 +28,16 @@ inline fun <reified Visitor : NodeVisitor> Pipeline.schedule() {
     this.schedule(Visitor::class.java)
 }
 
-inline fun <reified Provider : KfgProvider<DataType>, DataType> NodeVisitor.getProvider(): KfgProvider<DataType> {
-    return this.pipeline.visitorRegistry.getProvider(Provider::class.java) as KfgProvider<DataType>
+inline fun <reified Provider : KfgProvider> NodeVisitor.getProvider(): Provider {
+    return this.pipeline.visitorRegistry.getProvider(Provider::class.java) as Provider
 }
 
 inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> NodeVisitor.getAnalysis(node: Node): DataType {
     return this.pipeline.analysisManager.getAnalysisResult(Analysis::class.java, node)
 }
 
-inline fun <reified Provider : KfgProvider<DataType>, DataType> Pipeline.getProvider(): KfgProvider<DataType> {
-    return this.visitorRegistry.getProvider(Provider::class.java) as KfgProvider<DataType>
+inline fun <reified Provider : KfgProvider> Pipeline.getProvider(): Provider {
+    return this.visitorRegistry.getProvider(Provider::class.java) as Provider
 }
 
 inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> Pipeline.getAnalysis(node: Node): DataType {

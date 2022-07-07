@@ -79,7 +79,7 @@ class PassManagerTest {
 
         runner.execute(pm, provider, cm, targetMethod)
 
-        val context = provider.provide()
+        val context = provider.context
 
         assertEquals(nodes.size, context.executedPasses.size)
         println(context.executedAnalysis.size)
@@ -109,7 +109,7 @@ class PassManagerTest {
             registerProvider(provider)
         }
 
-        val context = provider.provide()
+        val context = provider.context
 
         assertEquals(16, context.executedPasses.size)
         println(context.executedAnalysis.size)

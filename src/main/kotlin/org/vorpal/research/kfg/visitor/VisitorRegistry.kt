@@ -8,15 +8,15 @@ class VisitorRegistry {
 
     private val visitorDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out NodeVisitor>>>()
     private val visitorSoftDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out NodeVisitor>>>()
-    private val providerDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out KfgProvider<*>>>>()
+    private val providerDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out KfgProvider>>>()
     private val analysisDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>>()
     private val analysisPersistedResults = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>>()
     private val analysisPersistedAll = mutableSetOf<Class<out NodeVisitor>>()
-    private val providers = mutableMapOf<Class<out KfgProvider<*>>, KfgProvider<*>>()
+    private val providers = mutableMapOf<Class<out KfgProvider>, KfgProvider>()
 
     fun getVisitorDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out NodeVisitor>> = visitorDependencies[nodeVisitor] ?: emptySet()
     fun getVisitorSoftDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out NodeVisitor>> = visitorSoftDependencies[nodeVisitor] ?: emptySet()
-    fun getProviderDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out KfgProvider<*>>> = providerDependencies[nodeVisitor] ?: emptySet()
+    fun getProviderDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out KfgProvider>> = providerDependencies[nodeVisitor] ?: emptySet()
     fun getAnalysisDependencies(nodeVisitor: Class<out NodeVisitor>): Set<Class<out AnalysisVisitor<out AnalysisResult>>> = analysisDependencies[nodeVisitor] ?: emptySet()
     fun getAnalysisPersisted(nodeVisitor: Class<out NodeVisitor>): Set<Class<out AnalysisVisitor<out AnalysisResult>>> = analysisPersistedResults[nodeVisitor] ?: emptySet()
 
@@ -31,7 +31,7 @@ class VisitorRegistry {
         visitorSoftDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addRequiresProvider(visitor: Class<out NodeVisitor>, dependency: Class<out KfgProvider<*>>) {
+    fun addRequiresProvider(visitor: Class<out NodeVisitor>, dependency: Class<out KfgProvider>) {
         providerDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
@@ -43,15 +43,15 @@ class VisitorRegistry {
         analysisPersistedResults.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun getProviderNullable(provider: Class<out KfgProvider<*>>): KfgProvider<*>? = providers[provider]
+    fun getProviderNullable(provider: Class<out KfgProvider>): KfgProvider? = providers[provider]
 
-    fun getProvider(provider: Class<out KfgProvider<*>>): KfgProvider<*> = try {
+    fun getProvider(provider: Class<out KfgProvider>): KfgProvider = try {
         providers[provider]!!
     } catch (e: NullPointerException) {
         throw IllegalPipelineException("Required provider ${provider.name} but it is not registered. Try registering provider before scheduling a pass")
     }
 
-    fun registerProvider(provider: KfgProvider<*>) {
+    fun registerProvider(provider: KfgProvider) {
         providers[provider::class.java] = provider
     }
 
