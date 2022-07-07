@@ -50,6 +50,8 @@ data class TestPipelineContext(
 
 data class TestProvider(val context: TestPipelineContext = TestPipelineContext()) : KfgProvider
 
+data class TestProviderInternal(var dummyData: Int = 0) : KfgProvider
+
 class TestAnalysisResult : AnalysisResult
 
 abstract class TestPass : MethodVisitor {
@@ -57,6 +59,7 @@ abstract class TestPass : MethodVisitor {
 
     override fun visit(method: Method) {
         val context = getProvider<TestProvider>().context
+        getProvider<TestProviderInternal>().dummyData += 1
 
         if (context.executedPasses.contains(this.javaClass)) {
             throw IllegalStateException("Pass ${javaClass.name} executed second time.")
@@ -81,6 +84,7 @@ abstract class TestPass : MethodVisitor {
             this.pipeline.visitorRegistry.addRequiredPass(this::class.java, clazz)
         }
         addRequiredProvider<TestProvider>()
+        addRequiredInternalProvider<TestProviderInternal>()
     }
 
     override fun registerAnalysisDependencies() {

@@ -3,6 +3,7 @@ package org.vorpal.research.kfg.visitor
 import org.vorpal.research.kfg.ir.Node
 import org.vorpal.research.kfg.visitor.pass.AnalysisResult
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
+import java.lang.IllegalArgumentException
 
 inline fun <reified Dependency : NodeVisitor> NodeVisitor.addRequiredPass() {
     this.pipeline.visitorRegistry.addRequiredPass(this::class.java, Dependency::class.java)
@@ -15,6 +16,24 @@ inline fun <reified Dependency : NodeVisitor> NodeVisitor.addSoftDependencyPass(
 inline fun <reified Dependency : KfgProvider> NodeVisitor.addRequiredProvider() {
     this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
 }
+
+inline fun <reified Dependency : KfgProvider> NodeVisitor.addRequiredInternalProvider() {
+    if (pipeline.visitorRegistry.getProviderNullable(Dependency::class.java) == null) {
+        val provider = try {
+            Dependency::class.java
+                .getDeclaredConstructor()
+                .apply { isAccessible = true }
+                .newInstance()
+        } catch (e: NoSuchMethodException) {
+            throw IllegalArgumentException("Internal KfgProvider ${Dependency::class.java.name} has no default constructor")
+        }
+
+        this.pipeline.visitorRegistry.registerProvider(provider)
+    }
+
+    this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
+}
+
 
 inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addRequiredAnalysis() {
     this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, Dependency::class.java)

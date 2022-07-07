@@ -8,6 +8,7 @@ import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.container.JarContainer
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.getProvider
 import org.vorpal.research.kfg.visitor.pass.IllegalPipelineException
 import org.vorpal.research.kfg.visitor.pass.PassManager
 import org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPlusPassStrategy
@@ -98,7 +99,7 @@ class PassManagerTest {
         val pm = PassManager(IterativeAStarPlusPassStrategy())
         val provider = TestProvider()
 
-        executePipeline(cm, targetMethod) {
+        val pipeline = executePipeline(cm, targetMethod) {
             passManager = pm
             schedule<P2>()
             schedule<P8>()
@@ -110,8 +111,10 @@ class PassManagerTest {
         }
 
         val context = provider.context
+        val executedPasses = pipeline.getProvider<TestProviderInternal>().dummyData
 
         assertEquals(16, context.executedPasses.size)
+        assertEquals(16, executedPasses)
         println(context.executedAnalysis.size)
     }
 
