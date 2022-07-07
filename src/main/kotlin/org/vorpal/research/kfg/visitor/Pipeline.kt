@@ -24,23 +24,21 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     private val passesToRun: MutableList<NodeVisitor> = pipeline.toMutableList()
     private var previousDirectlyAddedVisitor: NodeVisitor? = null
 
-    fun <T : NodeVisitor> schedule(visitor: java.lang.Class<T>) {
+    fun schedule(visitor: java.lang.Class<out NodeVisitor>, shouldPersistOrder: Boolean) {
         if (!scheduled.add(visitor)) {
             return
         }
 
-        val visitorInstance = try {visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
-                .apply { isAccessible = true }
-                .newInstance(cm, this@Pipeline)
-        } catch (e: NoSuchMethodException) {
-            log.warn("Tried to schedule visitor ${visitor.name}, but not required constructor found. Assuming user will add an instance manually")
-            return
-        }
+        val visitorInstance = getVisitorInstance(visitor) ?: return
 
-        processScheduledInstance(visitorInstance)
+        processScheduledInstance(visitorInstance, shouldPersistOrder)
     }
 
     fun schedule(visitorInstance: NodeVisitor, shouldPersistOrder: Boolean) {
+        processScheduledInstance(visitorInstance, shouldPersistOrder)
+    }
+
+    private fun processScheduledInstance(visitorInstance: NodeVisitor, shouldPersistOrder: Boolean) {
         if (!scheduled.add(visitorInstance::class.java)) {
             return
         }
@@ -52,16 +50,12 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
             previousDirectlyAddedVisitor = visitorInstance
         }
 
-        processScheduledInstance(visitorInstance)
-    }
-
-    private fun processScheduledInstance(visitorInstance: NodeVisitor) {
         visitorInstance.registerPassDependencies()
         visitorInstance.registerAnalysisDependencies()
 
         passesToRun.add(visitorInstance)
 
-        visitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it) }
+        visitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it, false) }
 
         fun registerAnalysisDependencies(analysis: java.lang.Class<out AnalysisVisitor<*>>) {
             if (visitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
@@ -132,6 +126,14 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         }
     }
 
+    fun NodeVisitor.schedule() {
+        schedule(this, false)
+    }
+
+    fun NodeVisitor.scheduleOrdered() {
+        schedule(this, true)
+    }
+
     operator fun NodeVisitor.unaryPlus() {
         schedule(this, true)
     }
@@ -146,6 +148,16 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     }
 
     protected abstract fun runInternal()
+
+    private fun <T : NodeVisitor> getVisitorInstance(visitor: java.lang.Class<T>) =
+        try {
+            visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
+                .apply { isAccessible = true }
+                .newInstance(cm, this@Pipeline)
+        } catch (e: NoSuchMethodException) {
+            log.warn("Tried to schedule visitor ${visitor.name}, but not required constructor found. Assuming user will add an instance manually")
+            null
+        }
 }
 
 class PackagePipeline(

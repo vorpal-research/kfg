@@ -44,7 +44,11 @@ inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addPersistedAna
 }
 
 inline fun <reified Visitor : NodeVisitor> Pipeline.schedule() {
-    this.schedule(Visitor::class.java)
+    this.schedule(Visitor::class.java, shouldPersistOrder = false)
+}
+
+inline fun <reified Visitor : NodeVisitor> Pipeline.scheduleOrdered() {
+    this.schedule(Visitor::class.java, shouldPersistOrder = true)
 }
 
 inline fun <reified Provider : KfgProvider> NodeVisitor.getProvider(): Provider {
