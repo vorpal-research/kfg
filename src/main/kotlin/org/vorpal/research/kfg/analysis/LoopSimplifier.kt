@@ -127,7 +127,7 @@ class LoopSimplifier(override val cm: ClassManager, override val pipeline: Pipel
 
         remapPhis(header, loopPredecessors, preheader)
         preheader += inst(cm) { goto(header) }
-        method.addBefore(header, preheader)
+        method.body.addBefore(header, preheader)
         if (loop.hasParent) {
             loop.parent.addBlock(preheader)
         }
@@ -140,7 +140,7 @@ class LoopSimplifier(override val cm: ClassManager, override val pipeline: Pipel
         oldCatchEntries: Map<CatchBlock, Set<BasicBlock>>,
         newCatchEntries: Map<CatchBlock, Set<BasicBlock>>
     ) = with(ctx) {
-        for (catch in method.catchEntries) {
+        for (catch in method.body.catchEntries) {
             val newEntries = newCatchEntries[catch]!!
             val oldEntries = oldCatchEntries[catch]!!
             // if there is a difference --- we have changed the catch entries, and
@@ -244,7 +244,7 @@ class LoopSimplifier(override val cm: ClassManager, override val pipeline: Pipel
         val latches = loop.latches
         if (latches.size == 1) return
 
-        val oldCatchEntries = method.catchEntries.associateWith { it.entries }
+        val oldCatchEntries = method.body.catchEntries.associateWith { it.entries }
 
         val latch = BodyBlock("loop.latch")
         remapPhis(header, latches, latch)
@@ -254,11 +254,11 @@ class LoopSimplifier(override val cm: ClassManager, override val pipeline: Pipel
         mapToCatches(latches, latch)
         latch.linkForward(header)
 
-        val newCatchEntries = method.catchEntries.associateWith { it.entries }
+        val newCatchEntries = method.body.catchEntries.associateWith { it.entries }
         mapCatchEntries(latches, latch, oldCatchEntries, newCatchEntries)
 
         latch += inst(cm) { goto(header) }
-        method.addAfter(latches.first(), latch)
+        method.body.addAfter(latches.first(), latch)
         loop.addBlock(latch)
     }
 }

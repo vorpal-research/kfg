@@ -183,7 +183,7 @@ class KfgIntegrationTest {
         with(initMethod.usageContext) {
             val block = BodyBlock("entry")
             block.add(inst(cm) { `return`() })
-            initMethod.add(block)
+            initMethod.body.add(block)
         }
         val target = Files.createTempDirectory(Paths.get("."), "kfg")
         jar.update(cm, target)

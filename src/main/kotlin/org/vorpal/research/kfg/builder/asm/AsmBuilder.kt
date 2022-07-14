@@ -6,7 +6,7 @@ import org.objectweb.asm.tree.*
 import org.vorpal.research.kfg.*
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
-import org.vorpal.research.kfg.ir.MethodDesc
+import org.vorpal.research.kfg.ir.MethodDescriptor
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
@@ -46,7 +46,10 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
-    private val labels = method.basicBlocks.associateWith { LabelNode() }
+    private val labels = when {
+        method.bodyInitialized -> method.body.basicBlocks.associateWith { LabelNode() }
+        else -> emptyMap()
+    }
     private val stack = ArrayDeque<Value>()
     private val locals = hashMapOf<Value, Int>()
 
@@ -394,12 +397,12 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         )
 
     private val Type.asAsmType: AsmType get() = getType(this.asmDesc)
-    private val MethodDesc.asAsmType: AsmType get() = getType(this.asmDesc)
+    private val MethodDescriptor.asAsmType: AsmType get() = getType(this.asmDesc)
 
     override fun visitInvokeDynamicInst(inst: InvokeDynamicInst) {
         val insn = InvokeDynamicInsnNode(
             inst.methodName,
-            inst.methodDesc.asmDesc,
+            inst.methodDescriptor.asmDesc,
             inst.bootstrapMethod.asAsmHandle,
             *inst.bootstrapMethodArgs.map {
                 when (it) {
@@ -409,7 +412,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                     is DoubleConstant -> it.value
                     is StringConstant -> it.value
                     is Type -> it.asAsmType
-                    is MethodDesc -> it.asAsmType
+                    is MethodDescriptor -> it.asAsmType
                     is Handle -> it.asAsmHandle
                     else -> unreachable("Unknown arg of bsm: $it")
                 }
@@ -504,12 +507,12 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     private fun buildTryCatchBlocks(): List<TryCatchBlockNode> {
         val catchBlocks = mutableListOf<TryCatchBlockNode>()
-        for (catchBlock in method.catchEntries) {
+        for (catchBlock in method.body.catchEntries) {
             val `catch` = catchBlock.label
             val exception = catchBlock.exception.internalDesc
             for (thrower in catchBlock.throwers) {
                 val from = thrower.label
-                val to = method.getNext(thrower).label
+                val to = method.body.getNext(thrower).label
                 catchBlocks.add(TryCatchBlockNode(from, to, `catch`, exception))
             }
         }
@@ -541,10 +544,12 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
     }
 
     fun build(): MethodNode {
+        if (!method.bodyInitialized || !method.hasBody) return method.mn
+
         super.visit(method)
-        method.flatten().filterIsInstance<PhiInst>().forEach { buildPhiInst(it) }
+        method.body.flatten().filterIsInstance<PhiInst>().forEach { buildPhiInst(it) }
         val insnList = InsnList()
-        for (bb in method.basicBlocks) {
+        for (bb in method.body.basicBlocks) {
             insnList.add(bb.label)
             bb.insnList.forEach { insnList.add(it) }
             bb.terminateInsnList.forEach { insnList.add(it) }

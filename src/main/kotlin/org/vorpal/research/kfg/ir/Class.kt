@@ -2,8 +2,8 @@ package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.tree.ClassNode
 import org.vorpal.research.kfg.ClassManager
-import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.InvalidStateException
+import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnknownInstanceException
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
@@ -11,13 +11,13 @@ import org.vorpal.research.kthelper.assert.ktassert
 import org.vorpal.research.kthelper.defaultHashCode
 
 abstract class Class : Node {
-    protected data class MethodKey(val name: String, val desc: MethodDesc) {
-        constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDesc.fromDesc(tf, desc))
+    protected data class MethodKey(val name: String, val desc: MethodDescriptor) {
+        constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDescriptor.fromDesc(tf, desc))
 
         override fun toString() = "$name$desc"
     }
 
-    protected infix fun String.to(desc: MethodDesc) = MethodKey(this, desc)
+    protected infix fun String.to(desc: MethodDescriptor) = MethodKey(this, desc)
 
     protected data class FieldKey(val name: String, val type: Type)
 
@@ -38,8 +38,6 @@ abstract class Class : Node {
     val constructors get() = allMethods.filter { it.isConstructor }.toSet()
     val methods get() = allMethods.filterNot { it.isConstructor }.toSet()
     val fields get() = innerFields.values.toSet()
-
-    internal val failingMethods = mutableSetOf<Method>()
 
     val fullName
         get() = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
@@ -113,7 +111,7 @@ abstract class Class : Node {
             innerFields[field.name to field.type] = field
         }
         cn.methods.forEach {
-            val desc = MethodDesc.fromDesc(cm.type, it.desc)
+            val desc = MethodDescriptor.fromDesc(cm.type, it.desc)
             innerMethods[it.name to desc] = Method(cm, this, it)
         }
         cn.methods = this.allMethods.map { it.mn }
@@ -127,17 +125,17 @@ abstract class Class : Node {
     fun isInheritorOf(other: Class) = other.isAncestorOf(this)
 
     abstract fun getFieldConcrete(name: String, type: Type): Field?
-    abstract fun getMethodConcrete(name: String, desc: MethodDesc): Method?
+    abstract fun getMethodConcrete(name: String, desc: MethodDescriptor): Method?
 
     fun getFields(name: String) = fields.filter { it.name == name }.toSet()
     abstract fun getField(name: String, type: Type): Field
 
     fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
-    fun getMethod(name: String, desc: String) = getMethod(name, MethodDesc.fromDesc(cm.type, desc))
+    fun getMethod(name: String, desc: String) = getMethod(name, MethodDescriptor.fromDesc(cm.type, desc))
     fun getMethod(name: String, returnType: Type, vararg argTypes: Type) =
-        this.getMethod(name, MethodDesc(argTypes, returnType))
+        this.getMethod(name, MethodDescriptor(argTypes, returnType))
 
-    abstract fun getMethod(name: String, desc: MethodDesc): Method
+    abstract fun getMethod(name: String, desc: MethodDescriptor): Method
 
     /**
      * creates a new field with given name and type and adds is to this klass
@@ -154,7 +152,7 @@ abstract class Class : Node {
      * creates a new method with given name and descriptor and adds is to this klass
      * @throws InvalidStateException if there already exists method with given parameters
      */
-    fun addMethod(name: String, desc: MethodDesc): Method {
+    fun addMethod(name: String, desc: MethodDescriptor): Method {
         if ((name to desc) in innerMethods) throw InvalidStateException("Method $name: $desc already exists in $this")
         val method = Method(cm, this, name, desc)
         innerMethods[name to desc] = method
@@ -162,7 +160,7 @@ abstract class Class : Node {
     }
 
     fun addMethod(name: String, returnType: Type, vararg argTypes: Type) =
-        addMethod(name, MethodDesc(argTypes, returnType))
+        addMethod(name, MethodDescriptor(argTypes, returnType))
 
     fun removeField(field: Field) = innerFields.remove(field.name to field.type)
     fun removeMethod(method: Method) = innerMethods.remove(method.name to method.desc)
@@ -189,7 +187,7 @@ class ConcreteClass : Class {
     override fun getFieldConcrete(name: String, type: Type): Field? =
         innerFields.getOrElse(name to type) { superClass?.getFieldConcrete(name, type) }
 
-    override fun getMethodConcrete(name: String, desc: MethodDesc): Method? =
+    override fun getMethodConcrete(name: String, desc: MethodDescriptor): Method? =
         innerMethods.getOrElse(name to desc) {
             val concreteMethod = allAncestors.mapNotNull { it as? ConcreteClass }
                 .map { it.getMethodConcrete(name, desc) }
@@ -216,7 +214,7 @@ class ConcreteClass : Class {
             ?: throw UnknownInstanceException("No field \"$name\" in class $this")
     }
 
-    override fun getMethod(name: String, desc: MethodDesc): Method {
+    override fun getMethod(name: String, desc: MethodDescriptor): Method {
         val methodDesc = name to desc
         return innerMethods.getOrElse(methodDesc) {
             var parents = allAncestors.toList()
@@ -251,13 +249,13 @@ class OuterClass(
     modifiers: Modifiers = Modifiers(0)
 ) : Class(cm, pkg, name, modifiers) {
     override fun getFieldConcrete(name: String, type: Type) = getField(name, type)
-    override fun getMethodConcrete(name: String, desc: MethodDesc) = getMethod(name, desc)
+    override fun getMethodConcrete(name: String, desc: MethodDescriptor) = getMethod(name, desc)
 
     override fun getField(name: String, type: Type): Field = innerFields.getOrPut(name to type) {
         addField(name, type)
     }
 
-    override fun getMethod(name: String, desc: MethodDesc): Method {
+    override fun getMethod(name: String, desc: MethodDescriptor): Method {
         return innerMethods.getOrPut(name to desc) {
             addMethod(name, desc)
         }

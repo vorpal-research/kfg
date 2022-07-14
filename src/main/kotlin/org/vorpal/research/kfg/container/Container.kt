@@ -27,6 +27,8 @@ interface Container {
     )
 
     fun update(cm: ClassManager, target: Path, loader: ClassLoader = classLoader): Container
+
+    fun extract(target: Path)
 }
 
 fun File.asContainer(pkg: Package? = null): Container? = when {

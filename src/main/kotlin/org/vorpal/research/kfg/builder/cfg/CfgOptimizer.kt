@@ -2,7 +2,7 @@ package org.vorpal.research.kfg.builder.cfg
 
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.CatchBlock
-import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.instruction.PhiInst
 import org.vorpal.research.kfg.visitor.MethodVisitor
@@ -12,10 +12,8 @@ class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : Metho
     override val pipeline = PipelineStub()
     override fun cleanup() {}
 
-    override fun visit(method: Method) = with (ctx) {
-        super.visit(method)
-
-        for (block in method.basicBlocks.toList()) {
+    override fun visitBody(body: MethodBody) = with (ctx) {
+        for (block in body.basicBlocks.toList()) {
             if (block.isEmpty) continue
             if (block.size > 1) continue
             if (block.successors.size != 1) continue
@@ -57,7 +55,7 @@ class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : Metho
                 phi.clearUses()
             }
 
-            method.remove(block)
+            body.remove(block)
             for (inst in block.toList()) {
                 block.remove(inst)
                 inst.clearUses()

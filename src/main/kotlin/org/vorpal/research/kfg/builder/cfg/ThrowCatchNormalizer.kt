@@ -1,7 +1,7 @@
 package org.vorpal.research.kfg.builder.cfg
 
 import org.vorpal.research.kfg.ClassManager
-import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kfg.visitor.PipelineStub
@@ -11,10 +11,8 @@ class ThrowCatchNormalizer(override val cm: ClassManager, val ctx: UsageContext)
 
     override fun cleanup() {}
 
-    override fun visit(method: Method) = with(ctx) {
-        super.visit(method)
-
-        for (block in method.basicBlocks.toList()) {
+    override fun visitBody(body: MethodBody) = with(ctx) {
+        for (block in body.basicBlocks.toList()) {
             if (block.size > 1) continue
             if (block.successors.size != 1) continue
             if (block.predecessors.size != 1) continue

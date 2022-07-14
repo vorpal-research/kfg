@@ -2,10 +2,7 @@ package org.vorpal.research.kfg.analysis
 
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
-import org.vorpal.research.kfg.ir.BasicBlock
-import org.vorpal.research.kfg.ir.BodyBlock
-import org.vorpal.research.kfg.ir.CatchBlock
-import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.*
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.ir.value.instruction.Instruction
 import org.vorpal.research.kfg.ir.value.instruction.PhiInst
@@ -26,19 +23,12 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()
     private val valueNames = hashMapOf<String, Value>()
     private val blockNames = hashMapOf<String, BasicBlock>()
-    private var current: Method? = null
+    private var current: MethodBody? = null
     private var usageContext: UsageContext = EmptyUsageContext
 
     constructor(classManager: ClassManager, ctx: UsageContext) : this(classManager) {
         this.usageContext = ctx
     }
-
-    private val Instruction.parents
-        get(): Pair<Method, BasicBlock> {
-            val bb = parent
-            val method = bb.parent
-            return method to bb
-        }
 
     private fun visitValue(value: Value) = with(usageContext) {
         if (value.name !is UndefinedName && value !is Constant) {
@@ -50,7 +40,7 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
         }
         for (user in value.users) {
             if (user is Instruction) {
-                ktassert(user.hasParent && user.parent.hasParent && user.parent.parent == current)
+                ktassert(user.hasParent && user.parent.hasParent && user.parent.parentUnsafe == current)
             } else {
                 fail("Unknown user of value $value")
             }
@@ -58,23 +48,21 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     }
 
     override fun visitInstruction(inst: Instruction) {
-        val (method, _) = inst.parents
-
         inst.operands.forEach { visitValue(it) }
         visitValue(inst)
 
         ktassert(inst.hasParent, "Instruction ${inst.print()} with no parent in method")
-        ktassert(inst.parent in method, "Instruction ${inst.print()} parent does not belong to method")
+        ktassert(inst.parent in current!!, "Instruction ${inst.print()} parent does not belong to method")
 
         super.visitInstruction(inst)
     }
 
     override fun visitPhiInst(inst: PhiInst) {
-        val (method, bb) = inst.parents
+        val bb = inst.parent
 
         for (predecessor in inst.predecessors) {
             ktassert(
-                predecessor in method,
+                predecessor in current!!,
                 "Phi ${inst.print()} incoming from unknown block"
             )
         }
@@ -95,14 +83,14 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     }
 
     override fun visitTerminateInst(inst: TerminateInst) {
-        val (method, bb) = inst.parents
+        val bb = inst.parent
 
         ktassert(
             bb.successors.size == inst.successors.toSet().size,
             "Terminate inst ${inst.print()} successors are different from block successors"
         )
         for (successor in inst.successors) {
-            ktassert(successor in method, "Terminate inst to unknown block")
+            ktassert(successor in current!!, "Terminate inst to unknown block")
             ktassert(successor in bb.successors, "Terminate instruction successors are different from block successors")
         }
         super.visitTerminateInst(inst)
@@ -119,7 +107,10 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
 
         when (bb) {
             is CatchBlock -> {
-                ktassert(bb in method.catchEntries, "Catch block ${bb.name} does not belong to method catch entries")
+                ktassert(
+                    bb in method.catchEntries,
+                    "Catch block ${bb.name} does not belong to method catch entries"
+                )
                 ktassert(bb.predecessors.isEmpty(), "Catch block ${bb.name} should not have predecessors")
             }
             method.entry -> ktassert(bb.predecessors.isEmpty(), "Entry block should not have predecessors")
@@ -142,14 +133,18 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     override fun visit(method: Method) {
         if (!cm.verifyIR) return
         try {
-            current = method
             super.visit(method)
-            current = null
         } catch (e: AssertionException) {
             throw InvalidIRException(e)
         } finally {
             cleanup()
         }
+    }
+
+    override fun visitBody(body: MethodBody) {
+        current = body
+        super.visitBody(body)
+        current = null
     }
 
     override fun cleanup() {

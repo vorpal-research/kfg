@@ -19,6 +19,7 @@ import org.vorpal.research.kfg.util.print
 import org.vorpal.research.kfg.visitor.Loop
 import org.vorpal.research.kthelper.assert.unreachable
 import org.vorpal.research.kthelper.collection.queueOf
+import org.vorpal.research.kthelper.graph.LoopDetector
 import org.vorpal.research.kthelper.`try`
 import java.util.*
 import org.objectweb.asm.Handle as AsmHandle
@@ -43,8 +44,10 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
-class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUsageContext(), InstructionBuilder,
-    Opcodes {
+class CfgBuilder(
+    override val cm: ClassManager,
+    val method: Method
+) : AbstractUsageContext(), InstructionBuilder, Opcodes {
     override val ctx: UsageContext
         get() = this
 
@@ -542,7 +545,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
             org.objectweb.asm.Type.DOUBLE -> types.doubleType
             org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
             org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
-            org.objectweb.asm.Type.METHOD -> MethodDesc(this.argumentTypes.map { it.asKfgType }.map { it as Type }
+            org.objectweb.asm.Type.METHOD -> MethodDescriptor(this.argumentTypes.map { it.asKfgType }.map { it as Type }
                 .toTypedArray(), this.returnType.asKfgType as Type)
             else -> unreachable("Unknown type: $this")
         }
@@ -550,7 +553,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
     @Suppress("UNUSED_PARAMETER")
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode) {
         val bb = nodeToBlock.getValue(insn)
-        val desc = MethodDesc.fromDesc(types, insn.desc)
+        val desc = MethodDescriptor.fromDesc(types, insn.desc)
         val bsmMethod = insn.bsm.asHandle
         val bsmArgs = insn.bsmArgs.map {
             when (it) {
@@ -779,7 +782,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    private fun buildCFG() {
+    private fun buildCFG(body: MethodBody) {
         for (insn in method.mn.tryCatchBlocks) {
             val type = when {
                 insn.type != null -> types.getRefType(insn.type)
@@ -804,7 +807,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                         blockToNode[entry] = arrayListOf()
                         entry.linkForward(bb)
 
-                        method.add(entry)
+                        body.add(entry)
                     }
                     else -> {
                         bb = nodeToBlock.getOrPut(insn) { BodyBlock("label") }
@@ -861,7 +864,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                 }
             }
             insnList.add(insn)
-            method.add(bb)
+            body.add(bb)
         }
         for (insn in method.mn.tryCatchBlocks) {
             val handle = nodeToBlock.getValue(insn.handler) as CatchBlock
@@ -885,22 +888,22 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                 thrower.addHandler(handle)
             }
             handle.addThrowers(throwers)
-            method.addCatchBlock(handle)
+            body.addCatchBlock(handle)
         }
     }
 
-    private fun buildFrames() {
-        if (method.isEmpty()) return
-        val sf = frames.getOrPut(method.entry) { BlockFrame(method.entry) }
+    private fun buildFrames(body: MethodBody) {
+        if (body.isEmpty()) return
+        val sf = frames.getOrPut(body.entry) { BlockFrame(body.entry) }
         sf.locals.putAll(locals)
 
-        for (bb in method.basicBlocks.drop(1)) {
+        for (bb in body.basicBlocks.drop(1)) {
             frames.getOrPut(bb) { BlockFrame(bb) }
         }
     }
 
-    private fun buildCyclePhis() {
-        for (block in method) {
+    private fun buildCyclePhis(body: MethodBody) {
+        for (block in body) {
             val sf = frames.getValue(block)
             val predFrames = when (block) {
                 is CatchBlock -> block.allPredecessors.map { frames.getValue(it) }
@@ -958,8 +961,8 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    private fun optimizePhis() {
-        val queue = queueOf(method.flatten().filterIsInstance<PhiInst>())
+    private fun optimizePhis(body: MethodBody) {
+        val queue = queueOf(body.flatten().filterIsInstance<PhiInst>())
         for ((deps, values) in queue.groupBy { it.users.filter { user -> user is Value } }.toMap()) {
             if (deps == values) {
                 for (value in values) {
@@ -1027,9 +1030,9 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         unmappedBlocks.remove(block)
     }
 
-    private fun finishState(block: BasicBlock) {
+    private fun finishState(body: MethodBody, block: BasicBlock) {
         if (block in visitedBlocks) return
-        if (block !in method) return
+        if (block !in body) return
 
         if (block in unmappedBlocks)
             copyBlockMappings(block)
@@ -1046,31 +1049,31 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         visitedBlocks += block
     }
 
-    private fun initFrame() {
+    private fun initFrame(body: MethodBody) {
         var localIndex = 0
         if (!method.isStatic) {
             val instance = values.getThis(types.getRefType(method.klass))
             locals[localIndex++] = instance
-            method.slotTracker.addValue(instance)
+            body.slotTracker.addValue(instance)
         }
         for ((index, type) in method.argTypes.withIndex()) {
             val arg = values.getArgument(index, method, type)
             locals[localIndex] = arg
             if (type.isDWord) localIndex += 2
             else ++localIndex
-            method.slotTracker.addValue(arg)
+            body.slotTracker.addValue(arg)
         }
         lastFrame = FrameState.parse(types, method, locals, stack)
     }
 
-    private fun buildInstructions() {
-        var previousNodeBlock = method.entry
+    private fun buildInstructions(body: MethodBody) {
+        var previousNodeBlock = body.entry
         lateinit var currentBlock: BasicBlock
         for (insn in method.mn.instructions) {
             currentBlock = nodeToBlock[insn] ?: break
 
             if (currentBlock != previousNodeBlock) {
-                finishState(previousNodeBlock)
+                finishState(body, previousNodeBlock)
                 previousNodeBlock = currentBlock
             }
 
@@ -1094,12 +1097,12 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
                 else -> throw InvalidOpcodeException("Unknown insn: ${insn.print()}")
             }
         }
-        finishState(previousNodeBlock)
-        buildCyclePhis()
-        optimizePhis()
+        finishState(body, previousNodeBlock)
+        buildCyclePhis(body)
+        optimizePhis(body)
     }
 
-    private fun clearUses() {
+    private fun clearUses(body: MethodBody) {
         visitedBlocks.clear()
         locals.clear()
         nodeToBlock.clear()
@@ -1113,7 +1116,7 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
         unmappedBlocks.clear()
 
-        for (inst in method.flatten()) {
+        for (inst in body.flatten()) {
             for (value in (inst.operands + inst)) {
                 value.users.filterNot { it is Instruction }.forEach {
                     value.removeUser(it)
@@ -1122,37 +1125,33 @@ class CfgBuilder(override val cm: ClassManager, val method: Method) : AbstractUs
         }
     }
 
-    private fun buildLoops() {
-        val methodLoops = method.getLoopInfo()
-        val queue = queueOf(*methodLoops.toTypedArray())
-        while (queue.isNotEmpty()) {
-            val top = queue.poll()
-            loops.add(top)
-            queue.addAll(top.subLoops)
-        }
+    private fun buildLoops(body: MethodBody) {
+        loops.addAll(LoopDetector(body).search().map { Loop(it.key, it.value.toMutableSet()) })
     }
 
-    fun build() {
-        initFrame()
-        buildCFG()
+    fun build(): MethodBody {
+        val body = MethodBody(method)
+        initFrame(body)
+        buildCFG(body)
 
-        if (method.isEmpty()) return
+        if (body.isEmpty()) return body.also { clear() }
 
-        buildLoops()
-        buildFrames()
-        buildInstructions()
+        buildLoops(body)
+        buildFrames(body)
+        buildInstructions(body)
 
-        clearUses()
+        clearUses(body)
 
-        RetvalBuilder(cm, this).visit(method)
-        CfgOptimizer(cm, this).visit(method)
-        NullTypeAdapter(cm, this).visit(method)
-        ThrowCatchNormalizer(cm, this).visit(method)
+        RetvalBuilder(cm, this).visitBody(body)
+        CfgOptimizer(cm, this).visitBody(body)
+        NullTypeAdapter(cm, this).visitBody(body)
+        ThrowCatchNormalizer(cm, this).visitBody(body)
 
-        method.slotTracker.rerun()
+        body.slotTracker.rerun()
 
-        IRVerifier(cm, this).visit(method)
+        IRVerifier(cm, this).visitBody(body)
 
         clear()
+        return body
     }
 }
