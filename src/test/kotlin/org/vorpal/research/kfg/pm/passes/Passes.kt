@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.pm.passes
 
+import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.Node
 import org.vorpal.research.kfg.visitor.*
@@ -54,6 +55,8 @@ data class TestProviderInternal(var dummyData: Int = 0) : KfgProvider
 
 class TestAnalysisResult : AnalysisResult
 
+class OtherAnalysisResult : AnalysisResult
+
 abstract class TestPass : MethodVisitor {
     override fun cleanup() {}
 
@@ -74,6 +77,7 @@ abstract class TestPass : MethodVisitor {
         for (clazz in analysisDependencies()) {
             this.pipeline.analysisManager.getAnalysisResult<TestAnalysisResult>(clazz, method)
         }
+        this.pipeline.getAnalysis<OtherAnalysisResult>(method)
 
         invalidateAnalysisCache(method)
         context.executedPasses.add(this.javaClass)
@@ -99,6 +103,17 @@ abstract class TestPass : MethodVisitor {
     abstract fun passDependencies(): List<Class<out MethodVisitor>>
     abstract fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>>
     abstract fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>>
+}
+
+class OtherAnalysis(override val cm: ClassManager, override val pipeline: Pipeline) : AnalysisVisitor<OtherAnalysisResult> {
+    override fun analyse(node: Node): OtherAnalysisResult {
+        getProvider<TestProvider>()
+            .context
+            .executedAnalysis
+            .add(this.javaClass)
+
+        return OtherAnalysisResult()
+    }
 }
 
 abstract class TestAnalysis : AnalysisVisitor<TestAnalysisResult> {

@@ -128,7 +128,7 @@ fun performLoopAnalysis(method: Method): List<Loop> {
     val pipeline = executePipeline(method.cm, listOf(method)) {
         schedule<LoopAnalysis>()
     }
-    return pipeline.getAnalysis<LoopAnalysis, LoopAnalysisResult>(method).loops
+    return pipeline.getAnalysis<LoopAnalysisResult>(method).loops
 }
 
 class LoopAnalysis(override val cm: ClassManager, override val pipeline: Pipeline) : AnalysisVisitor<LoopAnalysisResult> {

@@ -2,19 +2,23 @@ package org.vorpal.research.kfg.pm.passes
 
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
+import org.jetbrains.kotlin.descriptors.runtime.structure.parameterizedTypeArguments
+import org.reflections.Reflections
+import org.reflections.scanners.SubTypesScanner
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgConfigBuilder
 import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.container.JarContainer
 import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.visitor.PipelineStub
 import org.vorpal.research.kfg.visitor.executePipeline
 import org.vorpal.research.kfg.visitor.getProvider
-import org.vorpal.research.kfg.visitor.pass.IllegalPipelineException
-import org.vorpal.research.kfg.visitor.pass.PassManager
+import org.vorpal.research.kfg.visitor.pass.*
 import org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPlusPassStrategy
 import org.vorpal.research.kfg.visitor.schedule
 import java.io.ByteArrayOutputStream
 import java.io.Serializable
+import java.lang.reflect.ParameterizedType
 import kotlin.random.Random
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest

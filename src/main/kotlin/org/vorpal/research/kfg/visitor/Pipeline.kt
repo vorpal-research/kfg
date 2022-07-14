@@ -25,12 +25,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     private var previousDirectlyAddedVisitor: NodeVisitor? = null
 
     fun schedule(visitor: java.lang.Class<out NodeVisitor>, shouldPersistOrder: Boolean) {
-        if (!scheduled.add(visitor)) {
-            return
-        }
-
         val visitorInstance = getVisitorInstance(visitor) ?: return
-
         processScheduledInstance(visitorInstance, shouldPersistOrder)
     }
 

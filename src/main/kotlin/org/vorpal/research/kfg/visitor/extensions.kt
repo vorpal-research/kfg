@@ -55,16 +55,24 @@ inline fun <reified Provider : KfgProvider> NodeVisitor.getProvider(): Provider 
     return this.pipeline.visitorRegistry.getProvider(Provider::class.java) as Provider
 }
 
-inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> NodeVisitor.getAnalysis(node: Node): DataType {
+inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> NodeVisitor.getAnalysisByVisitor(node: Node): DataType {
     return this.pipeline.analysisManager.getAnalysisResult(Analysis::class.java, node)
+}
+
+inline fun <reified DataType : AnalysisResult> NodeVisitor.getAnalysis(node: Node): DataType {
+    return this.pipeline.analysisManager.getAnalysisResultByResultClass(DataType::class.java, node)
 }
 
 inline fun <reified Provider : KfgProvider> Pipeline.getProvider(): Provider {
     return this.visitorRegistry.getProvider(Provider::class.java) as Provider
 }
 
-inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> Pipeline.getAnalysis(node: Node): DataType {
+inline fun <reified Analysis : AnalysisVisitor<DataType>, DataType : AnalysisResult> Pipeline.getAnalysisByVisitor(node: Node): DataType {
     return this.analysisManager.getAnalysisResult(Analysis::class.java, node)
+}
+
+inline fun <reified DataType : AnalysisResult> Pipeline.getAnalysis(node: Node): DataType {
+    return this.analysisManager.getAnalysisResultByResultClass(DataType::class.java, node)
 }
 
 fun NodeVisitor.invalidateAnalysisCache(node: Node, persistedAdditional: List<Class<out AnalysisVisitor<*>>> = emptyList()) {
