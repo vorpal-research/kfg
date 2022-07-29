@@ -139,6 +139,7 @@ class IRVerifier(classManager: ClassManager) : MethodVisitor {
     }
 
     override fun visitBody(body: MethodBody) {
+        if (!cm.verifyIR) return
         current = body
         super.visitBody(body)
         current = null
