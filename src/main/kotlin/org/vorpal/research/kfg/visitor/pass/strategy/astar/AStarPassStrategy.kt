@@ -18,7 +18,7 @@ class AStarPassStrategy : PassStrategy {
             throw NotImplementedError("Parallel execution is not supported for this pass order")
         }
 
-        val passes = pipeline.getPasses().map { NodeVisitorWrapper(it, pipeline.visitorRegistry) }
+        val passes = pipeline.passes.map { NodeVisitorWrapper(it, pipeline.visitorRegistry) }
 
         val firstOpen = passes.filter { it.required.isEmpty() }
                 .map { AStarNode(null, it.visitor, 0, 0, pipeline.visitorRegistry) }

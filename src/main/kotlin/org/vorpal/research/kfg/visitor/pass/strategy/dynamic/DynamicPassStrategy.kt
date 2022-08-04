@@ -17,7 +17,7 @@ class DynamicPassStrategy : PassStrategy {
             throw NotImplementedError("Parallel execution is not supported for this pass order")
         }
 
-        val passes = pipeline.getPasses()
+        val passes = pipeline.passes
 
         val open = passes.filter { pipeline.visitorRegistry.getAnalysisDependencies(it::class.java).isEmpty() }
             .toCollection(LinkedList())

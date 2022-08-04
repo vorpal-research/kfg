@@ -2,29 +2,31 @@ package org.vorpal.research.kfg.visitor.pass
 
 import org.apache.commons.collections4.map.ReferenceMap
 import org.reflections.Reflections
-import org.reflections.scanners.SubTypesScanner
+import org.reflections.scanners.Scanners
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Node
 import org.vorpal.research.kfg.visitor.NodeVisitor
 import org.vorpal.research.kfg.visitor.Pipeline
-import java.lang.IllegalStateException
 import java.lang.reflect.ParameterizedType
 
-private fun getLoadedAnalysisVisitors(): Map<Class<out AnalysisResult>, List<Class<out AnalysisVisitor<out AnalysisResult>>>> = run {
-    val processedVisitors = mutableSetOf<Class<out AnalysisVisitor<*>>>()
-    val visitorToResult = mutableMapOf<Class<out AnalysisVisitor<*>>, Class<out AnalysisResult>>()
-    val resultToVisitors = mutableMapOf<Class<out AnalysisResult>, MutableList<Class<out AnalysisVisitor<out AnalysisResult>>>>()
+private typealias ResultClass = Class<out AnalysisResult>
+private typealias AnalysisClass = Class<out AnalysisVisitor<out AnalysisResult>>
 
-    fun findResultInterface(visitor: Class<out AnalysisVisitor<*>>): Class<out AnalysisResult>? =
+private fun getLoadedAnalysisVisitors(): Map<ResultClass, List<AnalysisClass>> {
+    val processedVisitors = mutableSetOf<AnalysisClass>()
+    val visitorToResult = mutableMapOf<AnalysisClass, ResultClass>()
+    val resultToVisitors = mutableMapOf<ResultClass, MutableList<AnalysisClass>>()
+
+    fun findResultInterface(visitor: AnalysisClass): ResultClass? =
         visitorToResult[visitor] ?: visitor.genericInterfaces.filterIsInstance<ParameterizedType>()
-            .map { g -> g.actualTypeArguments.filterIsInstance<Class<*>>()
-                .filter { generic -> AnalysisResult::class.java.isAssignableFrom(generic) }
+            .mapNotNull { g ->
+                g.actualTypeArguments
+                    .filterIsInstance<Class<*>>()
+                    .firstOrNull { generic -> AnalysisResult::class.java.isAssignableFrom(generic) }
             }
-            .filter { g -> g.isNotEmpty() }
-            .map { g -> g[0] }
-            .firstOrNull() as Class<out AnalysisResult>?
+            .firstOrNull() as ResultClass?
 
-    fun processVisitor(visitor: Class<out AnalysisVisitor<*>>) {
+    fun processVisitor(visitor: AnalysisClass) {
         if (processedVisitors.contains(visitor)) {
             return
         }
@@ -34,31 +36,31 @@ private fun getLoadedAnalysisVisitors(): Map<Class<out AnalysisResult>, List<Cla
         if (genericInterface != null) {
             processedVisitors.add(visitor)
             visitorToResult[visitor] = genericInterface
-            resultToVisitors.getOrPut(genericInterface) { mutableListOf() }
-                .add(visitor)
+            resultToVisitors.getOrPut(genericInterface, ::mutableListOf).add(visitor)
             return
         }
 
-        if (visitor.genericSuperclass is Class<*> &&
-            AnalysisVisitor::class.java.isAssignableFrom(visitor.genericSuperclass as Class<*>)
+        val genericSuperclass = visitor.genericSuperclass
+        if (genericSuperclass is Class<*> &&
+            AnalysisVisitor::class.java.isAssignableFrom(genericSuperclass)
         ) {
-            processVisitor(visitor.genericSuperclass as Class<out AnalysisVisitor<*>>)
+            processVisitor(genericSuperclass as AnalysisClass)
         }
     }
 
-    val visitors = mutableSetOf<Class<out AnalysisVisitor<*>>>()
+    val visitors = mutableSetOf<AnalysisClass>()
     AnalysisManager::class.java
         .classLoader
         .definedPackages
         .forEach {
-        Reflections(it.name, SubTypesScanner(false))
+        Reflections(it.name, Scanners.SubTypes)
             .getSubTypesOf(AnalysisVisitor::class.java)
             .forEach { visitor -> visitors.add(visitor) }
     }
 
     visitors.forEach { processVisitor(it) }
 
-    resultToVisitors
+    return resultToVisitors
 }
 
 private fun updateLoadedAnalysisVisitors() {
@@ -69,15 +71,16 @@ private var loadedAnalysisVisitors = getLoadedAnalysisVisitors()
 
 @Suppress("UNCHECKED_CAST")
 class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeline) {
-    private val visitors = mutableMapOf<Class<out AnalysisVisitor<out AnalysisResult>>, AnalysisVisitor<out AnalysisResult>>()
+    private val visitors = mutableMapOf<AnalysisClass, AnalysisVisitor<out AnalysisResult>>()
     private val cache = ReferenceMap<VisitorNodePair, AnalysisResult>()
 
     fun invalidateAllExcept(
         visitor: Class<out NodeVisitor>,
         node: Node,
-        persistedAdditional: List<Class<out AnalysisVisitor<*>>>
+        persistedAdditional: List<AnalysisClass>
     ) {
-        if (visitor is AnalysisVisitor<*>) {
+        // We don't want to invalidate cache after analysis visitors execution
+        if (AnalysisVisitor::class.java.isAssignableFrom(visitor)) {
             return
         }
 
@@ -94,7 +97,7 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
         }
     }
 
-    fun <R : AnalysisResult> getAnalysisResult(visitor: Class<out AnalysisVisitor<out AnalysisResult>>, node: Node): R =
+    fun <R : AnalysisResult> getAnalysisResult(visitor: AnalysisClass, node: Node): R =
             cache.computeIfAbsent(VisitorNodePair(visitor, node)) {
                 (getVisitorInstance(visitor) as AnalysisVisitor<*>).analyse(node)
             } as R

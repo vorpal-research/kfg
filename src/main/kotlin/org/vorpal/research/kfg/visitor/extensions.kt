@@ -34,7 +34,6 @@ inline fun <reified Dependency : KfgProvider> NodeVisitor.addRequiredInternalPro
     this.pipeline.visitorRegistry.addRequiresProvider(this::class.java, Dependency::class.java)
 }
 
-
 inline fun <reified Dependency : AnalysisVisitor<*>> NodeVisitor.addRequiredAnalysis() {
     this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, Dependency::class.java)
 }

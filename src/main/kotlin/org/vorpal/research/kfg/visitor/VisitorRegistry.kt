@@ -4,56 +4,60 @@ import org.vorpal.research.kfg.visitor.pass.AnalysisResult
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 import org.vorpal.research.kfg.visitor.pass.IllegalPipelineException
 
+private typealias VisitorClass = Class<out NodeVisitor>
+private typealias ProviderClass = Class<out KfgProvider>
+private typealias AnalysisClass = Class<out AnalysisVisitor<out AnalysisResult>>
+
 class VisitorRegistry {
 
-    private val visitorDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out NodeVisitor>>>()
-    private val visitorSoftDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out NodeVisitor>>>()
-    private val providerDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out KfgProvider>>>()
-    private val analysisDependencies = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>>()
-    private val analysisPersistedResults = mutableMapOf<Class<out NodeVisitor>, MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>>()
-    private val analysisPersistedAll = mutableSetOf<Class<out NodeVisitor>>()
-    private val providers = mutableMapOf<Class<out KfgProvider>, KfgProvider>()
+    private val visitorDependencies = mutableMapOf<VisitorClass, MutableSet<VisitorClass>>()
+    private val visitorSoftDependencies = mutableMapOf<VisitorClass, MutableSet<VisitorClass>>()
+    private val providerDependencies = mutableMapOf<VisitorClass, MutableSet<ProviderClass>>()
+    private val analysisDependencies = mutableMapOf<VisitorClass, MutableSet<AnalysisClass>>()
+    private val analysisPersistedResults = mutableMapOf<VisitorClass, MutableSet<AnalysisClass>>()
+    private val analysisPersistedAll = mutableSetOf<VisitorClass>()
+    private val providers = mutableMapOf<ProviderClass, KfgProvider>()
 
-    fun getVisitorDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out NodeVisitor>> = visitorDependencies[nodeVisitor] ?: emptySet()
-    fun getVisitorSoftDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out NodeVisitor>> = visitorSoftDependencies[nodeVisitor] ?: emptySet()
-    fun getProviderDependencies(nodeVisitor: Class<out NodeVisitor>) : Set<Class<out KfgProvider>> = providerDependencies[nodeVisitor] ?: emptySet()
-    fun getAnalysisDependencies(nodeVisitor: Class<out NodeVisitor>): Set<Class<out AnalysisVisitor<out AnalysisResult>>> = analysisDependencies[nodeVisitor] ?: emptySet()
-    fun getAnalysisPersisted(nodeVisitor: Class<out NodeVisitor>): Set<Class<out AnalysisVisitor<out AnalysisResult>>> = analysisPersistedResults[nodeVisitor] ?: emptySet()
+    val visitorsCount get() = visitorDependencies.size
+    val analysisCount get() = analysisDependencies.size
 
-    fun getVisitorsCount() = visitorDependencies.size
-    fun getAnalysisCount() = analysisDependencies.size
+    internal fun getVisitorDependencies(nodeVisitor: VisitorClass) : Set<VisitorClass> = visitorDependencies[nodeVisitor] ?: emptySet()
+    internal fun getVisitorSoftDependencies(nodeVisitor: VisitorClass) : Set<VisitorClass> = visitorSoftDependencies[nodeVisitor] ?: emptySet()
+    internal fun getProviderDependencies(nodeVisitor: VisitorClass) : Set<ProviderClass> = providerDependencies[nodeVisitor] ?: emptySet()
+    internal fun getAnalysisDependencies(nodeVisitor: VisitorClass): Set<AnalysisClass> = analysisDependencies[nodeVisitor] ?: emptySet()
+    internal fun getAnalysisPersisted(nodeVisitor: VisitorClass): Set<AnalysisClass> = analysisPersistedResults[nodeVisitor] ?: emptySet()
 
-    fun addRequiredPass(visitor: Class<out NodeVisitor>, dependency: Class<out NodeVisitor>) {
+    internal fun getRegisteredAnalysis() = analysisDependencies.values.flatten().distinct()
+
+    fun addRequiredPass(visitor: VisitorClass, dependency: VisitorClass) {
         visitorDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addSoftDependencyPass(visitor: Class<out NodeVisitor>, dependency: Class<out NodeVisitor>) {
+    fun addSoftDependencyPass(visitor: VisitorClass, dependency: VisitorClass) {
         visitorSoftDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addRequiresProvider(visitor: Class<out NodeVisitor>, dependency: Class<out KfgProvider>) {
+    fun addRequiresProvider(visitor: VisitorClass, dependency: ProviderClass) {
         providerDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addRequiredAnalysis(visitor: Class<out NodeVisitor>, dependency: Class<out AnalysisVisitor<out AnalysisResult>>) {
+    fun addRequiredAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
         analysisDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addPersistedAnalysis(visitor: Class<out NodeVisitor>, dependency: Class<out AnalysisVisitor<out AnalysisResult>>) {
+    fun addPersistedAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
         analysisPersistedResults.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun getProviderNullable(provider: Class<out KfgProvider>): KfgProvider? = providers[provider]
-
-    fun getProvider(provider: Class<out KfgProvider>): KfgProvider = try {
+    fun getProvider(provider: ProviderClass): KfgProvider = try {
         providers[provider]!!
     } catch (e: NullPointerException) {
         throw IllegalPipelineException("Required provider ${provider.name} but it is not registered. Try registering provider before scheduling a pass")
     }
 
+    fun getProviderNullable(provider: ProviderClass): KfgProvider? = providers[provider]
+
     fun registerProvider(provider: KfgProvider) {
         providers[provider::class.java] = provider
     }
-
-    internal fun getRegisteredAnalysis() = analysisDependencies.values.flatten().distinct()
 }

@@ -22,3 +22,7 @@ interface NodeVisitor {
     fun registerPassDependencies() {}
     fun registerAnalysisDependencies() {}
 }
+
+interface StandaloneNodeVisitor : NodeVisitor {
+    override val pipeline: Pipeline get() = memoizedPipelineStub
+}

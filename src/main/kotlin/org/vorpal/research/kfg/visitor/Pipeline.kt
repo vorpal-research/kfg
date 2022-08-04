@@ -9,7 +9,8 @@ import org.vorpal.research.kfg.visitor.pass.AnalysisManager
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 import org.vorpal.research.kfg.visitor.pass.PassManager
 import org.vorpal.research.kthelper.collection.dequeOf
-import org.vorpal.research.kthelper.logging.log
+
+private typealias JavaClass<T> = java.lang.Class<T>
 
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
     var passManager = PassManager()
@@ -20,11 +21,13 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         get() = passManager.getPassOrder(this).map { it.wrap() }
 
     // List of all scheduled passes. Used to add all passes only single time
-    private val scheduled = mutableSetOf<java.lang.Class<*>>()
+    private val scheduled = mutableSetOf<JavaClass<*>>()
     private val passesToRun: MutableList<NodeVisitor> = pipeline.toMutableList()
     private var previousDirectlyAddedVisitor: NodeVisitor? = null
 
-    fun schedule(visitor: java.lang.Class<out NodeVisitor>, shouldPersistOrder: Boolean) {
+    val passes: List<NodeVisitor> get() = passesToRun
+
+    fun schedule(visitor: JavaClass<out NodeVisitor>, shouldPersistOrder: Boolean) {
         val visitorInstance = getVisitorInstance(visitor) ?: return
         processScheduledInstance(visitorInstance, shouldPersistOrder)
     }
@@ -52,7 +55,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
 
         visitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it, false) }
 
-        fun registerAnalysisDependencies(analysis: java.lang.Class<out AnalysisVisitor<*>>) {
+        fun registerAnalysisDependencies(analysis: JavaClass<out AnalysisVisitor<*>>) {
             if (visitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
 
             analysisManager.getVisitorInstance(analysis).registerAnalysisDependencies()
@@ -66,8 +69,6 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     fun registerProvider(provider: KfgProvider) {
         visitorRegistry.registerProvider(provider)
     }
-
-    fun getPasses() = passesToRun.map { it }
 
     protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> visitor
@@ -130,7 +131,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
     }
 
     operator fun NodeVisitor.unaryPlus() {
-        schedule(this, true)
+        this.scheduleOrdered()
     }
 
     operator fun KfgProvider.unaryPlus() {
@@ -144,13 +145,14 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
 
     protected abstract fun runInternal()
 
-    private fun <T : NodeVisitor> getVisitorInstance(visitor: java.lang.Class<T>) =
+    private fun <T : NodeVisitor> getVisitorInstance(visitor: JavaClass<T>) =
         try {
             visitor.getConstructor(ClassManager::class.java, Pipeline::class.java)
                 .apply { isAccessible = true }
                 .newInstance(cm, this@Pipeline)
         } catch (e: NoSuchMethodException) {
-            log.warn("Tried to schedule visitor ${visitor.name}, but not required constructor found. Assuming user will add an instance manually")
+            // Tried to schedule visitor ${visitor.name}, but not required constructor found. Assuming user will add an instance manually
+            // If not - the pass manager will throw a dependency validation exception
             null
         }
 }
@@ -290,7 +292,7 @@ open class MethodPipeline(
     }
 }
 
-fun pipelineStub() = PipelineStub()
+val memoizedPipelineStub = PipelineStub()
 
 class PipelineStub : Pipeline(ClassManager()) {
     override fun runInternal() {

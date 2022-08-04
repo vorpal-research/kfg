@@ -5,11 +5,9 @@ import org.vorpal.research.kfg.ir.CatchBlock
 import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.instruction.PhiInst
-import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.PipelineStub
+import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
 
-class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
-    override val pipeline = PipelineStub()
+class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : StandaloneMethodVisitor {
     override fun cleanup() {}
 
     override fun visitBody(body: MethodBody) = with (ctx) {

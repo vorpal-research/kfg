@@ -7,17 +7,15 @@ import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.ir.value.instruction.Instruction
 import org.vorpal.research.kfg.ir.value.instruction.PhiInst
 import org.vorpal.research.kfg.ir.value.instruction.TerminateInst
-import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.PipelineStub
+import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
 import org.vorpal.research.kthelper.assert.AssertionException
 import org.vorpal.research.kthelper.assert.fail
 import org.vorpal.research.kthelper.assert.ktassert
 
 class InvalidIRException(reason: Throwable) : KfgException(reason)
 
-class IRVerifier(classManager: ClassManager) : MethodVisitor {
+class IRVerifier(classManager: ClassManager) : StandaloneMethodVisitor {
     override val cm: ClassManager = classManager
-    override val pipeline = PipelineStub()
 
     private val valueNameRegex = "(%([_\\-\$a-zA-Z]+[\\w.]*|\$|\\d+)|arg\\$\\d+|this)".toRegex()
     private val blockNameRegex = "%[a-zA-Z][\\w.\$]+".toRegex()

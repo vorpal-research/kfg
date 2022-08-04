@@ -12,10 +12,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.measureTimeMillis
 
-
-private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
-    override val pipeline = PipelineStub()
-
+private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : StandaloneClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
@@ -28,9 +25,7 @@ private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader
     }
 }
 
-private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
-    override val pipeline = PipelineStub()
-
+private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : StandaloneClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {

@@ -97,7 +97,7 @@ internal data class SearchNode(
     val evaluation = evaluate()
 
     private fun evaluate(): Float {
-        val visitorAnalysisRatio = visitorRegistry.getAnalysisCount().toFloat() / visitorRegistry.getVisitorsCount()
+        val visitorAnalysisRatio = visitorRegistry.analysisCount.toFloat() / visitorRegistry.visitorsCount
         val varSqr = if (visitorAnalysisRatio > 1) 1.0f else visitorAnalysisRatio * visitorAnalysisRatio
         val passesLeft = previousIteration.passesLeft.size - closedPasses.size
         val analysisComputed = analysisComputed

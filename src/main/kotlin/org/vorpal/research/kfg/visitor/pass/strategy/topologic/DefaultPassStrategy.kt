@@ -15,7 +15,7 @@ class DefaultPassStrategy : PassStrategy {
         }
 
         val graphNodes = mutableMapOf<Class<out NodeVisitor>, GraphNode>()
-        val passes = pipeline.getPasses()
+        val passes = pipeline.passes
 
         passes.forEach {
             graphNodes[it::class.java] = GraphNode(it)
@@ -60,18 +60,14 @@ class DefaultPassOrder : PassOrder {
         return singleLayerIterator != null && singleLayerIterator!!.hasNext() || layersIterator.hasNext()
     }
 
-    override fun getNext(): NodeVisitor {
+    override fun next(): NodeVisitor {
         if (singleLayerIterator != null && singleLayerIterator!!.hasNext()) {
             return singleLayerIterator!!.next()
         }
 
         singleLayerIterator = layersIterator.next().iterator()
-        return getNext()
+        return next()
     }
-
-    override fun isParallelSupported() = false
-    override fun getNextParallel(): NodeVisitor = throw NotImplementedError("Parallel execution is not supported for this pass order")
-    override fun completedParallel(pass: NodeVisitor) = throw NotImplementedError("Parallel execution is not supported for this pass order")
 }
 
 internal class GraphNode(val visitor: NodeVisitor) {

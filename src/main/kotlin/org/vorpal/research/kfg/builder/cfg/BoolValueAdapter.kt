@@ -8,19 +8,16 @@ import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.BoolType
 import org.vorpal.research.kfg.type.Integral
 import org.vorpal.research.kfg.type.TypeFactory
-import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.PipelineStub
+import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 
-class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
+class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : StandaloneMethodVisitor, InstructionBuilder {
     override val instructions: InstructionFactory
         get() = cm.instruction
     override val types: TypeFactory
         get() = cm.type
     override val values: ValueFactory
         get() = cm.value
-
-    override val pipeline = PipelineStub()
 
     override fun cleanup() {}
 

@@ -14,7 +14,7 @@ class IterativeAStarPlusPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
     override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
-        val allPasses = pipeline.getPasses().map { VisitorWrapper(it, pipeline.visitorRegistry) }
+        val allPasses = pipeline.passes.map { VisitorWrapper(it, pipeline.visitorRegistry) }
 
         var currentIteration = IterationSearchNode(
             passOrder = emptyList(),

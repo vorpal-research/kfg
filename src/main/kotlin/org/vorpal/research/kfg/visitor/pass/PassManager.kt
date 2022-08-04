@@ -10,7 +10,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
     fun getPassOrder(pipeline: Pipeline, parallel: Boolean = false): PassOrder {
         // Add existing soft dependencies to real one
         val registry = pipeline.visitorRegistry
-        val passes = pipeline.getPasses()
+        val passes = pipeline.passes
         val passesAsClass = passes.map { it::class.java }.toSet()
         for (pass in passes) {
             registry.getVisitorSoftDependencies(pass.javaClass)
@@ -28,7 +28,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
 
     private fun verifyDependencyInstances(pipeline: Pipeline) {
         val registry = pipeline.visitorRegistry
-        val passes = pipeline.getPasses().toSet()
+        val passes = pipeline.passes.toSet()
         val passesAsClass = passes.map { it::class.java }.toSet()
 
         fun exception(missed: Class<*>, forPass: Class<out NodeVisitor>) {
@@ -47,7 +47,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
 
     private fun verifyCircularDependencies(pipeline: Pipeline) {
         val registry = pipeline.visitorRegistry
-        val passes = pipeline.getPasses().toSet()
+        val passes = pipeline.passes.toSet()
         val passesAsClass = passes.map { it::class.java }.toSet()
         val analysisAsClass = registry.getRegisteredAnalysis()
 

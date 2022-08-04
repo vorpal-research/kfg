@@ -93,3 +93,7 @@ interface MethodVisitor : NodeVisitor {
 
     fun visitParameter(parameter: Parameter) {}
 }
+
+interface StandaloneMethodVisitor : MethodVisitor {
+    override val pipeline: Pipeline get() = memoizedPipelineStub
+}
