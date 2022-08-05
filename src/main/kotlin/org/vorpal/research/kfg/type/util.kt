@@ -113,6 +113,7 @@ private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {
     "null" -> tf.nullType
     "void" -> tf.voidType
     "bool" -> tf.boolType
+    "byte" -> tf.byteType
     "short" -> tf.shortType
     "long" -> tf.longType
     "char" -> tf.charType
