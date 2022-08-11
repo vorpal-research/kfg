@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar
 
+import kotlinx.collections.immutable.*
 import org.vorpal.research.kfg.visitor.Pipeline
 import org.vorpal.research.kfg.visitor.pass.strategy.IteratedPassOrder
 import org.vorpal.research.kfg.visitor.pass.strategy.PassOrder
@@ -12,13 +13,13 @@ private const val ITERATIVE_DEPTH = 15
 class IterativeAStarPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
-    override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
-        val allPasses = pipeline.passes.map { VisitorWrapper(it, pipeline.visitorRegistry) }
+    override fun createPassOrder(pipeline: Pipeline): PassOrder {
+        val allPasses = pipeline.passes.map { VisitorWrapper(it, pipeline.internalVisitorRegistry) }
 
         var currentIteration = IterationSearchNode(
-            passOrder = emptyList(),
+            passOrder = persistentListOf(),
             availableAnalysis = emptySet(),
-            closedPasses = emptySet(),
+            closedPasses = persistentSetOf(),
             passesLeft =  allPasses,
             analysisComputed = 0
         )
@@ -32,12 +33,12 @@ class IterativeAStarPassStrategy : PassStrategy {
 
                     SearchNode(
                         previousIteration = currentIteration,
-                        passOrder = listOf(it),
+                        passOrder = persistentListOf(it),
                         availableAnalysis = availableAnalysis,
-                        closedPasses = setOf(it.nodeVisitor::class.java),
+                        closedPasses = persistentSetOf(it.nodeVisitor::class.java),
                         analysisComputed = analysisComputed,
                         openNodesCount = 0,
-                        pipeline.visitorRegistry
+                        pipeline.internalVisitorRegistry
                     )
                 }
 
@@ -48,7 +49,7 @@ class IterativeAStarPassStrategy : PassStrategy {
             while (newIteration == null) {
                 val currentNode = open.poll()
 
-                val openedNodes = currentNode.openNodes(currentIteration, open, pipeline.visitorRegistry)
+                val openedNodes = currentNode.openNodes(currentIteration, open, pipeline.internalVisitorRegistry)
 
                 val suitableForNextIteration = currentNode.getSuitableNode(openedNodes, ITERATIVE_DEPTH)
 
@@ -56,11 +57,9 @@ class IterativeAStarPassStrategy : PassStrategy {
                     open.clear()
 
                     newIteration = IterationSearchNode(
-                        passOrder = currentIteration.passOrder.toMutableList()
-                            .apply { addAll(suitableForNextIteration.passOrder) },
+                        passOrder = currentIteration.passOrder.addAll(suitableForNextIteration.passOrder),
                         availableAnalysis = suitableForNextIteration.availableAnalysis,
-                        closedPasses = currentIteration.closedPasses.toMutableSet()
-                            .apply { addAll(suitableForNextIteration.closedPasses) },
+                        closedPasses = currentIteration.closedPasses.addAll(suitableForNextIteration.closedPasses),
                         passesLeft = currentIteration.passesLeft.filter {
                             !suitableForNextIteration.closedPasses.contains(
                                 it.nodeVisitor::class.java

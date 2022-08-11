@@ -85,7 +85,7 @@ abstract class TestPass : MethodVisitor {
 
     override fun registerPassDependencies() {
         for (clazz in passDependencies()) {
-            this.pipeline.visitorRegistry.addRequiredPass(this::class.java, clazz)
+            this.pipeline.internalVisitorRegistry.addRequiredPass(this::class.java, clazz)
         }
         addRequiredProvider<TestProvider>()
         addRequiredInternalProvider<TestProviderInternal>()
@@ -93,10 +93,10 @@ abstract class TestPass : MethodVisitor {
 
     override fun registerAnalysisDependencies() {
         for (clazz in analysisDependencies()) {
-            this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, clazz)
+            this.pipeline.internalVisitorRegistry.addRequiredAnalysis(this::class.java, clazz)
         }
         for (clazz in analysisDependenciesPersisted()) {
-            this.pipeline.visitorRegistry.addPersistedAnalysis(this::class.java, clazz)
+            this.pipeline.internalVisitorRegistry.addPersistedAnalysis(this::class.java, clazz)
         }
     }
 
@@ -128,7 +128,7 @@ abstract class TestAnalysis : AnalysisVisitor<TestAnalysisResult> {
 
     override fun registerAnalysisDependencies() {
         for (clazz in analysisDependencies()) {
-            this.pipeline.visitorRegistry.addRequiredAnalysis(this::class.java, clazz)
+            this.pipeline.internalVisitorRegistry.addRequiredAnalysis(this::class.java, clazz)
         }
     }
 

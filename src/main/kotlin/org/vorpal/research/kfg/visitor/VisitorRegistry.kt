@@ -8,7 +8,7 @@ private typealias VisitorClass = Class<out NodeVisitor>
 private typealias ProviderClass = Class<out KfgProvider>
 private typealias AnalysisClass = Class<out AnalysisVisitor<out AnalysisResult>>
 
-class VisitorRegistry {
+internal class InternalVisitorRegistry {
 
     private val visitorDependencies = mutableMapOf<VisitorClass, MutableSet<VisitorClass>>()
     private val visitorSoftDependencies = mutableMapOf<VisitorClass, MutableSet<VisitorClass>>()
@@ -18,8 +18,8 @@ class VisitorRegistry {
     private val analysisPersistedAll = mutableSetOf<VisitorClass>()
     private val providers = mutableMapOf<ProviderClass, KfgProvider>()
 
-    val visitorsCount get() = visitorDependencies.size
-    val analysisCount get() = analysisDependencies.size
+    internal val visitorsCount get() = visitorDependencies.size
+    internal val analysisCount get() = analysisDependencies.size
 
     internal fun getVisitorDependencies(nodeVisitor: VisitorClass) : Set<VisitorClass> = visitorDependencies[nodeVisitor] ?: emptySet()
     internal fun getVisitorSoftDependencies(nodeVisitor: VisitorClass) : Set<VisitorClass> = visitorSoftDependencies[nodeVisitor] ?: emptySet()
@@ -29,35 +29,67 @@ class VisitorRegistry {
 
     internal fun getRegisteredAnalysis() = analysisDependencies.values.flatten().distinct()
 
-    fun addRequiredPass(visitor: VisitorClass, dependency: VisitorClass) {
+    internal fun addRequiredPass(visitor: VisitorClass, dependency: VisitorClass) {
         visitorDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addSoftDependencyPass(visitor: VisitorClass, dependency: VisitorClass) {
+    internal fun addSoftDependencyPass(visitor: VisitorClass, dependency: VisitorClass) {
         visitorSoftDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addRequiresProvider(visitor: VisitorClass, dependency: ProviderClass) {
+    internal fun addRequiresProvider(visitor: VisitorClass, dependency: ProviderClass) {
         providerDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addRequiredAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
+    internal fun addRequiredAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
         analysisDependencies.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun addPersistedAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
+    internal fun addPersistedAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
         analysisPersistedResults.computeIfAbsent(visitor) { mutableSetOf() }.add(dependency)
     }
 
-    fun getProvider(provider: ProviderClass): KfgProvider = try {
+    internal fun getProvider(provider: ProviderClass): KfgProvider = try {
         providers[provider]!!
     } catch (e: NullPointerException) {
         throw IllegalPipelineException("Required provider ${provider.name} but it is not registered. Try registering provider before scheduling a pass")
     }
 
-    fun getProviderNullable(provider: ProviderClass): KfgProvider? = providers[provider]
+    internal fun getProviderNullable(provider: ProviderClass): KfgProvider? = providers[provider]
+
+    internal fun registerProvider(provider: KfgProvider) {
+        providers[provider::class.java] = provider
+    }
+
+    val exposed = VisitorRegistry(this)
+}
+
+class VisitorRegistry internal constructor(private val delegate: InternalVisitorRegistry) {
+    fun addRequiredPass(visitor: VisitorClass, dependency: VisitorClass) {
+        delegate.addRequiredPass(visitor, dependency)
+    }
+
+    fun addSoftDependencyPass(visitor: VisitorClass, dependency: VisitorClass) {
+        delegate.addSoftDependencyPass(visitor, dependency)
+    }
+
+    fun addRequiresProvider(visitor: VisitorClass, dependency: ProviderClass) {
+        delegate.addRequiresProvider(visitor, dependency)
+    }
+
+    fun addRequiredAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
+        delegate.addRequiredAnalysis(visitor, dependency)
+    }
+
+    fun addPersistedAnalysis(visitor: VisitorClass, dependency: AnalysisClass) {
+        delegate.addPersistedAnalysis(visitor, dependency)
+    }
+
+    fun getProvider(provider: ProviderClass): KfgProvider = delegate.getProvider(provider)
+
+    fun getProviderNullable(provider: ProviderClass): KfgProvider? = delegate.getProviderNullable(provider)
 
     fun registerProvider(provider: KfgProvider) {
-        providers[provider::class.java] = provider
+        delegate.registerProvider(provider)
     }
 }

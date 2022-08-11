@@ -5,7 +5,7 @@ import org.vorpal.research.kfg.visitor.Pipeline
 
 interface PassStrategy {
     fun isParallelSupported(): Boolean
-    fun createPassOrder(pipeline: Pipeline, parallel: Boolean = false): PassOrder
+    fun createPassOrder(pipeline: Pipeline): PassOrder
 }
 
 interface PassOrder : Iterator<NodeVisitor>, Iterable<NodeVisitor> {

@@ -7,9 +7,9 @@ import org.vorpal.research.kfg.visitor.pass.strategy.PassStrategy
 import org.vorpal.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
 
 class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()) {
-    fun getPassOrder(pipeline: Pipeline, parallel: Boolean = false): PassOrder {
+    fun getPassOrder(pipeline: Pipeline): PassOrder {
         // Add existing soft dependencies to real one
-        val registry = pipeline.visitorRegistry
+        val registry = pipeline.internalVisitorRegistry
         val passes = pipeline.passes
         val passesAsClass = passes.map { it::class.java }.toSet()
         for (pass in passes) {
@@ -18,7 +18,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
                 .forEach { registry.addRequiredPass(pass.javaClass, it) }
         }
 
-        return passStrategy.createPassOrder(pipeline, parallel)
+        return passStrategy.createPassOrder(pipeline)
     }
 
     fun verify(pipeline: Pipeline) {
@@ -27,7 +27,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
     }
 
     private fun verifyDependencyInstances(pipeline: Pipeline) {
-        val registry = pipeline.visitorRegistry
+        val registry = pipeline.internalVisitorRegistry
         val passes = pipeline.passes.toSet()
         val passesAsClass = passes.map { it::class.java }.toSet()
 
@@ -46,7 +46,7 @@ class PassManager(private val passStrategy: PassStrategy = DefaultPassStrategy()
     }
 
     private fun verifyCircularDependencies(pipeline: Pipeline) {
-        val registry = pipeline.visitorRegistry
+        val registry = pipeline.internalVisitorRegistry
         val passes = pipeline.passes.toSet()
         val passesAsClass = passes.map { it::class.java }.toSet()
         val analysisAsClass = registry.getRegisteredAnalysis()

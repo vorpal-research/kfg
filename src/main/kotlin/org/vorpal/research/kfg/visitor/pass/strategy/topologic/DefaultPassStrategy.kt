@@ -9,11 +9,7 @@ import kotlin.math.max
 class DefaultPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
-    override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): PassOrder {
-        if (parallel) {
-            throw NotImplementedError("Parallel execution is not supported for this pass order")
-        }
-
+    override fun createPassOrder(pipeline: Pipeline): PassOrder {
         val graphNodes = mutableMapOf<Class<out NodeVisitor>, GraphNode>()
         val passes = pipeline.passes
 
@@ -23,7 +19,7 @@ class DefaultPassStrategy : PassStrategy {
 
         passes.forEach {
             val graphNode = graphNodes[it::class.java]
-            pipeline.visitorRegistry.getVisitorDependencies(it::class.java).forEach { required ->
+            pipeline.internalVisitorRegistry.getVisitorDependencies(it::class.java).forEach { required ->
                 graphNode!!.parents.add(graphNodes[required]!!)
             }
         }

@@ -1,14 +1,15 @@
 package org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar
 
+import kotlinx.collections.immutable.*
 import org.vorpal.research.kfg.visitor.NodeVisitor
-import org.vorpal.research.kfg.visitor.VisitorRegistry
+import org.vorpal.research.kfg.visitor.InternalVisitorRegistry
 import org.vorpal.research.kfg.visitor.pass.AnalysisResult
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 
 internal fun SearchNode.openNodes(
     currentIteration: IterationSearchNode,
     open: Collection<SearchNode>,
-    visitorRegistry: VisitorRegistry
+    visitorRegistry: InternalVisitorRegistry
 ): List<SearchNode> = this.previousIteration.passesLeft
     .filter { it.isAvailableFrom(this) }
     .map {
@@ -17,9 +18,9 @@ internal fun SearchNode.openNodes(
 
         SearchNode(
             previousIteration = currentIteration,
-            passOrder = this.passOrder.toMutableList().apply { add(it) },
+            passOrder = this.passOrder + it,
             availableAnalysis = availableAnalysis,
-            closedPasses = this.closedPasses.toMutableSet().apply { add(it.nodeVisitor::class.java) },
+            closedPasses = this.closedPasses + it.nodeVisitor::class.java,
             analysisComputed = analysisComputed,
             openNodesCount = open.size,
             visitorRegistry
@@ -45,7 +46,7 @@ internal fun <T> Iterable<T>.merge(other: Iterable<T>): Iterator<T> {
     }
 }
 
-internal data class VisitorWrapper(val nodeVisitor: NodeVisitor, private val visitorRegistry: VisitorRegistry) {
+internal data class VisitorWrapper(val nodeVisitor: NodeVisitor, private val visitorRegistry: InternalVisitorRegistry) {
     val requiredPasses = visitorRegistry.getVisitorDependencies(nodeVisitor::class.java)
 
     val requiredAnalysis = visitorRegistry.getAnalysisDependencies(nodeVisitor::class.java)
@@ -77,21 +78,21 @@ internal data class VisitorWrapper(val nodeVisitor: NodeVisitor, private val vis
 }
 
 internal data class IterationSearchNode(
-    val passOrder: List<VisitorWrapper>,
+    val passOrder: PersistentList<VisitorWrapper>,
     val availableAnalysis: Set<Class<out AnalysisVisitor<out AnalysisResult>>>,
-    val closedPasses: Set<Class<out NodeVisitor>>,
+    val closedPasses: PersistentSet<Class<out NodeVisitor>>,
     val passesLeft: List<VisitorWrapper>,
     val analysisComputed: Int
 )
 
 internal data class SearchNode(
     val previousIteration: IterationSearchNode,
-    val passOrder: List<VisitorWrapper>,
+    val passOrder: PersistentList<VisitorWrapper>,
     val availableAnalysis: Set<Class<out AnalysisVisitor<out AnalysisResult>>>,
-    val closedPasses: Set<Class<out NodeVisitor>>,
+    val closedPasses: PersistentSet<Class<out NodeVisitor>>,
     val analysisComputed: Int,
     val openNodesCount: Int,
-    val visitorRegistry: VisitorRegistry
+    val visitorRegistry: InternalVisitorRegistry
 ) {
     val depth = closedPasses.size // depth inside the iteration
     val evaluation = evaluate()

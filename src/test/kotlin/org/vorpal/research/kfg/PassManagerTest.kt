@@ -1,24 +1,5 @@
 package org.vorpal.research.kfg
 
-import org.vorpal.research.kfg.container.JarContainer
-import org.vorpal.research.kfg.ir.Method
-import org.vorpal.research.kfg.ir.Node
-import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
-import org.vorpal.research.kfg.visitor.VisitorRegistry
-import org.vorpal.research.kfg.visitor.executePipeline
-import org.vorpal.research.kfg.visitor.pass.AnalysisManager
-import org.vorpal.research.kfg.visitor.pass.AnalysisResult
-import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
-import org.vorpal.research.kfg.visitor.pass.PassManager
-import org.vorpal.research.kfg.visitor.pass.strategy.astar.AStarPassStrategy
-import org.vorpal.research.kfg.visitor.pass.strategy.dynamic.DynamicPassStrategy
-import org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPassStrategy
-import org.vorpal.research.kfg.visitor.pass.strategy.iterativeastar.IterativeAStarPlusPassStrategy
-import org.vorpal.research.kfg.visitor.pass.strategy.topologic.DefaultPassStrategy
-import org.junit.*
-import java.io.*
-import kotlin.random.Random
 /*
 // TODO: add dynamic test class creation
 class PassManagerTest {

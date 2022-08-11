@@ -27,6 +27,7 @@
         <jdot.version>1.0</jdot.version>
         <kotlin-compile-testing.version>1.4.9</kotlin-compile-testing.version>
         <reflections.version>0.10.2</reflections.version>
+        <kotlin-collections.version>0.3.5</kotlin-collections.version>
 
         <apache-commons-collections.version>4.4</apache-commons-collections.version>
     </properties>
@@ -48,6 +49,12 @@
             <artifactId>kotlin-reflect</artifactId>
             <version>${kotlin.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-collections-immutable-jvm</artifactId>
+            <version>${kotlin-collections.version}</version>
         </dependency>
 
         <dependency>

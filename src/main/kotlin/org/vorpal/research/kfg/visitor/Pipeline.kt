@@ -15,7 +15,8 @@ private typealias JavaClass<T> = java.lang.Class<T>
 abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arrayListOf()) {
     var passManager = PassManager()
     val analysisManager: AnalysisManager by lazy { AnalysisManager(cm, this@Pipeline) }
-    val visitorRegistry = VisitorRegistry()
+    internal val internalVisitorRegistry = InternalVisitorRegistry()
+    val visitorRegistry get() = internalVisitorRegistry.exposed
 
     protected open val runnablePipeline: List<NodeVisitor>
         get() = passManager.getPassOrder(this).map { it.wrap() }
@@ -42,7 +43,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
         }
 
         if (shouldPersistOrder && previousDirectlyAddedVisitor != null) {
-            visitorRegistry.addRequiredPass(visitorInstance::class.java, previousDirectlyAddedVisitor!!::class.java)
+            internalVisitorRegistry.addRequiredPass(visitorInstance::class.java, previousDirectlyAddedVisitor!!::class.java)
         }
         if (shouldPersistOrder) {
             previousDirectlyAddedVisitor = visitorInstance
@@ -53,21 +54,21 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
 
         passesToRun.add(visitorInstance)
 
-        visitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it, false) }
+        internalVisitorRegistry.getVisitorDependencies(visitorInstance::class.java).forEach { schedule(it, false) }
 
         fun registerAnalysisDependencies(analysis: JavaClass<out AnalysisVisitor<*>>) {
-            if (visitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
+            if (internalVisitorRegistry.getAnalysisDependencies(analysis).isNotEmpty()) return
 
             analysisManager.getVisitorInstance(analysis).registerAnalysisDependencies()
-            visitorRegistry.getAnalysisDependencies(analysis).forEach {
+            internalVisitorRegistry.getAnalysisDependencies(analysis).forEach {
                 registerAnalysisDependencies(it)
             }
         }
-        visitorRegistry.getAnalysisDependencies(visitorInstance::class.java).forEach { registerAnalysisDependencies(it) }
+        internalVisitorRegistry.getAnalysisDependencies(visitorInstance::class.java).forEach { registerAnalysisDependencies(it) }
     }
 
     fun registerProvider(provider: KfgProvider) {
-        visitorRegistry.registerProvider(provider)
+        internalVisitorRegistry.registerProvider(provider)
     }
 
     protected fun NodeVisitor.wrap(): ClassVisitor = when (val visitor = this) {

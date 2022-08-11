@@ -2,7 +2,7 @@ package org.vorpal.research.kfg.visitor.pass.strategy.dynamic
 
 import org.vorpal.research.kfg.visitor.NodeVisitor
 import org.vorpal.research.kfg.visitor.Pipeline
-import org.vorpal.research.kfg.visitor.VisitorRegistry
+import org.vorpal.research.kfg.visitor.InternalVisitorRegistry
 import org.vorpal.research.kfg.visitor.pass.AnalysisResult
 import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 import org.vorpal.research.kfg.visitor.pass.strategy.IteratedPassOrder
@@ -12,14 +12,10 @@ import java.util.*
 class DynamicPassStrategy : PassStrategy {
     override fun isParallelSupported() = false
 
-    override fun createPassOrder(pipeline: Pipeline, parallel: Boolean): IteratedPassOrder {
-        if (parallel) {
-            throw NotImplementedError("Parallel execution is not supported for this pass order")
-        }
-
+    override fun createPassOrder(pipeline: Pipeline): IteratedPassOrder {
         val passes = pipeline.passes
 
-        val open = passes.filter { pipeline.visitorRegistry.getAnalysisDependencies(it::class.java).isEmpty() }
+        val open = passes.filter { pipeline.internalVisitorRegistry.getAnalysisDependencies(it::class.java).isEmpty() }
             .toCollection(LinkedList())
         var openSet = open.map { it::class.java }
         val closed = mutableSetOf<Class<out NodeVisitor>>()
@@ -31,16 +27,16 @@ class DynamicPassStrategy : PassStrategy {
             var bestNode = open[0]
             for (nodeToInsert in open) {
                 // Calculate cost of adding at the end
-                var bestCostOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, passOrder.size, pipeline.visitorRegistry)
+                var bestCostOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, passOrder.size, pipeline.internalVisitorRegistry)
                 var bestIndexToInsert = passOrder.size
 
                 // Calculate cost of insertion in every other place
                 for (i in 0 until passOrder.size) {
-                    if (!isPossibleToInsert(passOrder, nodeToInsert, i, pipeline.visitorRegistry)) {
+                    if (!isPossibleToInsert(passOrder, nodeToInsert, i, pipeline.internalVisitorRegistry)) {
                         continue
                     }
 
-                    val costOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, i, pipeline.visitorRegistry)
+                    val costOfInsertion = calculateCostAfterInsertion(passOrder, nodeToInsert, i, pipeline.internalVisitorRegistry)
                     if (costOfInsertion < bestCostOfInsertion) {
                         bestCostOfInsertion = costOfInsertion
                         bestIndexToInsert = i
@@ -61,7 +57,7 @@ class DynamicPassStrategy : PassStrategy {
             closed.add(nodeToInsert::class.java)
             val openedPasses = passes.filter { !closed.contains(it::class.java) }
                 .filter { !openSet.contains(it::class.java) }
-                .filter { closed.containsAll(pipeline.visitorRegistry.getVisitorDependencies(it::class.java)) }
+                .filter { closed.containsAll(pipeline.internalVisitorRegistry.getVisitorDependencies(it::class.java)) }
             open.addAll(openedPasses)
             openSet = open.map { it::class.java }
 
@@ -75,7 +71,7 @@ class DynamicPassStrategy : PassStrategy {
         passOrder: List<NodeVisitor>,
         nodeToInsert: NodeVisitor,
         index: Int,
-        visitorRegistry: VisitorRegistry
+        visitorRegistry: InternalVisitorRegistry
     ): Boolean {
         val closed = mutableSetOf<Class<out NodeVisitor>>()
         for (i in 0 until index) {
@@ -88,7 +84,7 @@ class DynamicPassStrategy : PassStrategy {
         passOrder: List<NodeVisitor>,
         nodeToInsert: NodeVisitor,
         index: Int,
-        visitorRegistry: VisitorRegistry
+        visitorRegistry: InternalVisitorRegistry
     ): Int {
         // Returns new cost and updates cachedAnalysis set
         fun processPass(pass: NodeVisitor, cachedAnalysis: MutableSet<Class<out AnalysisVisitor<out AnalysisResult>>>, oldCost: Int): Int {
@@ -114,8 +110,6 @@ class DynamicPassStrategy : PassStrategy {
         for (i in index until passOrder.size) {
             cost = processPass(passOrder[i], cachedAnalysis, cost)
         }
-
-        //cost -= cachedAnalysis.size
 
         return cost
     }

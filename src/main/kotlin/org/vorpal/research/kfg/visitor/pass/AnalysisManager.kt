@@ -12,6 +12,23 @@ import java.lang.reflect.ParameterizedType
 private typealias ResultClass = Class<out AnalysisResult>
 private typealias AnalysisClass = Class<out AnalysisVisitor<out AnalysisResult>>
 
+private val scanPackages = mutableSetOf<Package>().apply { addAll(Package.getPackages().toList()) }
+
+private var loadedAnalysisVisitors = getLoadedAnalysisVisitors()
+
+private fun updateLoadedAnalysisVisitors() {
+    loadedAnalysisVisitors = getLoadedAnalysisVisitors()
+}
+
+fun addScanPackages(packages: Array<Package>) {
+    scanPackages.addAll(packages.toList())
+}
+
+// Inline because Package#getPackages is caller sensitive
+inline fun addScanPackages() {
+    addScanPackages(Package.getPackages())
+}
+
 private fun getLoadedAnalysisVisitors(): Map<ResultClass, List<AnalysisClass>> {
     val processedVisitors = mutableSetOf<AnalysisClass>()
     val visitorToResult = mutableMapOf<AnalysisClass, ResultClass>()
@@ -49,9 +66,7 @@ private fun getLoadedAnalysisVisitors(): Map<ResultClass, List<AnalysisClass>> {
     }
 
     val visitors = mutableSetOf<AnalysisClass>()
-    AnalysisManager::class.java
-        .classLoader
-        .definedPackages
+    scanPackages
         .forEach {
         Reflections(it.name, Scanners.SubTypes)
             .getSubTypesOf(AnalysisVisitor::class.java)
@@ -62,12 +77,6 @@ private fun getLoadedAnalysisVisitors(): Map<ResultClass, List<AnalysisClass>> {
 
     return resultToVisitors
 }
-
-private fun updateLoadedAnalysisVisitors() {
-    loadedAnalysisVisitors = getLoadedAnalysisVisitors()
-}
-
-private var loadedAnalysisVisitors = getLoadedAnalysisVisitors()
 
 @Suppress("UNCHECKED_CAST")
 class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeline) {
@@ -85,7 +94,7 @@ class AnalysisManager(private val cm: ClassManager, private val pipeline: Pipeli
         }
 
         cache.iterator().apply {
-            val persistedSet = pipeline.visitorRegistry.getAnalysisPersisted(visitor)
+            val persistedSet = pipeline.internalVisitorRegistry.getAnalysisPersisted(visitor)
             while (hasNext()) {
                 val current = next()
                 if (current.key.node === node &&
