@@ -1,7 +1,5 @@
 package org.vorpal.research.kfg.type
 
-import org.vorpal.research.kthelper.defaultHashCode
-
 object VoidType : Type {
     override val bitSize: Int
         get() = throw IllegalAccessError()
@@ -11,7 +9,7 @@ object VoidType : Type {
     override val isVoid get() = true
     override val asmDesc get() = "V"
 
-    override fun hashCode() = defaultHashCode(name)
+    override fun hashCode() = name.hashCode()
     override fun equals(other: Any?) = this === other
     override fun toString(): String = name
 

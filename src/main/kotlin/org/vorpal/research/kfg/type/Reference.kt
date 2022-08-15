@@ -3,7 +3,6 @@ package org.vorpal.research.kfg.type
 import org.vorpal.research.kfg.UnsupportedOperationException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
-import org.vorpal.research.kthelper.defaultHashCode
 
 interface Reference : Type {
     override val bitSize: Int
@@ -19,7 +18,7 @@ open class ClassType(val klass: Class) : Reference {
     override fun toString() = name
     override val asmDesc get() = "L${klass.fullName};"
 
-    override fun hashCode() = defaultHashCode(klass)
+    override fun hashCode() = klass.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -40,7 +39,7 @@ open class ArrayType(val component: Type) : Reference {
     override fun toString() = name
     override val asmDesc get() = "[${component.asmDesc}"
 
-    override fun hashCode() = defaultHashCode(component)
+    override fun hashCode() = component.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (this.javaClass != other?.javaClass) return false
@@ -73,7 +72,7 @@ object NullType : Reference {
     override fun toString() = name
     override val asmDesc get() = throw UnsupportedOperationException("Called getAsmDesc on NullType")
 
-    override fun hashCode() = defaultHashCode(name)
+    override fun hashCode() = name.hashCode()
     override fun equals(other: Any?): Boolean = this === other
 
     override val isConcrete: Boolean

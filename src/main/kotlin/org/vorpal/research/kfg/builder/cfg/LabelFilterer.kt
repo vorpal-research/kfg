@@ -5,10 +5,10 @@ import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
 
-internal class LabelFilterer(val mn: MethodNode) {
+internal class LabelFilterer(private val mn: MethodNode) {
 
     fun build(): MethodNode {
-        val insts = mn.instructions.toList()
+        val insts = mn.instructions
         val replacement = mutableMapOf<LabelNode, LabelNode>()
 
         val new = MethodNode(mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.toTypedArray())
@@ -21,28 +21,29 @@ internal class LabelFilterer(val mn: MethodNode) {
         }
 
         val clonedLabels = insts
-            .mapNotNull { it as? LabelNode }
+            .filterIsInstance<LabelNode>()
             .associateWith { LabelNode(Label()) }
-        val newReplacement = clonedLabels.map { (key, value) ->
-            key to when (key) {
+        val newReplacement = clonedLabels.mapValues { (key, value) ->
+            when (key) {
                 in replacement -> clonedLabels.getValue(replacement.getValue(key))
                 else -> value
             }
-        }.toMap()
+        }
         val newInsts = insts.mapNotNull {
             when (it) {
-                in replacement -> null
-                in clonedLabels -> clonedLabels[it]
-                else -> {
-                    val clone = it.clone(newReplacement)
-                    clone
+                is LabelNode -> when (it) {
+                    in replacement -> null
+                    in clonedLabels -> clonedLabels[it]
+                    else -> it.clone(newReplacement)
                 }
+
+                else -> it.clone(newReplacement)
             }
         }
         val tryCatches = mn.tryCatchBlocks.map {
             val tcb = TryCatchBlockNode(
-                    newReplacement.getValue(it.start), newReplacement.getValue(it.end),
-                    newReplacement.getValue(it.handler), it.type
+                newReplacement.getValue(it.start), newReplacement.getValue(it.end),
+                newReplacement.getValue(it.handler), it.type
             )
             tcb.visibleTypeAnnotations = it.visibleTypeAnnotations?.toList()
             tcb.invisibleTypeAnnotations = it.invisibleTypeAnnotations?.toList()

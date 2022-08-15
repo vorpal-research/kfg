@@ -1,13 +1,12 @@
 package org.vorpal.research.kfg.type
 
-import org.vorpal.research.kthelper.defaultHashCode
 
 sealed class Real : PrimaryType {
     override val isPrimary get() = true
     override val isReal get() = true
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(name)
+    override fun hashCode() = name.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return this.javaClass == other?.javaClass

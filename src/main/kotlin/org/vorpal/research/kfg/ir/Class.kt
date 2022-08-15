@@ -8,7 +8,6 @@ import org.vorpal.research.kfg.UnknownInstanceException
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kthelper.assert.ktassert
-import org.vorpal.research.kthelper.defaultHashCode
 
 abstract class Class : Node {
     protected data class MethodKey(val name: String, val desc: MethodDescriptor) {
@@ -39,8 +38,7 @@ abstract class Class : Node {
     val methods get() = allMethods.filterNot { it.isConstructor }.toSet()
     val fields get() = innerFields.values.toSet()
 
-    val fullName
-        get() = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
+    val fullName: String
 
     val canonicalDesc
         get() = fullName.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
@@ -84,6 +82,7 @@ abstract class Class : Node {
     ) : super(cm, name, modifiers) {
         ktassert(pkg.isConcrete)
         this.pkg = pkg
+        this.fullName = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
         this.cn = ClassNode()
         this.cn.name = fullName
         this.cn.access = modifiers.value
@@ -97,6 +96,7 @@ abstract class Class : Node {
         this.pkg = Package.parse(
             cn.name.substringBeforeLast(Package.SEPARATOR, "")
         )
+        this.fullName = if (pkg == Package.emptyPackage) name else "$pkg${Package.SEPARATOR}$name"
         this.superClassName = cn.superName
         this.interfaceNames.addAll(cn.interfaces.toMutableSet())
         this.outerClassName = cn.outerClass
@@ -166,7 +166,7 @@ abstract class Class : Node {
     fun removeMethod(method: Method) = innerMethods.remove(method.name to method.desc)
 
     override fun toString() = fullName
-    override fun hashCode() = defaultHashCode(name, pkg)
+    override fun hashCode() = fullName.hashCode()
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

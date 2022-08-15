@@ -24,6 +24,7 @@ data class MethodDescriptor(
     val args: Array<out Type>,
     val returnType: Type
 ) {
+    private val hash = defaultHashCode(*args, returnType)
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
             val (args, retval) = parseMethodDesc(tf, desc)
@@ -34,7 +35,7 @@ data class MethodDescriptor(
     val asmDesc: String
         get() = "(${args.joinToString(separator = "") { it.asmDesc }})${returnType.asmDesc}"
 
-    override fun hashCode() = defaultHashCode(*args, returnType)
+    override fun hashCode() = hash
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

@@ -6,7 +6,7 @@
 
     <groupId>org.vorpal.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.3.2-Pass-Manager</version>
+    <version>0.3.3-Pass-Manager</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -21,7 +21,7 @@
 
         <exec.main>org.vorpal.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.1.3</kt-helper.version>
+        <kt-helper.version>0.1.4</kt-helper.version>
         <asm.version>9.3</asm.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>
