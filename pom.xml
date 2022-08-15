@@ -6,7 +6,7 @@
 
     <groupId>org.vorpal.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.3-Pass-Manager</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -25,6 +25,11 @@
         <asm.version>9.3</asm.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>
+        <kotlin-compile-testing.version>1.4.9</kotlin-compile-testing.version>
+        <reflections.version>0.10.2</reflections.version>
+        <kotlin-collections.version>0.3.5</kotlin-collections.version>
+
+        <apache-commons-collections.version>4.4</apache-commons-collections.version>
     </properties>
 
     <dependencies>
@@ -44,6 +49,12 @@
             <artifactId>kotlin-reflect</artifactId>
             <version>${kotlin.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-collections-immutable-jvm</artifactId>
+            <version>${kotlin-collections.version}</version>
         </dependency>
 
         <dependency>
@@ -77,6 +88,25 @@
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
             <version>${asm.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>${apache-commons-collections.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.tschuchortdev</groupId>
+            <artifactId>kotlin-compile-testing</artifactId>
+            <version>${kotlin-compile-testing.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
         </dependency>
     </dependencies>
 

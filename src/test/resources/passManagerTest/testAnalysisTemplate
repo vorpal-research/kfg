@@ -1,0 +1,3 @@
+class %s(override val cm: ClassManager, override val pipeline: Pipeline) : TestAnalysis() {
+    override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf()
+}

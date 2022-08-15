@@ -3,9 +3,9 @@ package org.vorpal.research.kfg.builder.cfg
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.MethodBody
 import org.vorpal.research.kfg.ir.value.UsageContext
-import org.vorpal.research.kfg.visitor.MethodVisitor
+import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
 
-class ThrowCatchNormalizer(override val cm: ClassManager, val ctx: UsageContext) : MethodVisitor {
+class ThrowCatchNormalizer(override val cm: ClassManager, val ctx: UsageContext) : StandaloneMethodVisitor {
     override fun cleanup() {}
 
     override fun visitBody(body: MethodBody) = with(ctx) {

@@ -6,8 +6,7 @@ import org.vorpal.research.kfg.ir.BodyBlock
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.usageContext
-import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.*
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
@@ -87,18 +86,20 @@ class KfgIntegrationTest {
     @Test
     fun packagePipelineTest() {
         val visitedClasses = mutableSetOf<Class>()
-        executePipeline(cm, pkg) {
-            +object : ClassVisitor {
-                override val cm: ClassManager
-                    get() = this@KfgIntegrationTest.cm
+        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
+        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
 
-                override fun cleanup() {}
-
-                override fun visit(klass: Class) {
-                    super.visit(klass)
-                    visitedClasses += klass
-                }
+            override fun cleanup() {}
+            override fun visit(klass: Class) {
+                super.visit(klass)
+                getProvider<ProviderTest>().visitedClasses.add(klass)
             }
+        }
+
+        val provider = ProviderTest(visitedClasses)
+        executePipeline(cm, pkg) {
+            schedule<ClassVisitorTest>()
+            registerProvider(provider)
         }
 
         assertEquals(cm.concreteClasses.intersect(visitedClasses), cm.concreteClasses)
@@ -120,18 +121,19 @@ class KfgIntegrationTest {
         }
 
         val visitedClasses = mutableSetOf<Class>()
-        executePipeline(cm, klass) {
-            +object : ClassVisitor {
-                override val cm: ClassManager
-                    get() = this@KfgIntegrationTest.cm
-
-                override fun cleanup() {}
-
-                override fun visit(klass: Class) {
-                    super.visit(klass)
-                    visitedClasses += klass
-                }
+        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
+        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
+            override fun cleanup() {}
+            override fun visit(klass: Class) {
+                super.visit(klass)
+                getProvider<ProviderTest>().visitedClasses.add(klass)
             }
+        }
+
+        val provider = ProviderTest(visitedClasses)
+        executePipeline(cm, klass) {
+            schedule<ClassVisitorTest>()
+            registerProvider(provider)
         }
 
         assertEquals(targetClasses.intersect(visitedClasses), targetClasses)
@@ -149,18 +151,19 @@ class KfgIntegrationTest {
         val targetMethods = klass.getMethods(klass.methods.random().name)
 
         val visitedMethods = mutableSetOf<Method>()
-        executePipeline(cm, targetMethods) {
-            +object : ClassVisitor {
-                override val cm: ClassManager
-                    get() = this@KfgIntegrationTest.cm
-
-                override fun cleanup() {}
-
-                override fun visitMethod(method: Method) {
-                    super.visitMethod(method)
-                    visitedMethods += method
-                }
+        data class ProviderTest(val visitedMethods: MutableSet<Method>) : KfgProvider
+        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
+            override fun cleanup() {}
+            override fun visitMethod(method: Method) {
+                super.visitMethod(method)
+                getProvider<ProviderTest>().visitedMethods.add(method)
             }
+        }
+
+        val provider = ProviderTest(visitedMethods)
+        executePipeline(cm, targetMethods) {
+            schedule<ClassVisitorTest>()
+            registerProvider(provider)
         }
 
         assertEquals(targetMethods.intersect(visitedMethods), targetMethods)
