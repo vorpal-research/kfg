@@ -12,13 +12,11 @@ import org.vorpal.research.kfg.ir.value.instruction.PhiInst
 import org.vorpal.research.kfg.ir.value.usageContext
 import org.vorpal.research.kfg.visitor.Loop
 import org.vorpal.research.kfg.visitor.LoopVisitor
-import org.vorpal.research.kfg.visitor.Pipeline
-import org.vorpal.research.kfg.visitor.executePipeline
 import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.assert.unreachable
 
-class LoopSimplifier(override val cm: ClassManager, override val pipeline: Pipeline) : LoopVisitor {
+class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
 
     override val preservesLoopInfo get() = false

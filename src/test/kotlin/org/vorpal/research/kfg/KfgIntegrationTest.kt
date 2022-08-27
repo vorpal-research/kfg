@@ -6,7 +6,8 @@ import org.vorpal.research.kfg.ir.BodyBlock
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.usageContext
-import org.vorpal.research.kfg.visitor.*
+import org.vorpal.research.kfg.visitor.ClassVisitor
+import org.vorpal.research.kfg.visitor.executePipeline
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
@@ -86,20 +87,18 @@ class KfgIntegrationTest {
     @Test
     fun packagePipelineTest() {
         val visitedClasses = mutableSetOf<Class>()
-        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
-        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
-
-            override fun cleanup() {}
-            override fun visit(klass: Class) {
-                super.visit(klass)
-                getProvider<ProviderTest>().visitedClasses.add(klass)
-            }
-        }
-
-        val provider = ProviderTest(visitedClasses)
         executePipeline(cm, pkg) {
-            schedule<ClassVisitorTest>()
-            registerProvider(provider)
+            +object : ClassVisitor {
+                override val cm: ClassManager
+                    get() = this@KfgIntegrationTest.cm
+
+                override fun cleanup() {}
+
+                override fun visit(klass: Class) {
+                    super.visit(klass)
+                    visitedClasses += klass
+                }
+            }
         }
 
         assertEquals(cm.concreteClasses.intersect(visitedClasses), cm.concreteClasses)
@@ -121,19 +120,18 @@ class KfgIntegrationTest {
         }
 
         val visitedClasses = mutableSetOf<Class>()
-        data class ProviderTest(val visitedClasses: MutableSet<Class>) : KfgProvider
-        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
-            override fun cleanup() {}
-            override fun visit(klass: Class) {
-                super.visit(klass)
-                getProvider<ProviderTest>().visitedClasses.add(klass)
-            }
-        }
-
-        val provider = ProviderTest(visitedClasses)
         executePipeline(cm, klass) {
-            schedule<ClassVisitorTest>()
-            registerProvider(provider)
+            +object : ClassVisitor {
+                override val cm: ClassManager
+                    get() = this@KfgIntegrationTest.cm
+
+                override fun cleanup() {}
+
+                override fun visit(klass: Class) {
+                    super.visit(klass)
+                    visitedClasses += klass
+                }
+            }
         }
 
         assertEquals(targetClasses.intersect(visitedClasses), targetClasses)
@@ -151,19 +149,18 @@ class KfgIntegrationTest {
         val targetMethods = klass.getMethods(klass.methods.random().name)
 
         val visitedMethods = mutableSetOf<Method>()
-        data class ProviderTest(val visitedMethods: MutableSet<Method>) : KfgProvider
-        class ClassVisitorTest(override val cm: ClassManager, override val pipeline: Pipeline) : ClassVisitor {
-            override fun cleanup() {}
-            override fun visitMethod(method: Method) {
-                super.visitMethod(method)
-                getProvider<ProviderTest>().visitedMethods.add(method)
-            }
-        }
-
-        val provider = ProviderTest(visitedMethods)
         executePipeline(cm, targetMethods) {
-            schedule<ClassVisitorTest>()
-            registerProvider(provider)
+            +object : ClassVisitor {
+                override val cm: ClassManager
+                    get() = this@KfgIntegrationTest.cm
+
+                override fun cleanup() {}
+
+                override fun visitMethod(method: Method) {
+                    super.visitMethod(method)
+                    visitedMethods += method
+                }
+            }
         }
 
         assertEquals(targetMethods.intersect(visitedMethods), targetMethods)

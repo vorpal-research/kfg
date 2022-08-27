@@ -10,7 +10,7 @@ import org.vorpal.research.kfg.ir.MethodDescriptor
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
-import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
+import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 import java.util.*
 import org.objectweb.asm.Handle as AsmHandle
@@ -40,7 +40,7 @@ private val Type.shortInt
         else -> unreachable("Unexpected type for conversion: $name")
     }
 
-class AsmBuilder(override val cm: ClassManager, val method: Method) : StandaloneMethodVisitor {
+class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisitor {
     private val bbInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val terminateInsns = hashMapOf<BasicBlock, MutableList<AbstractInsnNode>>()
     private val labels = when {

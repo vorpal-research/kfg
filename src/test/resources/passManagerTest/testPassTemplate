@@ -1,5 +1,0 @@
-class %s(override val cm: ClassManager, override val pipeline: Pipeline) : TestPass() {
-    override fun passDependencies(): List<Class<out MethodVisitor>> = listOf(%s)
-    override fun analysisDependencies(): List<Class<out AnalysisVisitor<*>>> = listOf(%s)
-    override fun analysisDependenciesPersisted(): List<Class<out AnalysisVisitor<*>>> = listOf(%s)
-}

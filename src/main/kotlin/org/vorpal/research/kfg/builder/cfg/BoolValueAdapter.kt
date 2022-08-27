@@ -8,10 +8,10 @@ import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.BoolType
 import org.vorpal.research.kfg.type.Integral
 import org.vorpal.research.kfg.type.TypeFactory
-import org.vorpal.research.kfg.visitor.StandaloneMethodVisitor
+import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 
-class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : StandaloneMethodVisitor, InstructionBuilder {
+class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
     override val instructions: InstructionFactory
         get() = cm.instruction
     override val types: TypeFactory

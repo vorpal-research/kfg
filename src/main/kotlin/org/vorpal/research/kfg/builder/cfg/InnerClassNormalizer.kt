@@ -2,9 +2,9 @@ package org.vorpal.research.kfg.builder.cfg
 
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Class
-import org.vorpal.research.kfg.visitor.StandaloneClassVisitor
+import org.vorpal.research.kfg.visitor.ClassVisitor
 
-class InnerClassNormalizer(override val cm: ClassManager) : StandaloneClassVisitor {
+class InnerClassNormalizer(override val cm: ClassManager) : ClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {

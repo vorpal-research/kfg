@@ -5,7 +5,6 @@ import org.vorpal.research.kfg.ir.Node
 
 interface NodeVisitor {
     val cm: ClassManager
-    val pipeline: Pipeline
     val instructions get() = cm.instruction
     val types get() = cm.type
     val values get() = cm.value
@@ -18,11 +17,4 @@ interface NodeVisitor {
 
     fun visitVisibleAnnotation(anno: Annotation) {}
     fun visitInvisibleAnnotation(anno: Annotation) {}
-
-    fun registerPassDependencies() {}
-    fun registerAnalysisDependencies() {}
-}
-
-interface StandaloneNodeVisitor : NodeVisitor {
-    override val pipeline: Pipeline get() = memoizedPipelineStub
 }
