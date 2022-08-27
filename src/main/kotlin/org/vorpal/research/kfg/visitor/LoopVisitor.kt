@@ -4,6 +4,9 @@ import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.CatchBlock
 import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.Node
+import org.vorpal.research.kfg.visitor.pass.AnalysisResult
+import org.vorpal.research.kfg.visitor.pass.AnalysisVisitor
 import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.graph.GraphView
 import org.vorpal.research.kthelper.graph.LoopDetector
@@ -121,29 +124,20 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Predecess
         }
 }
 
-
-
 fun performLoopAnalysis(method: Method): List<Loop> {
-    val la = LoopAnalysis(method.cm)
-    return la.invoke(method)
+    val pipeline = executePipeline(method.cm, listOf(method)) {
+        schedule<LoopAnalysis>()
+    }
+    return pipeline.getAnalysis<LoopAnalysisResult>(method).loops
 }
 
-class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
-    private val loops = arrayListOf<Loop>()
+class LoopAnalysis(override val cm: ClassManager, override val pipeline: Pipeline) : AnalysisVisitor<LoopAnalysisResult> {
+    override fun analyse(node: Node): LoopAnalysisResult {
+        require(node is Method) { "LoopAnalysis can only work on methods"}
 
-    override fun cleanup() {
-        loops.clear()
-    }
+        val loops = arrayListOf<Loop>()
 
-    operator fun invoke(method: Method): List<Loop> {
-        visit(method)
-        return loops.toList()
-    }
-
-    override fun visit(method: Method) {
-        cleanup()
-
-        val allLoops = LoopDetector(method.body).search().map { Loop(it.key, it.value.toMutableSet()) }
+        val allLoops = LoopDetector(node.body).search().map { Loop(it.key, it.value.toMutableSet()) }
 
         val parents = hashMapOf<Loop, MutableSet<Loop>>()
         for (loop in allLoops) {
@@ -182,5 +176,9 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
             val headers = loop.body.count { !it.predecessors.all { pred -> pred in loop } }
             require(headers == 1) { "Only loops with single header are supported" }
         }
+
+        return LoopAnalysisResult(loops.toList())
     }
 }
+
+data class LoopAnalysisResult(val loops: List<Loop>) : AnalysisResult

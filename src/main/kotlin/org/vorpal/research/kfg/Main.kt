@@ -5,18 +5,14 @@ import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.util.Flags
 import org.vorpal.research.kfg.util.write
-import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.*
 import org.vorpal.research.kthelper.tryOrNull
 import java.net.URLClassLoader
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.measureTimeMillis
 
-
-private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
-
+private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : StandaloneClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
@@ -29,7 +25,7 @@ private class ClassWriter(override val cm: ClassManager, val loader: ClassLoader
     }
 }
 
-private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : ClassVisitor {
+private class ClassChecker(override val cm: ClassManager, val loader: ClassLoader, val target: Path) : StandaloneClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
@@ -78,9 +74,8 @@ fun main(args: Array<String>) {
     val writeTarget = Paths.get("written/")
     jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
     executePipeline(classManager, Package.defaultPackage) {
+        +LoopSimplifier(classManager, this@executePipeline)
         +MethodBuilder(classManager)
-//        +LoopAnalysis(classManager)
-//        +LoopSimplifier(classManager)
         +ClassWriter(classManager, loader, writeTarget)
         +ClassChecker(classManager, loader, writeTarget)
     }

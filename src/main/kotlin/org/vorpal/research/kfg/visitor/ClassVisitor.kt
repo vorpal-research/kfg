@@ -16,3 +16,7 @@ interface ClassVisitor : NodeVisitor {
     fun visitField(field: Field) {}
     fun visitMethod(method: Method) {}
 }
+
+interface StandaloneClassVisitor : ClassVisitor {
+    override val pipeline: Pipeline get() = memoizedPipelineStub
+}

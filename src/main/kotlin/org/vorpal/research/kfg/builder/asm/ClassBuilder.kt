@@ -6,9 +6,9 @@ import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Field
 import org.vorpal.research.kfg.ir.Method
-import org.vorpal.research.kfg.visitor.ClassVisitor
+import org.vorpal.research.kfg.visitor.StandaloneClassVisitor
 
-class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVisitor {
+class ClassBuilder(override val cm: ClassManager, val `class`: Class) : StandaloneClassVisitor {
     override fun cleanup() {}
 
     override fun visit(klass: Class) {
