@@ -133,7 +133,7 @@ abstract class Class : Node {
     fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDescriptor.fromDesc(cm.type, desc))
     fun getMethod(name: String, returnType: Type, vararg argTypes: Type) =
-        this.getMethod(name, MethodDescriptor(argTypes, returnType))
+        this.getMethod(name, MethodDescriptor(argTypes.toList(), returnType))
 
     abstract fun getMethod(name: String, desc: MethodDescriptor): Method
 
@@ -160,7 +160,13 @@ abstract class Class : Node {
     }
 
     fun addMethod(name: String, returnType: Type, vararg argTypes: Type) =
-        addMethod(name, MethodDescriptor(argTypes, returnType))
+        addMethod(name, MethodDescriptor(argTypes.toList(), returnType))
+
+    internal fun updateMethod(old: MethodDescriptor, new: MethodDescriptor, method: Method) {
+        innerMethods.remove(method.name to old)
+        innerMethods[method.name to new] = method
+
+    }
 
     fun removeField(field: Field) = innerFields.remove(field.name to field.type)
     fun removeMethod(method: Method) = innerMethods.remove(method.name to method.desc)

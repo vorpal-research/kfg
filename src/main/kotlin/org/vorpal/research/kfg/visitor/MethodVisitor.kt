@@ -3,7 +3,6 @@ package org.vorpal.research.kfg.visitor
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.MethodBody
-import org.vorpal.research.kfg.ir.Parameter
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kthelper.assert.unreachable
 
@@ -11,9 +10,6 @@ interface MethodVisitor : NodeVisitor {
 
     fun visit(method: Method) {
         super<NodeVisitor>.visit(method)
-        method.run {
-            parameters.toTypedArray().forEach { visitParameter(it) }
-        }
         visitBody(method.body)
     }
 
@@ -90,6 +86,4 @@ interface MethodVisitor : NodeVisitor {
     fun visitThrowInst(inst: ThrowInst) {}
     fun visitUnreachableInst(inst: UnreachableInst) {}
     fun visitUnknownValueInst(inst : UnknownValueInst) {}
-
-    fun visitParameter(parameter: Parameter) {}
 }

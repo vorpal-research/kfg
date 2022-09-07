@@ -98,7 +98,7 @@ fun primaryTypeToInt(type: Type): Int = when (type) {
     else -> throw InvalidOpcodeException("${type.name} is not primary type")
 }
 
-fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
+fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<List<Type>, Type> {
     val args = mutableListOf<Type>()
     val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[^;]+;))")
     val matcher = pattern.matcher(desc)
@@ -106,7 +106,7 @@ fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<Array<Type>, Type> {
         args.add(parseDesc(tf, matcher.group(0)))
     }
     val returnType = args.last()
-    return Pair(args.dropLast(1).toTypedArray(), returnType)
+    return Pair(args.dropLast(1), returnType)
 }
 
 private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {

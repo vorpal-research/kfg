@@ -545,8 +545,7 @@ class CfgBuilder(
             org.objectweb.asm.Type.DOUBLE -> types.doubleType
             org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
             org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
-            org.objectweb.asm.Type.METHOD -> MethodDescriptor(this.argumentTypes.map { it.asKfgType }.map { it as Type }
-                .toTypedArray(), this.returnType.asKfgType as Type)
+            org.objectweb.asm.Type.METHOD -> MethodDescriptor(this.argumentTypes.map { it.asKfgType }.map { it as Type }, this.returnType.asKfgType as Type)
             else -> unreachable("Unknown type: $this")
         }
 

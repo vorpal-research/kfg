@@ -21,14 +21,14 @@ import org.vorpal.research.kthelper.graph.PredecessorGraph
 import org.vorpal.research.kthelper.graph.Viewable
 
 data class MethodDescriptor(
-    val args: Array<out Type>,
+    val args: List<Type>,
     val returnType: Type
 ) {
-    private val hash = defaultHashCode(*args, returnType)
+    private val hash = defaultHashCode(args, returnType)
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
             val (args, retval) = parseMethodDesc(tf, desc)
-            return MethodDescriptor(args, retval)
+            return MethodDescriptor(args.toList(), retval)
         }
     }
 
@@ -40,7 +40,7 @@ data class MethodDescriptor(
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false
         other as MethodDescriptor
-        return this.args.contentEquals(other.args) && this.returnType == other.returnType
+        return this.args == other.args && this.returnType == other.returnType
     }
 
     override fun toString() = "(${args.joinToString { it.name }}): ${returnType.name}"
@@ -213,7 +213,6 @@ class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<Ba
 class Method : Node {
     val klass: Class
     internal val mn: MethodNode
-    val desc: MethodDescriptor
     var bodyInitialized: Boolean = false
         private set
 
@@ -230,8 +229,17 @@ class Method : Node {
             MethodBody(this)
         }
     }
-    private var innerParameters = mutableListOf<Parameter>()
-    private var innerExceptions = mutableSetOf<Class>()
+
+    // we need this suppresses, because when setter
+    // яis called from constructor field is actually null
+    @Suppress("SAFE_CALL_WILL_CHANGE_NULLABILITY", "UNNECESSARY_SAFE_CALL")
+    var desc: MethodDescriptor
+        set(value) {
+            field?.let { klass.updateMethod(field, value, this) }
+            field = value
+        }
+    var parameters = listOf<Parameter>()
+    var exceptions = setOf<Class>()
 
     companion object {
         const val CONSTRUCTOR_NAME = "<init>"
@@ -246,12 +254,10 @@ class Method : Node {
         this.klass = klass
         this.mn = node.jsrInlined
         this.desc = MethodDescriptor.fromDesc(cm.type, node.desc)
-        this.innerParameters.addAll(
-            mn.parameters?.withIndex()?.map { (index, param) ->
+        this.parameters = mn.parameters?.withIndex()?.map { (index, param) ->
                 Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access))
             } ?: listOf()
-        )
-        this.innerExceptions.addAll(mn.exceptions.map { cm[it] })
+        this.exceptions = mn.exceptions.map { cm[it] }.toSet()
     }
 
     constructor(
@@ -268,8 +274,6 @@ class Method : Node {
 
     val argTypes get() = desc.args
     val returnType get() = desc.returnType
-    val parameters get() = innerParameters
-    val exceptions get() = innerExceptions
 
     val prototype: String
         get() = "$klass::$name$desc"
