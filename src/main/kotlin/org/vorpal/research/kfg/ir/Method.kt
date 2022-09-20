@@ -1,13 +1,11 @@
 package org.vorpal.research.kfg.ir
 
+import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.builder.cfg.CfgBuilder
-import org.vorpal.research.kfg.ir.value.BlockUsageContext
-import org.vorpal.research.kfg.ir.value.BlockUser
-import org.vorpal.research.kfg.ir.value.SlotTracker
-import org.vorpal.research.kfg.ir.value.UsableBlock
+import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.type.parseMethodDesc
@@ -254,9 +252,7 @@ class Method : Node {
         this.klass = klass
         this.mn = node.jsrInlined
         this.desc = MethodDescriptor.fromDesc(cm.type, node.desc)
-        this.parameters = mn.parameters?.withIndex()?.map { (index, param) ->
-                Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access))
-            } ?: listOf()
+        this.parameters = getParameters(mn)
         this.exceptions = mn.exceptions.map { cm[it] }.toSet()
     }
 
@@ -270,6 +266,52 @@ class Method : Node {
         this.klass = klass
         this.mn = MethodNode(modifiers.value, name, desc.asmDesc, null, null)
         this.desc = desc
+    }
+
+    private fun getParameters(methodNode: MethodNode): List<Parameter> {
+        return when {
+            mn.parameters.isNotEmpty() -> processNodeParameters(methodNode)
+            else -> processImplicitNodeParameters(methodNode)
+        }
+    }
+
+    private fun processNodeParameters(methodNode: MethodNode): List<Parameter> = buildList {
+        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations
+        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations
+
+        for ((index, param) in mn.parameters.withIndex()) {
+            val parameterAnnotationsNodes = invisibleParameterAnnotations[index].orEmpty() +
+                    visibleParameterAnnotations[index].orEmpty()
+
+            val annotations = parameterAnnotationsNodes.map { annotationNode ->
+                MethodParameterAnnotation.get(annotationNode, cm)
+            }
+
+            add(Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access), annotations))
+        }
+    }
+
+    private fun processImplicitNodeParameters(methodNode: MethodNode): List<Parameter> = buildList {
+        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations
+        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations
+        invisibleParameterAnnotations?.let { annotations ->
+            addAll(getParametersStubs(annotations))
+        }
+
+        visibleParameterAnnotations?.let { annotations ->
+            addAll(getParametersStubs(annotations))
+        }
+    }
+
+    private fun getParametersStubs(annotations: Array<List<AnnotationNode>>): List<Parameter> {
+        return annotations.mapIndexed { index, parameterAnnotations ->
+            val type = cm.type.voidType
+            @Suppress("UselessCallOnNotNull")  // interoperability error: parameterAnnotations may be null
+            val annotationsOfParameter = parameterAnnotations.orEmpty().map { annotationNode ->
+                MethodParameterAnnotation.get(annotationNode, cm)
+            }
+            StubParameter(cm, index, type, Modifiers(0), annotationsOfParameter)
+        }
     }
 
     val argTypes get() = desc.args

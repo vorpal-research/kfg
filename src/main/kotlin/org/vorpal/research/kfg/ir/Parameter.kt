@@ -1,14 +1,16 @@
 package org.vorpal.research.kfg.ir
 
+import org.objectweb.asm.tree.AnnotationNode
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.type.Type
 
-class Parameter(
+open class Parameter(
     cm: ClassManager,
     val index: Int,
     name: String,
     val type: Type,
-    modifiers: Modifiers
+    modifiers: Modifiers,
+    val annotations: List<MethodParameterAnnotation>
 ) : Node(cm, name, modifiers) {
     override val asmDesc = type.asmDesc
 
@@ -19,6 +21,7 @@ class Parameter(
         if (index != other.index) return false
         if (type != other.type) return false
         if (asmDesc != other.asmDesc) return false
+        if (annotations != other.annotations) return false
 
         return true
     }
@@ -28,5 +31,45 @@ class Parameter(
         result = 31 * result + type.hashCode()
         result = 31 * result + asmDesc.hashCode()
         return result
+    }
+}
+
+class StubParameter(
+    cm: ClassManager,
+    index: Int,
+    type: Type,
+    modifiers: Modifiers,
+    annotations: List<MethodParameterAnnotation>
+) : Parameter(cm, index, name = NAME, type, modifiers, annotations) {
+    companion object {
+        const val NAME = "stub"
+    }
+}
+
+/**
+ * @param arguments: argument is a pair of name to value where value could be one of java's primitive type wrapper
+ * (Integer, Long, ...), String, Reference, Enum or Array
+ */
+data class MethodParameterAnnotation(
+    val type: Type,
+    val arguments: Map<String, Any>
+) {
+    companion object {
+        fun get(annotationNode: AnnotationNode, cm: ClassManager): MethodParameterAnnotation {
+            val fullName = getAnnotationFullName(annotationNode.desc)
+            val type = cm[fullName].toType()
+
+            val keys = annotationNode.values.orEmpty()
+                .filterIndexed { index, _ -> index.mod(2) == 0 }
+                .filterIsInstance<String>()
+            val values = annotationNode.values.orEmpty()
+                .filterIndexed { index, _ -> index.mod(2) == 1 }
+
+            return MethodParameterAnnotation(type, mapOf(*(keys zip values).toTypedArray()))
+        }
+
+        private fun getAnnotationFullName(desc: String): String {
+            return desc.removePrefix("L").removeSuffix(";").replace("/", ".")
+        }
     }
 }

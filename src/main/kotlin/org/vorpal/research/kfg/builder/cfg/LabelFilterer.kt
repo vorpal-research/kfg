@@ -56,6 +56,14 @@ internal class LabelFilterer(private val mn: MethodNode) {
             new.tryCatchBlocks.add(it)
         }
 
+        new.visibleParameterAnnotations = mn.visibleParameterAnnotations?.clone()
+        new.invisibleParameterAnnotations = mn.invisibleParameterAnnotations?.clone()
+
+        new.visibleAnnotableParameterCount = mn.visibleAnnotableParameterCount
+        new.invisibleAnnotableParameterCount = mn.invisibleAnnotableParameterCount
+
+        new.parameters = mn.parameters?.toList().orEmpty()
+
         new.maxStack = mn.maxStack
         new.maxLocals = mn.maxLocals
 
