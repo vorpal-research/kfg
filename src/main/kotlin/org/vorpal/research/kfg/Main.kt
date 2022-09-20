@@ -55,8 +55,9 @@ private class MethodBuilder(
 fun main(args: Array<String>) {
     val cfg = tryOrNull { KfgConfigParser(args) } ?: return
 
-    val jars =
-        cfg.getStringValue("jar").split(System.getProperty("path.separator")).map { Paths.get(it).asContainer()!! }
+    val jars = cfg.getStringValue("jar")
+        .split(System.getProperty("path.separator"))
+        .map { Paths.get(it).asContainer()!! }
 
     val classManager = ClassManager(
         KfgConfig(

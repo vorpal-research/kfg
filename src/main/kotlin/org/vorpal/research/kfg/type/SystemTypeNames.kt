@@ -35,4 +35,17 @@ object SystemTypeNames {
     const val navigableMapClass = "java/util/NavigableMap"
     const val hashMapClass = "java/util/HashMap"
     const val treeMapClass = "java/util/TreeMap"
+
+
+    const val classLoader = "java/lang/ClassLoader"
+    const val unmodifiableCollection = "java/util/Collections\$UnmodifiableCollection"
+    const val unmodifiableList = "java/util/Collections\$UnmodifiableList"
+    const val unmodifiableSet = "java/util/Collections\$UnmodifiableSet"
+    const val unmodifiableMap = "java/util/Collections\$UnmodifiableMap"
+    const val charSequence = "java/lang/CharSequence"
+    const val field = "java/lang/reflect/Field"
+    const val stringBuilder = "java/lang/StringBuilder"
+    const val stringBuffer = "java/lang/StringBuffer"
+    const val linkedHashSet = "java/util/LinkedHashSet"
+    const val linkedHashMap = "java/util/LinkedHashMap"
 }

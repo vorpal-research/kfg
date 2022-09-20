@@ -110,87 +110,6 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
 
-    val classClass
-        get() = this[SystemTypeNames.classClass]
-
-    val stringClass
-        get() = this[SystemTypeNames.stringClass]
-
-    val objectClass
-        get() = this[SystemTypeNames.objectClass]
-
-    val boolWrapper
-        get() = this[SystemTypeNames.booleanClass]
-
-    val byteWrapper
-        get() = this[SystemTypeNames.byteClass]
-
-    val charWrapper
-        get() = this[SystemTypeNames.charClass]
-
-    val shortWrapper
-        get() = this[SystemTypeNames.shortClass]
-
-    val intWrapper
-        get() = this[SystemTypeNames.integerClass]
-
-    val longWrapper
-        get() = this[SystemTypeNames.longClass]
-
-    val floatWrapper
-        get() = this[SystemTypeNames.floatClass]
-
-    val doubleWrapper
-        get() = this[SystemTypeNames.doubleClass]
-
-    val collectionClass
-        get() = this[SystemTypeNames.collectionClass]
-
-    val listClass
-        get() = this[SystemTypeNames.listClass]
-
-    val arrayListClass
-        get() = this[SystemTypeNames.arrayListClass]
-
-    val linkedListClass
-        get() = this[SystemTypeNames.linkedListClass]
-
-    val queueClass
-        get() = this[SystemTypeNames.queueClass]
-    val dequeClass
-        get() = this[SystemTypeNames.dequeClass]
-    val arrayDequeClass
-        get() = this[SystemTypeNames.arrayDequeClass]
-
-    val setClass
-        get() = this[SystemTypeNames.setClass]
-
-    val sortedSetClass
-        get() = this[SystemTypeNames.sortedSetClass]
-    val navigableSetClass
-        get() = this[SystemTypeNames.navigableSetClass]
-
-    val hashSetClass
-        get() = this[SystemTypeNames.hashSetClass]
-
-    val treeSetClass
-        get() = this[SystemTypeNames.treeSetClass]
-
-    val mapClass
-        get() = this[SystemTypeNames.mapClass]
-
-    val sortedMapClass
-        get() = this[SystemTypeNames.sortedMapClass]
-
-    val navigableMapClass
-        get() = this[SystemTypeNames.navigableMapClass]
-
-    val hashMapClass
-        get() = this[SystemTypeNames.hashMapClass]
-
-    val treeMapClass
-        get() = this[SystemTypeNames.treeMapClass]
-
     fun initialize(loader: ClassLoader, vararg containers: Container) {
         val container2ClassNode = containers.associateWith { it.parse(flags, config.failOnError, loader) }
         initialize(container2ClassNode)
@@ -256,3 +175,97 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     fun getContainerClasses(container: Container): Set<Class> = container2class.getOrDefault(container, emptySet())
 }
+
+val ClassManager.classClass
+    get() = this[SystemTypeNames.classClass]
+
+val ClassManager.stringClass
+    get() = this[SystemTypeNames.stringClass]
+
+val ClassManager.objectClass
+    get() = this[SystemTypeNames.objectClass]
+
+val ClassManager.boolWrapper
+    get() = this[SystemTypeNames.booleanClass]
+
+val ClassManager.byteWrapper
+    get() = this[SystemTypeNames.byteClass]
+
+val ClassManager.charWrapper
+    get() = this[SystemTypeNames.charClass]
+
+val ClassManager.shortWrapper
+    get() = this[SystemTypeNames.shortClass]
+
+val ClassManager.intWrapper
+    get() = this[SystemTypeNames.integerClass]
+
+val ClassManager.longWrapper
+    get() = this[SystemTypeNames.longClass]
+
+val ClassManager.floatWrapper
+    get() = this[SystemTypeNames.floatClass]
+
+val ClassManager.doubleWrapper
+    get() = this[SystemTypeNames.doubleClass]
+
+val ClassManager.collectionClass
+    get() = this[SystemTypeNames.collectionClass]
+
+val ClassManager.listClass
+    get() = this[SystemTypeNames.listClass]
+
+val ClassManager.arrayListClass
+    get() = this[SystemTypeNames.arrayListClass]
+
+val ClassManager.linkedListClass
+    get() = this[SystemTypeNames.linkedListClass]
+
+val ClassManager.queueClass
+    get() = this[SystemTypeNames.queueClass]
+
+val ClassManager.dequeClass
+    get() = this[SystemTypeNames.dequeClass]
+
+val ClassManager.arrayDequeClass
+    get() = this[SystemTypeNames.arrayDequeClass]
+
+val ClassManager.setClass
+    get() = this[SystemTypeNames.setClass]
+
+val ClassManager.sortedSetClass
+    get() = this[SystemTypeNames.sortedSetClass]
+
+val ClassManager.navigableSetClass
+    get() = this[SystemTypeNames.navigableSetClass]
+
+val ClassManager.hashSetClass
+    get() = this[SystemTypeNames.hashSetClass]
+
+val ClassManager.treeSetClass
+    get() = this[SystemTypeNames.treeSetClass]
+
+val ClassManager.mapClass
+    get() = this[SystemTypeNames.mapClass]
+
+val ClassManager.sortedMapClass
+    get() = this[SystemTypeNames.sortedMapClass]
+
+val ClassManager.navigableMapClass
+    get() = this[SystemTypeNames.navigableMapClass]
+
+val ClassManager.hashMapClass
+    get() = this[SystemTypeNames.hashMapClass]
+
+val ClassManager.treeMapClass
+    get() = this[SystemTypeNames.treeMapClass]
+val ClassManager.classLoaderClass
+    get() = this[SystemTypeNames.classLoader]
+val ClassManager.stringBuilderClass
+    get() = this[SystemTypeNames.stringBuilder]
+val ClassManager.stringBufferClass
+    get() = this[SystemTypeNames.stringBuffer]
+val ClassManager.linkedHashSetClass
+    get() = this[SystemTypeNames.linkedHashSet]
+val ClassManager.linkedHashMapClass
+    get() = this[SystemTypeNames.linkedHashMap]

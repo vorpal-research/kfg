@@ -56,72 +56,6 @@ class TypeFactory internal constructor(val cm: ClassManager) {
     val nullType: Type
         get() = NullType
 
-    val classType
-        get() = getRefType(SystemTypeNames.classClass)
-
-    val stringType
-        get() = getRefType(SystemTypeNames.stringClass)
-
-    val objectType
-        get() = getRefType(SystemTypeNames.objectClass)
-
-    val boolWrapper: Type
-        get() = getRefType(SystemTypeNames.booleanClass)
-
-    val byteWrapper: Type
-        get() = getRefType(SystemTypeNames.byteClass)
-
-    val charWrapper: Type
-        get() = getRefType(SystemTypeNames.charClass)
-
-    val shortWrapper: Type
-        get() = getRefType(SystemTypeNames.shortClass)
-
-    val intWrapper: Type
-        get() = getRefType(SystemTypeNames.integerClass)
-
-    val longWrapper: Type
-        get() = getRefType(SystemTypeNames.longClass)
-
-    val floatWrapper: Type
-        get() = getRefType(SystemTypeNames.floatClass)
-
-    val doubleWrapper: Type
-        get() = getRefType(SystemTypeNames.doubleClass)
-
-    val collectionType: Type
-        get() = getRefType(SystemTypeNames.collectionClass)
-
-    val listType: Type
-        get() = getRefType(SystemTypeNames.listClass)
-
-    val arrayListType: Type
-        get() = getRefType(SystemTypeNames.arrayListClass)
-
-    val linkedListType: Type
-        get() = getRefType(SystemTypeNames.linkedListClass)
-
-    val setType: Type
-        get() = getRefType(SystemTypeNames.setClass)
-
-    val hashSetType: Type
-        get() = getRefType(SystemTypeNames.hashSetClass)
-
-    val treeSetType: Type
-        get() = getRefType(SystemTypeNames.treeSetClass)
-
-    val mapType: Type
-        get() = getRefType(SystemTypeNames.setClass)
-
-    val hashMapType: Type
-        get() = getRefType(SystemTypeNames.hashMapClass)
-
-    val treeMapType: Type
-        get() = getRefType(SystemTypeNames.treeMapClass)
-
-    val objectArrayClass
-        get() = getRefType(cm["$objectType[]"])
-
     fun getRefType(cname: Class): Type = klassTypeHash.getOrPut(cname) { ClassType(cname) }
     fun getRefType(cname: String): Type = getRefType(cm[cname])
     fun getArrayType(component: Type): Type = arrayTypeHash.getOrPut(component) { ArrayType(component) }
@@ -163,8 +97,78 @@ class TypeFactory internal constructor(val cm: ClassManager) {
             Double::class.javaPrimitiveType -> doubleType
             else -> unreachable("Unknown primary type $klass")
         }
+
         klass.isArray -> getArrayType(get(klass.componentType))
         else -> getRefType(cm[klass.name.replace(Package.CANONICAL_SEPARATOR, Package.SEPARATOR)])
     }
 
 }
+
+val TypeFactory.classType
+    get() = getRefType(SystemTypeNames.classClass)
+
+val TypeFactory.stringType
+    get() = getRefType(SystemTypeNames.stringClass)
+
+val TypeFactory.objectType
+    get() = getRefType(SystemTypeNames.objectClass)
+
+val TypeFactory.boolWrapper: Type
+    get() = getRefType(SystemTypeNames.booleanClass)
+
+val TypeFactory.byteWrapper: Type
+    get() = getRefType(SystemTypeNames.byteClass)
+
+val TypeFactory.charWrapper: Type
+    get() = getRefType(SystemTypeNames.charClass)
+
+val TypeFactory.shortWrapper: Type
+    get() = getRefType(SystemTypeNames.shortClass)
+
+val TypeFactory.intWrapper: Type
+    get() = getRefType(SystemTypeNames.integerClass)
+
+val TypeFactory.longWrapper: Type
+    get() = getRefType(SystemTypeNames.longClass)
+
+val TypeFactory.floatWrapper: Type
+    get() = getRefType(SystemTypeNames.floatClass)
+
+val TypeFactory.doubleWrapper: Type
+    get() = getRefType(SystemTypeNames.doubleClass)
+
+val TypeFactory.collectionType: Type
+    get() = getRefType(SystemTypeNames.collectionClass)
+
+val TypeFactory.listType: Type
+    get() = getRefType(SystemTypeNames.listClass)
+
+val TypeFactory.arrayListType: Type
+    get() = getRefType(SystemTypeNames.arrayListClass)
+
+val TypeFactory.linkedListType: Type
+    get() = getRefType(SystemTypeNames.linkedListClass)
+
+val TypeFactory.setType: Type
+    get() = getRefType(SystemTypeNames.setClass)
+
+val TypeFactory.hashSetType: Type
+    get() = getRefType(SystemTypeNames.hashSetClass)
+
+val TypeFactory.treeSetType: Type
+    get() = getRefType(SystemTypeNames.treeSetClass)
+
+val TypeFactory.mapType: Type
+    get() = getRefType(SystemTypeNames.setClass)
+
+val TypeFactory.hashMapType: Type
+    get() = getRefType(SystemTypeNames.hashMapClass)
+
+val TypeFactory.treeMapType: Type
+    get() = getRefType(SystemTypeNames.treeMapClass)
+
+val TypeFactory.objectArrayClass
+    get() = getRefType(cm["$objectType[]"])
+
+val TypeFactory.classLoaderType
+    get() = getRefType(SystemTypeNames.classLoader)
