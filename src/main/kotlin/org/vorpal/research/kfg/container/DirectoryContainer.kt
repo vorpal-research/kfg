@@ -131,7 +131,8 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
 
             if (entry.isClass) {
                 val bytes = entry.readBytes()
-                val copyFile = target.resolve(entry.name)
+                val copyFile = target.resolve(entry.relativeTo(this.file).toString())
+                copyFile.parent.toFile().mkdirs()
                 copyFile.writeBytes(bytes)
             }
         }
