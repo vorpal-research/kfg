@@ -69,7 +69,7 @@ data class MethodParameterAnnotation(
         }
 
         private fun getAnnotationFullName(desc: String): String {
-            return desc.removePrefix("L").removeSuffix(";").replace("/", ".")
+            return desc.removePrefix("L").removeSuffix(";")
         }
     }
 }
