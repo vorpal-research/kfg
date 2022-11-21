@@ -563,7 +563,7 @@ class CfgBuilder(
                 else -> unreachable("Unknown arg of bsm: $it")
             }
         }.reversed().toTypedArray()
-        val args = desc.args.map { pop() }.toTypedArray()
+        val args = desc.args.map { pop() }.reversed().toTypedArray()
         val invokeDynamic = invokeDynamic(insn.name, desc, bsmMethod, bsmArgs, args)
         addInstruction(bb, invokeDynamic)
         push(invokeDynamic)
