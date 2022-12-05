@@ -8,6 +8,7 @@ import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
 import org.vorpal.research.kfg.util.*
 import org.vorpal.research.kthelper.`try`
+import org.vorpal.research.kthelper.write
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths

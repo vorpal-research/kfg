@@ -12,7 +12,7 @@ import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
-import java.util.*
+import org.vorpal.research.kthelper.collection.stackOf
 import org.objectweb.asm.Handle as AsmHandle
 import org.objectweb.asm.Type as AsmType
 
@@ -47,7 +47,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         method.bodyInitialized -> method.body.basicBlocks.associateWith { LabelNode() }
         else -> emptyMap()
     }
-    private val stack = ArrayDeque<Value>()
+    private val stack = stackOf<Value>()
     private val locals = hashMapOf<Value, Int>()
 
     private var currentInsnList = mutableListOf<AbstractInsnNode>()
@@ -56,7 +56,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     init {
         if (!method.isStatic) {
-            val instance = values.getThis(types.getRefType(method.klass))
+            val instance = values.getThis(method.klass.toType())
             locals[instance] = instance.local
         }
         for ((index, type) in method.argTypes.withIndex()) {

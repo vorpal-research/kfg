@@ -199,8 +199,7 @@ class ConcreteClass : Class {
                 .map { it.getMethodConcrete(name, desc) }
                 .firstOrNull()
             val res: Method? = concreteMethod
-                ?: allAncestors.mapNotNull { it as? OuterClass }
-                    .firstOrNull()
+                ?: allAncestors.firstNotNullOfOrNull { it as? OuterClass }
                     ?.getMethodConcrete(name, desc)
             res
         }
@@ -211,7 +210,7 @@ class ConcreteClass : Class {
         var result: Field?
         do {
             result =
-                parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getFieldConcrete(name, type) }.firstOrNull()
+                parents.mapNotNull { it as? ConcreteClass }.firstNotNullOfOrNull { it.getFieldConcrete(name, type) }
             parents = parents.flatMap { it.allAncestors }
         } while (result == null && parents.isNotEmpty())
 
@@ -227,8 +226,8 @@ class ConcreteClass : Class {
 
             var result: Method?
             do {
-                result = parents.mapNotNull { it as? ConcreteClass }.mapNotNull { it.getMethodConcrete(name, desc) }
-                    .firstOrNull()
+                result = parents.mapNotNull { it as? ConcreteClass }
+                    .firstNotNullOfOrNull { it.getMethodConcrete(name, desc) }
                 parents = parents.flatMap { it.allAncestors }
             } while (result == null && parents.isNotEmpty())
 

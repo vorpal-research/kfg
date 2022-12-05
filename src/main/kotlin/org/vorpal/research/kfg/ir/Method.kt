@@ -25,8 +25,8 @@ data class MethodDescriptor(
     private val hash = defaultHashCode(args, returnType)
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
-            val (args, retval) = parseMethodDesc(tf, desc)
-            return MethodDescriptor(args.toList(), retval)
+            val (argTypes, returnType) = parseMethodDesc(tf, desc)
+            return MethodDescriptor(argTypes.toList(), returnType)
         }
     }
 
@@ -229,7 +229,7 @@ class Method : Node {
     }
 
     // we need this suppresses, because when setter
-    // яis called from constructor field is actually null
+    // is called from constructor field is actually null
     @Suppress("SAFE_CALL_WILL_CHANGE_NULLABILITY", "UNNECESSARY_SAFE_CALL")
     var desc: MethodDescriptor
         set(value) {

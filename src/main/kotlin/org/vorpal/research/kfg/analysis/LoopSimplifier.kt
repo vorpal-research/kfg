@@ -13,7 +13,6 @@ import org.vorpal.research.kfg.ir.value.usageContext
 import org.vorpal.research.kfg.visitor.Loop
 import org.vorpal.research.kfg.visitor.LoopVisitor
 import org.vorpal.research.kthelper.KtException
-import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.assert.unreachable
 
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
@@ -93,7 +92,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         return new.filterIsInstance<PhiInst>().firstOrNull { newPhi ->
             val incs = newPhi.incomings
             originalIncomings.all { (key, value) -> incs[key] == value }
-        } ?: asserted(originalIncomings.values.toSet().size == 1) { originalIncomings.values.first() }
+        } ?: originalIncomings.values.single()
     }
 
     private fun mapToCatches(originals: Set<BasicBlock>, new: BasicBlock) = with(ctx) {
