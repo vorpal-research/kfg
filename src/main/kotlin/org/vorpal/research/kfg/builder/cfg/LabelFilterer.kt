@@ -8,52 +8,50 @@ import org.objectweb.asm.tree.TryCatchBlockNode
 internal class LabelFilterer(private val mn: MethodNode) {
 
     fun build(): MethodNode {
-        val insts = mn.instructions
-        val replacement = mutableMapOf<LabelNode, LabelNode>()
+        val instructionList = mn.instructions
+        val replacementsList = MutableList(instructionList.size()) { -1 }
 
         val new = MethodNode(mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.toTypedArray())
-        var prev: LabelNode? = null
-        for (inst in insts) {
-            if (prev != null && inst is LabelNode) {
-                replacement[inst] = replacement.getOrDefault(prev, prev)
+        var prev: Int = -1
+        for ((index, inst) in instructionList.withIndex()) {
+            if (prev != -1 && inst is LabelNode) {
+                var actualPrev = prev
+                while (replacementsList[actualPrev] != -1)
+                    actualPrev = replacementsList[actualPrev]
+                replacementsList[index] = actualPrev
             }
-            prev = inst as? LabelNode
+            prev = if (inst is LabelNode) index else -1
         }
 
-        val clonedLabels = insts
-            .filterIsInstance<LabelNode>()
-            .associateWith { LabelNode(Label()) }
-        val newReplacement = clonedLabels.mapValues { (key, value) ->
-            when (key) {
-                in replacement -> clonedLabels.getValue(replacement.getValue(key))
-                else -> value
-            }
-        }
-        val newInsts = insts.mapNotNull {
-            when (it) {
-                is LabelNode -> when (it) {
-                    in replacement -> null
-                    in clonedLabels -> clonedLabels[it]
-                    else -> it.clone(newReplacement)
+        val clonedLabelsList = instructionList.map { if (it is LabelNode) LabelNode(Label()) else null }
+        val newReplacements = clonedLabelsList.withIndex().mapNotNull { (index, label) ->
+            if (label != null) {
+                instructionList[index] as LabelNode to if (replacementsList[index] != -1) clonedLabelsList[replacementsList[index]]!!
+                else label
+            } else null
+        }.toMap()
+
+        for ((index, inst) in instructionList.withIndex()) {
+            val newInst = when (inst) {
+                is LabelNode -> when {
+                    replacementsList[index] != -1 -> null
+                    clonedLabelsList[index] != null -> clonedLabelsList[index]!!
+                    else -> inst.clone(newReplacements)
                 }
 
-                else -> it.clone(newReplacement)
+                else -> inst.clone(newReplacements)
             }
+            if (newInst != null) new.instructions.add(newInst)
         }
-        val tryCatches = mn.tryCatchBlocks.map {
+
+        for (tryCatch in mn.tryCatchBlocks) {
             val tcb = TryCatchBlockNode(
-                newReplacement.getValue(it.start), newReplacement.getValue(it.end),
-                newReplacement.getValue(it.handler), it.type
+                newReplacements.getValue(tryCatch.start), newReplacements.getValue(tryCatch.end),
+                newReplacements.getValue(tryCatch.handler), tryCatch.type
             )
-            tcb.visibleTypeAnnotations = it.visibleTypeAnnotations?.toList()
-            tcb.invisibleTypeAnnotations = it.invisibleTypeAnnotations?.toList()
-            tcb
-        }
-        for (it in newInsts) {
-            new.instructions.add(it)
-        }
-        for (it in tryCatches) {
-            new.tryCatchBlocks.add(it)
+            tcb.visibleTypeAnnotations = tryCatch.visibleTypeAnnotations?.toList()
+            tcb.invisibleTypeAnnotations = tryCatch.invisibleTypeAnnotations?.toList()
+            new.tryCatchBlocks.add(tcb)
         }
 
         new.visibleParameterAnnotations = mn.visibleParameterAnnotations?.clone()
