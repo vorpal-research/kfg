@@ -253,7 +253,7 @@ class Method : Node {
         this.mn = node.jsrInlined
         this.desc = MethodDescriptor.fromDesc(cm.type, node.desc)
         this.parameters = getParameters(mn)
-        this.exceptions = mn.exceptions.map { cm[it] }.toSet()
+        this.exceptions = mn.exceptions.mapTo(mutableSetOf()) { cm[it] }
     }
 
     constructor(

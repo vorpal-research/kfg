@@ -33,10 +33,10 @@ interface LoopVisitor : MethodVisitor {
 
 data class LoopNode(val parent: Loop, val block: BasicBlock) : PredecessorGraph.PredecessorVertex<LoopNode> {
     override val predecessors: Set<LoopNode>
-        get() = block.predecessors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
+        get() = block.predecessors.filter { it in parent.body }.mapTo(mutableSetOf()) { LoopNode(parent, it) }
 
     override val successors: Set<LoopNode>
-        get() = block.successors.filter { it in parent.body }.map { LoopNode(parent, it) }.toSet()
+        get() = block.successors.filter { it in parent.body }.mapTo(mutableSetOf()) { LoopNode(parent, it) }
 }
 
 class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : PredecessorGraph<LoopNode>, Iterable<LoopNode>, Viewable {
@@ -51,24 +51,24 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Predecess
         get() = LoopNode(this, header)
 
     override val nodes: Set<LoopNode>
-        get() = body.map { LoopNode(this, it) }.toSet()
+        get() = body.mapTo(mutableSetOf()) { LoopNode(this, it) }
 
     val method: Method?
         get() = header.methodUnsafe
 
     val allEntries: Set<BasicBlock>
-        get() = body.filterNot {
+        get() = body.filterNotTo(mutableSetOf()) {
             when (it) {
                 is CatchBlock -> body.containsAll(it.allPredecessors)
                 else -> body.containsAll(it.predecessors)
             }
-        }.toSet()
+        }
 
     val exitingBlocks: Set<BasicBlock>
-        get() = body.filterNot { body.containsAll(it.successors) }.toSet()
+        get() = body.filterNotTo(mutableSetOf()) { body.containsAll(it.successors) }
 
     val loopExits: Set<BasicBlock>
-        get() = body.flatMap { it.successors }.asSequence().filterNot { body.contains(it) }.toSet()
+        get() = body.flatMap { it.successors }.filterNotTo(mutableSetOf()) { body.contains(it) }
 
     val preheaders: List<BasicBlock>
         get() = header.predecessors.filter { !body.contains(it) }
@@ -77,13 +77,13 @@ class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : Predecess
         get() = preheaders.first()
 
     val latches: Set<BasicBlock>
-        get() = body.filter { it.successors.contains(header) }.toSet()
+        get() = body.filterTo(mutableSetOf()) { it.successors.contains(header) }
 
     val latch: BasicBlock
         get() = latches.first()
 
     val hasSinglePreheader get() = preheaders.size == 1
-    val hasSingleLatch get() = body.filter { it.successors.contains(header) }.toSet().size == 1
+    val hasSingleLatch get() = body.filterTo(mutableSetOf()) { it.successors.contains(header) }.size == 1
 
     fun containsAll(blocks: Collection<LoopNode>) = body.containsAll(blocks.map { it.block })
 

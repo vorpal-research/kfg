@@ -35,8 +35,8 @@ abstract class Class : Node {
     protected var innerClassesMap = mutableMapOf<String, Modifiers>()
 
     val allMethods get() = innerMethods.values.toSet()
-    val constructors get() = allMethods.filter { it.isConstructor }.toSet()
-    val methods get() = allMethods.filterNot { it.isConstructor }.toSet()
+    val constructors: Set<Method> get() = allMethods.filterTo(mutableSetOf()) { it.isConstructor }
+    val methods: Set<Method> get() = allMethods.filterNotTo(mutableSetOf()) { it.isConstructor }
     val fields get() = innerFields.values.toSet()
 
     val fullName: String
@@ -50,7 +50,7 @@ abstract class Class : Node {
             superClassName = value?.fullName
         }
 
-    val interfaces get() = interfaceNames.map { cm[it] }.toSet()
+    val interfaces: Set<Class> get() = interfaceNames.mapTo(mutableSetOf()) { cm[it] }
 
     var outerClass
         get() = outerClassName?.let { cm[it] }
@@ -128,10 +128,10 @@ abstract class Class : Node {
     abstract fun getFieldConcrete(name: String, type: Type): Field?
     abstract fun getMethodConcrete(name: String, desc: MethodDescriptor): Method?
 
-    fun getFields(name: String) = fields.filter { it.name == name }.toSet()
+    fun getFields(name: String): Set<Field> = fields.filterTo(mutableSetOf()) { it.name == name }
     abstract fun getField(name: String, type: Type): Field
 
-    fun getMethods(name: String) = methods.filter { it.name == name }.toSet()
+    fun getMethods(name: String): Set<Method> = methods.filterTo(mutableSetOf()) { it.name == name }
     fun getMethod(name: String, desc: String) = getMethod(name, MethodDescriptor.fromDesc(cm.type, desc))
     fun getMethod(name: String, returnType: Type, vararg argTypes: Type) =
         this.getMethod(name, MethodDescriptor(argTypes.toList(), returnType))
@@ -241,8 +241,10 @@ class ConcreteClass : Class {
     override fun isAncestorOf(other: Class): Boolean {
         if (this == other) return true
         else {
-            val ancestors = other.allAncestors
-            for (it in ancestors) if (isAncestorOf(it)) return true
+            other.superClass?.let {
+                if (isAncestorOf(it)) return true
+            }
+            for (it in other.interfaces) if (isAncestorOf(it)) return true
         }
         return false
     }

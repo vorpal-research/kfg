@@ -142,7 +142,7 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     fun getByPackage(`package`: Package): List<Class> = concreteClasses.filter { `package`.isParent(it.pkg) }
 
     fun getSubtypesOf(klass: Class): Set<Class> =
-        concreteClasses.filter { it.isInheritorOf(klass) && it != klass }.toSet()
+        concreteClasses.filterTo(mutableSetOf()) { it.isInheritorOf(klass) && it != klass }
 
     fun getAllSubtypesOf(klass: Class): Set<Class> {
         val result = mutableSetOf(klass)

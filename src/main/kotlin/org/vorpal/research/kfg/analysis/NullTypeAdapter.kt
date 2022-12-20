@@ -15,7 +15,7 @@ class NullTypeAdapter(override val cm: ClassManager, val ctx: UsageContext) : Me
 
     override fun visitPhiInst(inst: PhiInst) = with(ctx) {
         if (inst.type == types.nullType) {
-            val incomingTypes = inst.incomingValues.map { it.type }.toSet()
+            val incomingTypes = inst.incomingValues.mapTo(mutableSetOf()) { it.type }
             val actualType = mergeTypes(types, incomingTypes) ?: throw TypeMergeFailedException(incomingTypes)
             val newPhi = inst(cm) { phi(actualType, inst.incomings) }
             inst.parent.insertBefore(inst, newPhi)

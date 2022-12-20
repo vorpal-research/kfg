@@ -19,7 +19,7 @@ val Type.internalDesc: String
 
 fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     tf.nullType in types -> {
-        val filtered = types.filterNot { it == tf.nullType }.toSet()
+        val filtered = types.filterNotTo(mutableSetOf()) { it == tf.nullType }
         when {
             filtered.isEmpty() -> tf.nullType
             else -> mergeTypes(tf, filtered)
@@ -43,9 +43,9 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     }
     types.all { it is Reference } -> when {
         types.any { it is ClassType } -> tf.objectType
-        types.map { it as ArrayType }.map { it.component }.toSet().size == 1 -> types.first()
+        types.map { it as ArrayType }.mapTo(mutableSetOf()) { it.component }.size == 1 -> types.first()
         types.all { it is ArrayType } -> {
-            val components = types.map { (it as ArrayType).component }.toSet()
+            val components = types.mapTo(mutableSetOf()) { (it as ArrayType).component }
             when (val merged = mergeTypes(tf, components)) {
                 null -> tf.objectType
                 else -> tf.getArrayType(merged)

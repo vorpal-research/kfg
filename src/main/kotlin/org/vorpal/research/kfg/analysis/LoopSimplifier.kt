@@ -96,7 +96,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     }
 
     private fun mapToCatches(originals: Set<BasicBlock>, new: BasicBlock) = with(ctx) {
-        for (catch in originals.flatMap { it.handlers }.toSet()) {
+        for (catch in originals.flatMapTo(mutableSetOf()) { it.handlers }) {
             new.linkThrowing(catch)
 
             for (phi in catch.mapNotNull { it as? PhiInst }) {
@@ -114,7 +114,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
 
     private fun buildPreheader(loop: Loop) = with(ctx) {
         val header = loop.header
-        val loopPredecessors = header.predecessors.filter { it !in loop }.toSet()
+        val loopPredecessors = header.predecessors.filterTo(mutableSetOf()) { it !in loop }
         if (loopPredecessors.size == 1) return
 
         val preheader = BodyBlock("loop.preheader")
@@ -168,15 +168,14 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                         // first we need to find all values from old throwers that are used in catch body
                         // without phis
                         val catchBody = catch.body
-                        val catchExits = catchBody.flatMap { it.successors }.filter { it !in catchBody }.toSet()
+                        val catchExits = catchBody.flatMap { it.successors }.filterTo(mutableSetOf()) { it !in catchBody }
                         val bodyOperands = catchBody
                             .asSequence()
                             .flatten()
                             .filter { it !is PhiInst }
                             .flatten()
                             .filterIsInstance<Instruction>()
-                            .filter { it.parent !in catchBody }
-                            .toSet()
+                            .filterTo(mutableSetOf()) { it.parent !in catchBody }
 
                         // for each external operand we need to manually add phi instruction
                         // with default mappings for new entries

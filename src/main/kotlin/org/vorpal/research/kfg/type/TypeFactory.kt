@@ -48,7 +48,7 @@ class TypeFactory internal constructor(val cm: ClassManager) {
     }
 
     val primitiveWrapperTypes: Set<Type>
-        get() = primitiveTypes.map { getWrapper(it) }.toSet()
+        get() = primitiveTypes.mapTo(mutableSetOf()) { getWrapper(it) }
 
     val nullType: Type
         get() = NullType

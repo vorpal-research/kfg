@@ -61,7 +61,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         val returnInstruction = when {
             returnType.isVoid -> `return`()
             else -> {
-                val type = mergeTypes(types, incomings.values.map { it.type }.toSet()) ?: returnType
+                val type = mergeTypes(types, incomings.values.mapTo(mutableSetOf()) { it.type }) ?: returnType
 
                 val retval = phi("retval", type, incomings)
                 instructions.add(retval)
