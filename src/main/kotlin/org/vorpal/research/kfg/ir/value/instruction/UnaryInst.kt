@@ -10,8 +10,13 @@ enum class UnaryOpcode {
     LENGTH
 }
 
-class UnaryInst internal constructor(name: Name, type: Type, val opcode: UnaryOpcode, obj: Value, ctx: UsageContext) :
-    Instruction(name, type, arrayOf(obj), ctx) {
+class UnaryInst internal constructor(
+    name: Name,
+    type: Type,
+    val opcode: UnaryOpcode,
+    obj: Value,
+    ctx: UsageContext
+) : Instruction(name, type, mutableListOf(obj), ctx) {
 
     val operand: Value
         get() = ops[0]

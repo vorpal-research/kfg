@@ -16,18 +16,18 @@ class InvokeDynamicInst(
     val methodName: String,
     val methodDescriptor: MethodDescriptor,
     val bootstrapMethod: Handle,
-    val bootstrapMethodArgs: Array<Any>,
-    operands: Array<Value>,
+    val bootstrapMethodArgs: List<Any>,
+    operands: List<Value>,
     ctx: UsageContext
-) : Instruction(name, methodDescriptor.returnType, operands, ctx) {
-    val args: List<Value> get() = ops.toList()
+) : Instruction(name, methodDescriptor.returnType, operands.toMutableList(), ctx) {
+    val args: List<Value> get() = ops
 
     constructor(
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>,
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>,
         ctx: UsageContext
     ) : this(Slot(), methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
@@ -36,5 +36,5 @@ class InvokeDynamicInst(
     }
 
     override fun clone(ctx: UsageContext): Instruction =
-        InvokeDynamicInst(methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, args.toTypedArray(), ctx)
+        InvokeDynamicInst(methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, args, ctx)
 }

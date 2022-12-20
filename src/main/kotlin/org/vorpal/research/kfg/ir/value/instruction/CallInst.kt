@@ -25,34 +25,59 @@ class CallInst : Instruction {
             else -> ops.drop(1)
         }
 
-    internal constructor(opcode: CallOpcode, method: Method, klass: Class, args: Array<Value>, ctx: UsageContext)
-            : super(UndefinedName(), method.returnType, args, ctx) {
+    internal constructor(opcode: CallOpcode, method: Method, klass: Class, args: List<Value>, ctx: UsageContext)
+            : super(UndefinedName(), method.returnType, args.toMutableList(), ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
-    internal constructor(opcode: CallOpcode, method: Method, klass: Class, obj: Value, args: Array<Value>, ctx: UsageContext)
-            : super(UndefinedName(), method.returnType, arrayOf(obj).plus(args), ctx) {
+    internal constructor(
+        opcode: CallOpcode,
+        method: Method,
+        klass: Class,
+        obj: Value,
+        args: List<Value>,
+        ctx: UsageContext
+    ) : super(UndefinedName(), method.returnType, mutableListOf(obj).also { it.addAll(args) }, ctx) {
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = false
     }
 
-    internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, args: Array<Value>, ctx: UsageContext)
-            : super(name, method.returnType, args, ctx) {
-        ktassert((method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
+    internal constructor(
+        opcode: CallOpcode,
+        name: Name,
+        method: Method,
+        klass: Class,
+        args: List<Value>,
+        ctx: UsageContext
+    ) : super(name, method.returnType, args.toMutableList(), ctx) {
+        ktassert(
+            (method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType,
+            "named CallInst should not have type `VoidType`"
+        )
         this.opcode = opcode
         this.method = method
         this.klass = klass
         this.isStatic = true
     }
 
-    internal constructor(opcode: CallOpcode, name: Name, method: Method, klass: Class, obj: Value, args: Array<Value>, ctx: UsageContext)
-            : super(name, method.returnType, arrayOf(obj).plus(args), ctx) {
-        ktassert((method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType, "named CallInst should not have type `VoidType`")
+    internal constructor(
+        opcode: CallOpcode,
+        name: Name,
+        method: Method,
+        klass: Class,
+        obj: Value,
+        args: List<Value>,
+        ctx: UsageContext
+    ) : super(name, method.returnType, mutableListOf(obj).also { it.addAll(args) }, ctx) {
+        ktassert(
+            (method.returnType is VoidType && name is UndefinedName) || method.returnType !is VoidType,
+            "named CallInst should not have type `VoidType`"
+        )
         this.opcode = opcode
         this.method = method
         this.klass = klass
@@ -73,7 +98,7 @@ class CallInst : Instruction {
     }
 
     override fun clone(ctx: UsageContext): Instruction = when {
-        isStatic -> CallInst(opcode, name.clone(), method, klass, args.toTypedArray(), ctx)
-        else -> CallInst(opcode, name.clone(), method, klass, callee, args.toTypedArray(), ctx)
+        isStatic -> CallInst(opcode, name.clone(), method, klass, args, ctx)
+        else -> CallInst(opcode, name.clone(), method, klass, callee, args, ctx)
     }
 }

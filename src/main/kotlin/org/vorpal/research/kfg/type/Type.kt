@@ -2,39 +2,43 @@ package org.vorpal.research.kfg.type
 
 import org.vorpal.research.kfg.Package
 
-interface Type {
+abstract class Type {
     companion object {
         const val WORD = 32
         const val DWORD = 64
     }
 
-    val name: String
+    abstract val name: String
 
-    val asmDesc: String
+    abstract val asmDesc: String
 
-    val isPrimary: Boolean
+    abstract val isPrimitive: Boolean
 
-    val isDWord
+    open val isDWord
         get() = false
 
-    val isVoid
+    open val isVoid
         get() = false
 
-    val isIntegral
+    open val isInteger
         get() = false
 
-    val isReal
+    open val isReal
         get() = false
 
-    val isReference
+    open val isReference
         get() = false
 
     val canonicalDesc
         get() = asmDesc.replace(Package.SEPARATOR, Package.CANONICAL_SEPARATOR)
 
-    val bitSize: Int
+    abstract val bitSize: Int
 
-    val isConcrete: Boolean
-    fun isSubtypeOf(other: Type): Boolean
+    abstract val isConcrete: Boolean
+    abstract fun isSubtypeOf(other: Type): Boolean
     fun isSupertypeOf(other: Type): Boolean = other.isSubtypeOf(this)
+
+    val asArray: ArrayType by lazy {
+        ArrayType(this)
+    }
 }

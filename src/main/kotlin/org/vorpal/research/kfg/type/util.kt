@@ -11,7 +11,7 @@ val FrameNode.frameType get() = FrameNodeHelper.getFrameType(this)
 
 val Type.internalDesc: String
     get() = when {
-        this.isPrimary -> this.asmDesc
+        this.isPrimitive -> this.asmDesc
         this is ClassType -> this.klass.fullName
         this is ArrayType -> "[${(component as? ClassType)?.asmDesc ?: component.internalDesc}"
         else -> throw InvalidStateException("Unknown type ${this.name}")
@@ -26,7 +26,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         }
     }
     types.size == 1 -> types.first()
-    types.all { it is Integral } -> types.map { it as Integral }.maxByOrNull { it.width }
+    types.all { it is Integer } -> types.map { it as Integer }.maxByOrNull { it.width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
         var result = tf.objectType

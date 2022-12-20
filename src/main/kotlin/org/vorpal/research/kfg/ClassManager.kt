@@ -105,7 +105,6 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
 
     private val classes = hashMapOf<String, Class>()
     private val outerClasses = hashMapOf<String, Class>()
-    private val class2container = hashMapOf<Class, Container>()
     private val container2class = hashMapOf<Container, MutableSet<Class>>()
 
     val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
@@ -125,7 +124,6 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
             classNodes.forEach { (name, cn) ->
                 val klass = ConcreteClass(this, cn)
                 classes[name] = klass
-                class2container[klass] = container
                 container2class.getOrPut(container, ::mutableSetOf).add(klass)
             }
         }
@@ -168,7 +166,6 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     ): Class {
         val klass = ConcreteClass(this, pkg, name, modifiers)
         classes[klass.fullName] = klass
-        class2container[klass] = container
         container2class.getOrPut(container, ::mutableSetOf).add(klass)
         return klass
     }

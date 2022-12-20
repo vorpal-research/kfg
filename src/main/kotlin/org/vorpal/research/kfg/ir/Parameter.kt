@@ -57,7 +57,7 @@ data class MethodParameterAnnotation(
     companion object {
         fun get(annotationNode: AnnotationNode, cm: ClassManager): MethodParameterAnnotation {
             val fullName = getAnnotationFullName(annotationNode.desc)
-            val type = cm[fullName].toType()
+            val type = cm[fullName].asType
 
             val keys = annotationNode.values.orEmpty()
                 .filterIndexed { index, _ -> index.mod(2) == 0 }

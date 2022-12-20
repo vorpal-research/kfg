@@ -13,9 +13,15 @@ class TableSwitchInst internal constructor(
     min: Value,
     max: Value,
     default: BasicBlock,
-    branches: Array<BasicBlock>,
+    branches: List<BasicBlock>,
     ctx: UsageContext
-) : TerminateInst(UndefinedName(), type, arrayOf(index, min, max), arrayOf(default, *branches), ctx) {
+) : TerminateInst(
+    UndefinedName(),
+    type,
+    mutableListOf(index, min, max),
+    mutableListOf(default).also { it.addAll(branches) },
+    ctx
+) {
 
     val index: Value
         get() = ops[0]
@@ -41,5 +47,5 @@ class TableSwitchInst internal constructor(
     }
 
     override fun clone(ctx: UsageContext): Instruction =
-        TableSwitchInst(type, index, min, max, default, branches.toTypedArray(), ctx)
+        TableSwitchInst(type, index, min, max, default, branches, ctx)
 }

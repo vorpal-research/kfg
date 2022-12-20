@@ -5,8 +5,14 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
-class CmpInst internal constructor(name: Name, type: Type, val opcode: CmpOpcode, lhv: Value, rhv: Value, ctx: UsageContext)
-    : Instruction(name, type, arrayOf(lhv, rhv), ctx) {
+class CmpInst internal constructor(
+    name: Name,
+    type: Type,
+    val opcode: CmpOpcode,
+    lhv: Value,
+    rhv: Value,
+    ctx: UsageContext
+) : Instruction(name, type, mutableListOf(lhv, rhv), ctx) {
 
     val lhv: Value
         get() = ops[0]

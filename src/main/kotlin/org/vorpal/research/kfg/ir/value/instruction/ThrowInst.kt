@@ -6,7 +6,7 @@ import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
 class ThrowInst internal constructor(type: Type, exc: Value, ctx: UsageContext) :
-    TerminateInst(UndefinedName(), type, arrayOf(exc), arrayOf(), ctx) {
+    TerminateInst(UndefinedName(), type, mutableListOf(exc), mutableListOf(), ctx) {
 
     val throwable: Value
         get() = ops[0]

@@ -1,15 +1,19 @@
 package org.vorpal.research.kfg.type
 
-import org.vorpal.research.kthelper.defaultHashCode
+import org.vorpal.research.kthelper.toInt
 
-sealed class Integral : PrimaryType {
-    override val bitSize get() = Type.WORD
+sealed class PrimitiveType : Type() {
+    override val isConcrete get() = true
+}
+
+sealed class Integer : PrimitiveType() {
+    override val bitSize get() = WORD
 
     abstract val width: Int
     abstract val signed: Boolean
 
-    override val isPrimary get() = true
-    override val isIntegral get() = true
+    override val isPrimitive get() = true
+    override val isInteger get() = true
 
     open val isByte get() = false
     open val isShort get() = false
@@ -18,11 +22,11 @@ sealed class Integral : PrimaryType {
     open val isChar get() = false
 
     override fun toString() = name
-    override fun hashCode() = defaultHashCode(width, signed)
+    override fun hashCode() = width * signed.toInt()
     override fun equals(other: Any?) = this === other
 }
 
-object BoolType : Integral() {
+object BoolType : Integer() {
     override val name = "bool"
     override val width = 32
     override val signed = false
@@ -31,7 +35,7 @@ object BoolType : Integral() {
     override fun isSubtypeOf(other: Type) = other is BoolType
 }
 
-object ByteType : Integral() {
+object ByteType : Integer() {
     override val name = "byte"
     override val width = 8
     override val signed = true
@@ -45,7 +49,7 @@ object ByteType : Integral() {
     }
 }
 
-object ShortType : Integral() {
+object ShortType : Integer() {
     override val name = "short"
     override val width = 16
     override val signed = true
@@ -59,7 +63,7 @@ object ShortType : Integral() {
     }
 }
 
-object IntType : Integral() {
+object IntType : Integer() {
     override val name = "int"
     override val width = 32
     override val signed = true
@@ -73,8 +77,8 @@ object IntType : Integral() {
     }
 }
 
-object LongType : Integral() {
-    override val bitSize = Type.DWORD
+object LongType : Integer() {
+    override val bitSize = DWORD
     override val name = "long"
     override val width = 64
     override val signed = true
@@ -89,7 +93,7 @@ object LongType : Integral() {
     }
 }
 
-object CharType : Integral() {
+object CharType : Integer() {
     override val name = "char"
     override val width = 16
     override val signed = false
@@ -99,6 +103,42 @@ object CharType : Integral() {
     override fun isSubtypeOf(other: Type) = when (other) {
         is CharType -> true
         is IntType, is LongType, is Real -> true
+        else -> false
+    }
+}
+
+sealed class Real : PrimitiveType() {
+    override val isPrimitive get() = true
+    override val isReal get() = true
+
+    override fun toString() = name
+    override fun hashCode() = name.hashCode()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return this.javaClass == other?.javaClass
+    }
+}
+
+object FloatType : Real() {
+    override val bitSize = WORD
+    override val name = "float"
+    override val asmDesc = "F"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is FloatType -> true
+        is DoubleType -> true
+        else -> false
+    }
+}
+
+object DoubleType : Real() {
+    override val bitSize = DWORD
+    override val name = "double"
+    override val isDWord = true
+    override val asmDesc = "D"
+
+    override fun isSubtypeOf(other: Type) = when (other) {
+        is DoubleType -> true
         else -> false
     }
 }

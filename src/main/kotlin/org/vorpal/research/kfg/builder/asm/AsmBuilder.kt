@@ -33,7 +33,7 @@ private val Type.fullInt
 private val Type.shortInt
     get() = when (this) {
         is LongType -> 1
-        is Integral -> 0
+        is Integer -> 0
         is FloatType -> 2
         is DoubleType -> 3
         is Reference -> 4
@@ -56,7 +56,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
 
     init {
         if (!method.isStatic) {
-            val instance = values.getThis(method.klass.toType())
+            val instance = values.getThis(method.klass.asType)
             locals[instance] = instance.local
         }
         for ((index, type) in method.argTypes.withIndex()) {
@@ -246,7 +246,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val throwEx = {
             throw InvalidOperandException("Invalid cast from ${originalType.name} to ${targetType.name}")
         }
-        val insn = if (originalType.isPrimary && targetType.isPrimary) {
+        val insn = if (originalType.isPrimitive && targetType.isPrimitive) {
             val opcode = when (originalType) {
                 is LongType -> when (targetType) {
                     is IntType -> L2I
@@ -254,7 +254,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                     is DoubleType -> L2D
                     else -> throwEx()
                 }
-                is Integral -> when (targetType) {
+                is Integer -> when (targetType) {
                     is LongType -> I2L
                     is FloatType -> I2F
                     is DoubleType -> I2D
@@ -310,7 +310,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val component = inst.component
         val insn = when {
             inst.numDimensions > 1 -> MultiANewArrayInsnNode(inst.type.asmDesc, inst.numDimensions)
-            component.isPrimary -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
+            component.isPrimitive -> IntInsnNode(NEWARRAY, primaryTypeToInt(component))
             else -> TypeInsnNode(ANEWARRAY, component.internalDesc)
         }
         val operands = inst.operands

@@ -5,8 +5,11 @@ import org.vorpal.research.kfg.ir.value.UndefinedName
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.type.Type
 
-class JumpInst internal constructor(type: Type, successor: BasicBlock, ctx: UsageContext) :
-    TerminateInst(UndefinedName(), type, arrayOf(), arrayOf(successor), ctx) {
+class JumpInst internal constructor(
+    type: Type,
+    successor: BasicBlock,
+    ctx: UsageContext
+) : TerminateInst(UndefinedName(), type, mutableListOf(), mutableListOf(successor), ctx) {
 
     val successor: BasicBlock
         get() = succs[0]

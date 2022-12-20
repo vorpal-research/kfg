@@ -7,37 +7,34 @@ import org.vorpal.research.kthelper.assert.unreachable
 import java.lang.Class as JClass
 
 class TypeFactory internal constructor(val cm: ClassManager) {
-    private val klassTypeHash = mutableMapOf<Class, Type>()
-    private val arrayTypeHash = mutableMapOf<Type, Type>()
-
     val voidType: Type
         get() = VoidType
 
-    val boolType: PrimaryType
+    val boolType: PrimitiveType
         get() = BoolType
 
-    val byteType: PrimaryType
+    val byteType: PrimitiveType
         get() = ByteType
 
-    val shortType: PrimaryType
+    val shortType: PrimitiveType
         get() = ShortType
 
-    val intType: PrimaryType
+    val intType: PrimitiveType
         get() = IntType
 
-    val longType: PrimaryType
+    val longType: PrimitiveType
         get() = LongType
 
-    val charType: PrimaryType
+    val charType: PrimitiveType
         get() = CharType
 
-    val floatType: PrimaryType
+    val floatType: PrimitiveType
         get() = FloatType
 
-    val doubleType: PrimaryType
+    val doubleType: PrimitiveType
         get() = DoubleType
 
-    val primaryTypes: Set<PrimaryType> by lazy {
+    val primitiveTypes: Set<PrimitiveType> by lazy {
         setOf(
             boolType,
             byteType,
@@ -50,17 +47,17 @@ class TypeFactory internal constructor(val cm: ClassManager) {
         )
     }
 
-    val primaryWrapperTypes: Set<Type>
-        get() = primaryTypes.map { getWrapper(it) }.toSet()
+    val primitiveWrapperTypes: Set<Type>
+        get() = primitiveTypes.map { getWrapper(it) }.toSet()
 
     val nullType: Type
         get() = NullType
 
-    fun getRefType(cname: Class): Type = klassTypeHash.getOrPut(cname) { ClassType(cname) }
+    fun getRefType(cname: Class): Type = cname.asType
     fun getRefType(cname: String): Type = getRefType(cm[cname])
-    fun getArrayType(component: Type): Type = arrayTypeHash.getOrPut(component) { ArrayType(component) }
+    fun getArrayType(component: Type): Type = component.asArray
 
-    fun getWrapper(type: PrimaryType): Type = when (type) {
+    fun getWrapper(type: PrimitiveType): Type = when (type) {
         is BoolType -> boolWrapper
         is ByteType -> byteWrapper
         is CharType -> charWrapper
@@ -69,10 +66,9 @@ class TypeFactory internal constructor(val cm: ClassManager) {
         is LongType -> longWrapper
         is FloatType -> floatWrapper
         is DoubleType -> doubleWrapper
-        else -> unreachable("Unknown primary type $type")
     }
 
-    fun getUnwrapped(type: Type): PrimaryType? = when (type) {
+    fun getUnwrapped(type: Type): PrimitiveType? = when (type) {
         boolWrapper -> boolType
         byteWrapper -> byteType
         charWrapper -> charType

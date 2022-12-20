@@ -544,7 +544,7 @@ class CfgBuilder(
             org.objectweb.asm.Type.LONG -> types.longType
             org.objectweb.asm.Type.DOUBLE -> types.doubleType
             org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
-            org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].toType()
+            org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].asType
             org.objectweb.asm.Type.METHOD -> MethodDescriptor(this.argumentTypes.map { it.asKfgType }.map { it as Type }, this.returnType.asKfgType as Type)
             else -> unreachable("Unknown type: $this")
         }
@@ -562,8 +562,8 @@ class CfgBuilder(
                 is AsmHandle -> it.asHandle
                 else -> unreachable("Unknown arg of bsm: $it")
             }
-        }.reversed().toTypedArray()
-        val args = desc.args.map { pop() }.reversed().toTypedArray()
+        }.reversed()
+        val args = desc.args.map { pop() }.reversed()
         val invokeDynamic = invokeDynamic(insn.name, desc, bsmMethod, bsmArgs, args)
         addInstruction(bb, invokeDynamic)
         push(invokeDynamic)
@@ -630,7 +630,7 @@ class CfgBuilder(
         val bb = nodeToBlock.getValue(insn)
         val index = pop()
         val default = nodeToBlock.getValue(insn.dflt)
-        val branches = insn.labels.map { nodeToBlock.getValue(it) }.toTypedArray()
+        val branches = insn.labels.map { nodeToBlock.getValue(it) }
         addInstruction(bb, index.tableSwitch(insn.min..insn.max, branches, default))
     }
 

@@ -11,13 +11,13 @@ class FieldStoreInst : Instruction {
     val isStatic: Boolean
 
     internal constructor(field: Field, value: Value, ctx: UsageContext)
-            : super(UndefinedName(), field.type, arrayOf(value), ctx) {
+            : super(UndefinedName(), field.type, mutableListOf(value), ctx) {
         this.field = field
         isStatic = true
     }
 
     internal constructor(owner: Value, field: Field, value: Value, ctx: UsageContext)
-            : super(UndefinedName(), field.type, arrayOf(owner, value), ctx) {
+            : super(UndefinedName(), field.type, mutableListOf(owner, value), ctx) {
         this.field = field
         isStatic = false
     }

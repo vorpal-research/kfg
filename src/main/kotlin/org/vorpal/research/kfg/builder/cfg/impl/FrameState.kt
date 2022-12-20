@@ -12,30 +12,30 @@ import org.vorpal.research.kfg.type.parseDesc
 import org.vorpal.research.kthelper.assert.unreachable
 import java.util.*
 
-private object TopType : Type {
+private object TopType : Type() {
     override val name: String
         get() = "TOP"
     override val asmDesc: String
         get() = "T"
-    override val isPrimary: Boolean
+    override val isPrimitive: Boolean
         get() = false
     override val bitSize: Int
-        get() = Type.WORD
+        get() = WORD
 
     override val isConcrete: Boolean
         get() = true
     override fun isSubtypeOf(other: Type) = false
 }
 
-private object UninitializedThisType : Type {
+private object UninitializedThisType : Type() {
     override val name: String
         get() = "this"
     override val asmDesc: String
         get() = "U"
-    override val isPrimary: Boolean
+    override val isPrimitive: Boolean
         get() = false
     override val bitSize: Int
-        get() = Type.WORD
+        get() = WORD
 
     override val isConcrete: Boolean
         get() = true

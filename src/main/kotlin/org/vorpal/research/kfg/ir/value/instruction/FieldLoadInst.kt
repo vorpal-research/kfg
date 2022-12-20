@@ -16,7 +16,7 @@ class FieldLoadInst : Instruction {
     val owner: Value
         get() = asserted(hasOwner) { ops[0] }
 
-    internal constructor(name: Name, field: Field, ctx: UsageContext) : super(name, field.type, arrayOf(), ctx) {
+    internal constructor(name: Name, field: Field, ctx: UsageContext) : super(name, field.type, mutableListOf(), ctx) {
         this.field = field
         isStatic = true
     }
@@ -24,7 +24,7 @@ class FieldLoadInst : Instruction {
     internal constructor(name: Name, owner: Value, field: Field, ctx: UsageContext) : super(
         name,
         field.type,
-        arrayOf(owner),
+        mutableListOf(owner),
         ctx
     ) {
         this.field = field

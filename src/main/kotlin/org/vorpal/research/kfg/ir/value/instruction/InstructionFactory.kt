@@ -14,18 +14,18 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         getNewArray(ctx, StringName(name), types.getArrayType(componentType), count)
 
     fun getNewArray(ctx: UsageContext, name: Name, componentType: Type, count: Value): Instruction =
-        NewArrayInst(name, types.getArrayType(componentType), arrayOf(count), ctx)
+        NewArrayInst(name, types.getArrayType(componentType), listOf(count), ctx)
 
     fun getNewArray(ctx: UsageContext, componentType: Type, count: Value): Instruction =
-        NewArrayInst(Slot(), types.getArrayType(componentType), arrayOf(count), ctx)
+        NewArrayInst(Slot(), types.getArrayType(componentType), listOf(count), ctx)
 
-    fun getNewArray(ctx: UsageContext, name: String, type: Type, dimensions: Array<Value>): Instruction =
+    fun getNewArray(ctx: UsageContext, name: String, type: Type, dimensions: List<Value>): Instruction =
         getNewArray(ctx, StringName(name), type, dimensions)
 
-    fun getNewArray(ctx: UsageContext, name: Name, type: Type, dimensions: Array<Value>): Instruction =
+    fun getNewArray(ctx: UsageContext, name: Name, type: Type, dimensions: List<Value>): Instruction =
         NewArrayInst(name, type, dimensions, ctx)
 
-    fun getNewArray(ctx: UsageContext, type: Type, dimensions: Array<Value>): Instruction =
+    fun getNewArray(ctx: UsageContext, type: Type, dimensions: List<Value>): Instruction =
         NewArrayInst(Slot(), type, dimensions, ctx)
 
     fun getArrayLoad(ctx: UsageContext, name: String, arrayRef: Value, index: Value): Instruction =
@@ -132,8 +132,10 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
     fun getBranch(ctx: UsageContext, cond: Value, trueSucc: BasicBlock, falseSucc: BasicBlock): Instruction =
         BranchInst(cond, types.voidType, trueSucc, falseSucc, ctx)
 
-    fun getSwitch(ctx: UsageContext, key: Value, default: BasicBlock, branches: Map<Value, BasicBlock>): Instruction =
-        SwitchInst(key, types.voidType, default, branches, ctx)
+    fun getSwitch(ctx: UsageContext, key: Value, default: BasicBlock, branches: Map<Value, BasicBlock>): Instruction {
+        val temp = branches.toList()
+        return SwitchInst(key, types.voidType, default, temp.map { it.first }, temp.map { it.second }, ctx)
+    }
 
     fun getTableSwitch(
         ctx: UsageContext,
@@ -141,25 +143,29 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         min: Value,
         max: Value,
         default: BasicBlock,
-        branches: Array<BasicBlock>
+        branches: List<BasicBlock>
     ): Instruction =
         TableSwitchInst(types.voidType, index, min, max, default, branches, ctx)
 
     fun getPhi(ctx: UsageContext, name: String, type: Type, incomings: Map<BasicBlock, Value>): Instruction =
         getPhi(ctx, StringName(name), type, incomings)
 
-    fun getPhi(ctx: UsageContext, name: Name, type: Type, incomings: Map<BasicBlock, Value>): Instruction =
-        PhiInst(name, type, incomings, ctx)
+    fun getPhi(ctx: UsageContext, name: Name, type: Type, incomings: Map<BasicBlock, Value>): Instruction {
+        val temp = incomings.toList()
+        return PhiInst(name, type, temp.map { it.first }, temp.map { it.second }, ctx)
+    }
 
-    fun getPhi(ctx: UsageContext, type: Type, incomings: Map<BasicBlock, Value>): Instruction =
-        PhiInst(Slot(), type, incomings, ctx)
+    fun getPhi(ctx: UsageContext, type: Type, incomings: Map<BasicBlock, Value>): Instruction {
+        val temp = incomings.toList()
+        return PhiInst(Slot(), type, temp.map { it.first }, temp.map { it.second }, ctx)
+    }
 
     fun getCall(
         ctx: UsageContext,
         opcode: CallOpcode,
         method: Method,
         `class`: Class,
-        args: Array<Value>,
+        args: List<Value>,
         isNamed: Boolean
     ) =
         when {
@@ -173,7 +179,7 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         method: Method,
         `class`: Class,
         obj: Value,
-        args: Array<Value>,
+        args: List<Value>,
         isNamed: Boolean
     ) =
         when {
@@ -187,11 +193,10 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         name: String,
         method: Method,
         `class`: Class,
-        args: Array<Value>
-    ) =
-        getCall(ctx, opcode, StringName(name), method, `class`, args)
+        args: List<Value>
+    ) = getCall(ctx, opcode, StringName(name), method, `class`, args)
 
-    fun getCall(ctx: UsageContext, opcode: CallOpcode, name: Name, method: Method, `class`: Class, args: Array<Value>) =
+    fun getCall(ctx: UsageContext, opcode: CallOpcode, name: Name, method: Method, `class`: Class, args: List<Value>) =
         CallInst(opcode, name, method, `class`, args, ctx)
 
     fun getCall(
@@ -201,9 +206,8 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         method: Method,
         `class`: Class,
         obj: Value,
-        args: Array<Value>
-    ) =
-        getCall(ctx, opcode, StringName(name), method, `class`, obj, args)
+        args: List<Value>
+    ) = getCall(ctx, opcode, StringName(name), method, `class`, obj, args)
 
     fun getCall(
         ctx: UsageContext,
@@ -212,9 +216,8 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         method: Method,
         `class`: Class,
         obj: Value,
-        args: Array<Value>
-    ) =
-        CallInst(opcode, name, method, `class`, obj, args, ctx)
+        args: List<Value>
+    ) = CallInst(opcode, name, method, `class`, obj, args, ctx)
 
 
     fun getInvokeDynamic(
@@ -223,8 +226,8 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
     ) = InvokeDynamicInst(name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     fun getInvokeDynamic(
@@ -233,17 +236,25 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
-    ) = getInvokeDynamic(ctx, StringName(name), methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
+    ) = getInvokeDynamic(
+        ctx,
+        StringName(name),
+        methodName,
+        methodDescriptor,
+        bootstrapMethod,
+        bootstrapMethodArgs,
+        operands
+    )
 
     fun getInvokeDynamic(
         ctx: UsageContext,
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
     ) = InvokeDynamicInst(methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
     fun getCatch(ctx: UsageContext, name: String, type: Type): Instruction = getCatch(ctx, StringName(name), type)
@@ -256,9 +267,10 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
 
     fun getUnreachable(ctx: UsageContext): Instruction = UnreachableInst(types.voidType, ctx)
 
-    fun getUnknownValueInst(ctx: UsageContext, name: String, type : Type) =
+    fun getUnknownValueInst(ctx: UsageContext, name: String, type: Type) =
         UnknownValueInst(StringName(name), type, ctx)
-    fun getUnknownValueInst(ctx: UsageContext, name: Name, type : Type) =
+
+    fun getUnknownValueInst(ctx: UsageContext, name: Name, type: Type) =
         UnknownValueInst(name, type, ctx)
 
 }
@@ -278,46 +290,42 @@ interface InstructionBuilder {
     val Number.asValue get() = values.getNumber(this)
     val String.asValue get() = values.getString(this)
 
-    val Type.asArray get() = types.getArrayType(this)
-
     /**
      * new array wrappers
      */
-    fun Type.newArray(name: String, length: Int) = this.newArray(name, values.getInt(length))
-    fun Type.newArray(name: Name, length: Int) = this.newArray(name, values.getInt(length))
+    fun Type.newArray(name: String, length: Int): Instruction = this.newArray(name, values.getInt(length))
+    fun Type.newArray(name: Name, length: Int): Instruction = this.newArray(name, values.getInt(length))
 
-    fun Type.newArray(length: Int) = instructions.getNewArray(ctx, this, values.getInt(length))
-    fun Type.newArray(length: Value) = instructions.getNewArray(ctx, this, length)
+    fun Type.newArray(length: Int): Instruction = instructions.getNewArray(ctx, this, values.getInt(length))
+    fun Type.newArray(length: Value): Instruction = instructions.getNewArray(ctx, this, length)
 
-    fun Type.newArray(name: String, length: Value) =
+    fun Type.newArray(name: String, length: Value): Instruction =
         instructions.getNewArray(ctx, name, this, length)
 
-    fun Type.newArray(name: Name, length: Value) =
+    fun Type.newArray(name: Name, length: Value): Instruction =
         instructions.getNewArray(ctx, name, this, length)
 
 
-    fun Type.newArray(name: String, dimensions: Array<Int>) =
-        this.newArray(name, dimensions.map { values.getInt(it) }.toTypedArray())
+    fun Type.newConstArray(name: String, dimensions: List<Int>): Instruction =
+        this.newArray(name, dimensions.map { values.getInt(it) })
 
-    fun Type.newArray(name: Name, dimensions: Array<Int>) =
-        this.newArray(name, dimensions.map { values.getInt(it) }.toTypedArray())
+    fun Type.newConstArray(name: Name, dimensions: List<Int>): Instruction =
+        this.newArray(name, dimensions.map { values.getInt(it) })
 
-    fun Type.newArray(dimensions: Array<Int>) =
-        this.newArray(dimensions.map { values.getInt(it) }.toTypedArray())
+    fun Type.newConstArray(dimensions: List<Int>): Instruction =
+        this.newArray(dimensions.map { values.getInt(it) })
 
-    fun Type.newArray(name: String, dimensions: List<Value>) = newArray(name, dimensions.toTypedArray())
-    fun Type.newArray(name: String, dimensions: Array<Value>) =
+    fun Type.newArray(name: String, dimensions: List<Value>): Instruction =
         instructions.getNewArray(ctx, name, this, dimensions)
 
-    fun Type.newArray(name: Name, dimensions: List<Value>) = newArray(name, dimensions.toTypedArray())
-    fun Type.newArray(name: Name, dimensions: Array<Value>) =
+    fun Type.newArray(name: Name, dimensions: List<Value>): Instruction =
         instructions.getNewArray(ctx, name, this, dimensions)
 
-    fun Type.newArray(dimensions: Array<Value>) =
+    fun Type.newArray(dimensions: List<Value>): Instruction =
         instructions.getNewArray(ctx, this, dimensions)
 
-    fun Type.newArray(dimensions: List<Value>) =
-        newArray(dimensions.toTypedArray())
+    fun Type.newArray(dimensions: Array<Value>): Instruction =
+        newArray(dimensions.toList())
 
     /**
      * array load wrappers
@@ -484,9 +492,9 @@ interface InstructionBuilder {
     fun Type.new(name: String) = instructions.getNew(ctx, name, this)
     fun Type.new(name: Name) = instructions.getNew(ctx, name, this)
 
-    fun Class.new() = toType().new()
-    fun Class.new(name: String) = toType().new(name)
-    fun Class.new(name: Name) = toType().new(name)
+    fun Class.new() = asType.new()
+    fun Class.new(name: String) = asType.new(name)
+    fun Class.new(name: Name) = asType.new(name)
 
     /**
      * unary operator wrappers
@@ -517,13 +525,13 @@ interface InstructionBuilder {
     fun Value.switch(branches: Map<Value, BasicBlock>, default: BasicBlock) =
         instructions.getSwitch(ctx, this, default, branches)
 
-    fun Int.tableSwitch(range: IntRange, branches: Array<BasicBlock>, default: BasicBlock) =
+    fun Int.tableSwitch(range: IntRange, branches: List<BasicBlock>, default: BasicBlock) =
         values.getInt(this).tableSwitch(range, branches, default)
 
-    fun Value.tableSwitch(range: IntRange, branches: Array<BasicBlock>, default: BasicBlock) =
+    fun Value.tableSwitch(range: IntRange, branches: List<BasicBlock>, default: BasicBlock) =
         this.tableSwitch(values.getInt(range.first), values.getInt(range.last), branches, default)
 
-    fun Value.tableSwitch(min: Value, max: Value, branches: Array<BasicBlock>, default: BasicBlock) =
+    fun Value.tableSwitch(min: Value, max: Value, branches: List<BasicBlock>, default: BasicBlock) =
         instructions.getTableSwitch(ctx, this, min, max, default, branches)
 
     /**
@@ -535,110 +543,96 @@ interface InstructionBuilder {
 
     fun phi(name: Name, type: Type, incomings: Map<BasicBlock, Value>) = instructions.getPhi(ctx, name, type, incomings)
 
-    fun Method.call(klass: Class, opcode: CallOpcode, args: Array<Value>) =
+    fun Method.call(klass: Class, opcode: CallOpcode, args: List<Value>) =
         instructions.getCall(ctx, opcode, this, klass, args, !returnType.isVoid)
 
-    fun Method.call(klass: Class, name: String, opcode: CallOpcode, args: Array<Value>) =
+    fun Method.call(klass: Class, name: String, opcode: CallOpcode, args: List<Value>) =
         instructions.getCall(ctx, opcode, name, this, klass, args)
 
-    fun Method.call(klass: Class, name: Name, opcode: CallOpcode, args: Array<Value>) =
+    fun Method.call(klass: Class, name: Name, opcode: CallOpcode, args: List<Value>) =
         instructions.getCall(ctx, opcode, name, this, klass, args)
 
-    fun Method.call(klass: Class, opcode: CallOpcode, instance: Value, args: Array<Value>) =
+    fun Method.call(klass: Class, opcode: CallOpcode, instance: Value, args: List<Value>) =
         instructions.getCall(ctx, opcode, this, klass, instance, args, !returnType.isVoid)
 
-    fun Method.call(klass: Class, name: String, opcode: CallOpcode, instance: Value, args: Array<Value>) =
+    fun Method.call(klass: Class, name: String, opcode: CallOpcode, instance: Value, args: List<Value>) =
         instructions.getCall(ctx, opcode, name, this, klass, instance, args)
 
-    fun Method.call(klass: Class, name: Name, opcode: CallOpcode, instance: Value, args: Array<Value>) =
+    fun Method.call(klass: Class, name: Name, opcode: CallOpcode, instance: Value, args: List<Value>) =
         instructions.getCall(ctx, opcode, name, this, klass, instance, args)
 
-    fun Method.staticCall(klass: Class, args: Array<Value>) = call(klass, CallOpcode.STATIC, args)
-    fun Method.staticCall(klass: Class, args: List<Value>) = staticCall(klass, args.toTypedArray())
-
-    fun Method.virtualCall(klass: Class, instance: Value, args: Array<Value>) =
-        call(klass, CallOpcode.VIRTUAL, instance, args)
+    fun Method.staticCall(klass: Class, args: List<Value>) = call(klass, CallOpcode.STATIC, args)
 
     fun Method.virtualCall(klass: Class, instance: Value, args: List<Value>) =
-        virtualCall(klass, instance, args.toTypedArray())
-
-    fun Method.interfaceCall(klass: Class, instance: Value, args: Array<Value>) =
-        call(klass, CallOpcode.INTERFACE, instance, args)
+        call(klass, CallOpcode.VIRTUAL, instance, args)
 
     fun Method.interfaceCall(klass: Class, instance: Value, args: List<Value>) =
-        interfaceCall(klass, instance, args.toTypedArray())
-
-    fun Method.specialCall(klass: Class, instance: Value, args: Array<Value>) =
-        call(klass, CallOpcode.SPECIAL, instance, args)
+        call(klass, CallOpcode.INTERFACE, instance, args)
 
     fun Method.specialCall(klass: Class, instance: Value, args: List<Value>) =
-        specialCall(klass, instance, args.toTypedArray())
+        call(klass, CallOpcode.SPECIAL, instance, args)
 
-    fun Method.staticCall(klass: Class, name: String, args: Array<Value>) = call(klass, name, CallOpcode.STATIC, args)
-    fun Method.staticCall(klass: Class, name: String, args: List<Value>) = staticCall(klass, name, args.toTypedArray())
-
-    fun Method.virtualCall(klass: Class, name: String, instance: Value, args: Array<Value>) =
-        call(klass, name, CallOpcode.VIRTUAL, instance, args)
+    fun Method.staticCall(klass: Class, name: String, args: List<Value>) = call(klass, name, CallOpcode.STATIC, args)
 
     fun Method.virtualCall(klass: Class, name: String, instance: Value, args: List<Value>) =
-        virtualCall(klass, name, instance, args.toTypedArray())
-
-    fun Method.interfaceCall(klass: Class, name: String, instance: Value, args: Array<Value>) =
-        call(klass, name, CallOpcode.INTERFACE, instance, args)
-
-    fun Method.interfaceCall(klass: Class, name: String, instance: Value, args: List<Value>) =
-        interfaceCall(klass, name, instance, args.toTypedArray())
-
-    fun Method.specialCall(klass: Class, name: String, instance: Value, args: Array<Value>) =
-        call(klass, name, CallOpcode.SPECIAL, instance, args)
-
-    fun Method.specialCall(klass: Class, name: String, instance: Value, args: List<Value>) =
-        specialCall(klass, name, instance, args.toTypedArray())
-
-    fun Method.staticCall(klass: Class, name: Name, args: Array<Value>) = call(klass, name, CallOpcode.STATIC, args)
-    fun Method.staticCall(klass: Class, name: Name, args: List<Value>) = staticCall(klass, name, args.toTypedArray())
-    fun Method.virtualCall(klass: Class, name: Name, instance: Value, args: Array<Value>) =
         call(klass, name, CallOpcode.VIRTUAL, instance, args)
 
-    fun Method.virtualCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
-        virtualCall(klass, name, instance, args.toTypedArray())
-
-    fun Method.interfaceCall(klass: Class, name: Name, instance: Value, args: Array<Value>) =
+    fun Method.interfaceCall(klass: Class, name: String, instance: Value, args: List<Value>) =
         call(klass, name, CallOpcode.INTERFACE, instance, args)
 
-    fun Method.interfaceCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
-        interfaceCall(klass, name, instance, args.toTypedArray())
-
-    fun Method.specialCall(klass: Class, name: Name, instance: Value, args: Array<Value>) =
+    fun Method.specialCall(klass: Class, name: String, instance: Value, args: List<Value>) =
         call(klass, name, CallOpcode.SPECIAL, instance, args)
 
+    fun Method.staticCall(klass: Class, name: Name, args: List<Value>) = call(klass, name, CallOpcode.STATIC, args)
+    fun Method.virtualCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
+        call(klass, name, CallOpcode.VIRTUAL, instance, args)
+
+    fun Method.interfaceCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
+        call(klass, name, CallOpcode.INTERFACE, instance, args)
+
     fun Method.specialCall(klass: Class, name: Name, instance: Value, args: List<Value>) =
-        specialCall(klass, name, instance, args.toTypedArray())
+        call(klass, name, CallOpcode.SPECIAL, instance, args)
 
     fun invokeDynamic(
         name: Name,
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
-    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
+    ) = instructions.getInvokeDynamic(
+        ctx,
+        name,
+        methodName,
+        methodDescriptor,
+        bootstrapMethod,
+        bootstrapMethodArgs,
+        operands
+    )
 
     fun invokeDynamic(
         name: String,
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
-    ) = instructions.getInvokeDynamic(ctx, name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
+    ) = instructions.getInvokeDynamic(
+        ctx,
+        name,
+        methodName,
+        methodDescriptor,
+        bootstrapMethod,
+        bootstrapMethodArgs,
+        operands
+    )
 
     fun invokeDynamic(
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: Array<Any>,
-        operands: Array<Value>
+        bootstrapMethodArgs: List<Any>,
+        operands: List<Value>
     ) = instructions.getInvokeDynamic(ctx, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 
     /**
@@ -664,7 +658,7 @@ interface InstructionBuilder {
     /**
      * unknown value wrapper
      */
-    fun unknownValue(name : Name, type : Type) = instructions.getUnknownValueInst(ctx, name, type)
+    fun unknownValue(name: Name, type: Type) = instructions.getUnknownValueInst(ctx, name, type)
 }
 
 class InstructionBuilderImpl(
@@ -680,5 +674,9 @@ class InstructionListBuilderImpl(
 fun inst(cm: ClassManager, ctx: UsageContext, body: InstructionBuilder.() -> Instruction): Instruction =
     InstructionBuilderImpl(cm, ctx).body()
 
-fun insts(cm: ClassManager, ctx: UsageContext, body: InstructionListBuilderImpl.() -> List<Instruction>): List<Instruction> =
+fun insts(
+    cm: ClassManager,
+    ctx: UsageContext,
+    body: InstructionListBuilderImpl.() -> List<Instruction>
+): List<Instruction> =
     InstructionListBuilderImpl(cm, ctx).body()

@@ -5,6 +5,7 @@ import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.InvalidStateException
 import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnknownInstanceException
+import org.vorpal.research.kfg.type.ClassType
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kthelper.assert.ktassert
@@ -119,7 +120,7 @@ abstract class Class : Node {
 
     val allAncestors get() = listOfNotNull(superClass) + interfaces
 
-    fun toType() = cm.type.getRefType(this)
+    val asType: ClassType by lazy { ClassType(this) }
 
     abstract fun isAncestorOf(other: Class): Boolean
     fun isInheritorOf(other: Class) = other.isAncestorOf(this)

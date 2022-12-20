@@ -4,9 +4,14 @@ import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.type.Type
 
-class PhiInst internal constructor(name: Name, type: Type, incomings: Map<BasicBlock, Value>, ctx: UsageContext) :
-    Instruction(name, type, incomings.values.toTypedArray(), ctx), BlockUser {
-    private val preds = incomings.keys.toTypedArray()
+class PhiInst internal constructor(
+    name: Name,
+    type: Type,
+    predecessors: List<BasicBlock>,
+    operands: List<Value>,
+    ctx: UsageContext
+) : Instruction(name, type, operands.toMutableList(), ctx), BlockUser {
+    private val preds = predecessors.toMutableList()
 
     init {
         with(ctx) {
@@ -15,24 +20,24 @@ class PhiInst internal constructor(name: Name, type: Type, incomings: Map<BasicB
     }
 
     val predecessors: List<BasicBlock>
-        get() = preds.toList()
+        get() = preds
 
     val incomingValues: List<Value>
-        get() = ops.toList()
+        get() = ops
 
     val incomings: Map<BasicBlock, Value>
         get() = predecessors.zip(ops).toMap()
 
     override fun print() = buildString {
         append("$name = phi {")
-        append(incomings.toList()
+        append(predecessors.indices
             .joinToString(separator = "; ") {
-                "${it.first.name} -> ${it.second}"
+                "${predecessors[it].name} -> ${incomingValues[it]}"
             })
         append("}")
     }
 
-    override fun clone(ctx: UsageContext): Instruction = PhiInst(name.clone(), type, incomings, ctx)
+    override fun clone(ctx: UsageContext): Instruction = PhiInst(name.clone(), type, predecessors, operands, ctx)
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
         (0..preds.lastIndex)

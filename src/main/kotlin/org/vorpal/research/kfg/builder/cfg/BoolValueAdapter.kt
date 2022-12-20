@@ -6,12 +6,15 @@ import org.vorpal.research.kfg.ir.value.ValueFactory
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.BoolType
-import org.vorpal.research.kfg.type.Integral
+import org.vorpal.research.kfg.type.Integer
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 
-class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
+class BoolValueAdapter(
+    override val cm: ClassManager,
+    override val ctx: UsageContext
+) : MethodVisitor, InstructionBuilder {
     override val instructions: InstructionFactory
         get() = cm.instruction
     override val types: TypeFactory
@@ -25,9 +28,9 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
         val bb = inst.parent
 
         val arrayType = inst.arrayRef.type as? ArrayType
-                ?: unreachable("Non-array type of array store reference")
+            ?: unreachable("Non-array type of array store reference")
 
-        if (arrayType.component is BoolType && inst.value.type is Integral) {
+        if (arrayType.component is BoolType && inst.value.type is Integer) {
             val cast = inst.value `as` types.boolType
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(ctx, from = inst.value, to = cast)
@@ -37,7 +40,7 @@ class BoolValueAdapter(override val cm: ClassManager, override val ctx: UsageCon
     override fun visitFieldStoreInst(inst: FieldStoreInst) {
         val bb = inst.parent
 
-        if (inst.type is BoolType && inst.value.type is Integral) {
+        if (inst.type is BoolType && inst.value.type is Integer) {
             val cast = inst.value `as` types.boolType
             bb.insertBefore(inst, cast)
             inst.replaceUsesOf(ctx, from = inst.value, to = cast)

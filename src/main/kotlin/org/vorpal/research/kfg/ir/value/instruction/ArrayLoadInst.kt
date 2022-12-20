@@ -11,7 +11,7 @@ class ArrayLoadInst internal constructor(
     arrayRef: Value,
     index: Value,
     ctx: UsageContext
-) : Instruction(name, type, arrayOf(arrayRef, index), ctx) {
+) : Instruction(name, type, mutableListOf(arrayRef, index), ctx) {
 
     val arrayRef: Value
         get() = ops[0]

@@ -13,7 +13,7 @@ class ArrayStoreInst internal constructor(
     index: Value,
     value: Value,
     ctx: UsageContext
-) :    Instruction(UndefinedName(), type, arrayOf(arrayRef, index, value), ctx) {
+) : Instruction(UndefinedName(), type, mutableListOf(arrayRef, index, value), ctx) {
 
     val arrayRef: Value
         get() = ops[0]

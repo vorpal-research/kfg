@@ -10,13 +10,14 @@ class SwitchInst internal constructor(
     key: Value,
     type: Type,
     default: BasicBlock,
-    branches: Map<Value, BasicBlock>,
+    operands: List<Value>,
+    predecessors: List<BasicBlock>,
     ctx: UsageContext
 ) : TerminateInst(
     UndefinedName(),
     type,
-    arrayOf(key, *branches.keys.toTypedArray()),
-    arrayOf(default, *branches.values.toTypedArray()),
+    mutableListOf(key).also { it.addAll(operands) },
+    mutableListOf(default).also { it.addAll(predecessors) },
     ctx
 ) {
 
@@ -37,5 +38,5 @@ class SwitchInst internal constructor(
         return sb.toString()
     }
 
-    override fun clone(ctx: UsageContext): Instruction = SwitchInst(key, type, default, branches, ctx)
+    override fun clone(ctx: UsageContext): Instruction = SwitchInst(key, type, default, operands, successors.drop(1), ctx)
 }

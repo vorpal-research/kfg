@@ -6,12 +6,19 @@ import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
 class ReturnInst : TerminateInst {
-    internal constructor(type: Type, ctx: UsageContext) : super(UndefinedName(), type, arrayOf(), arrayOf(), ctx)
+    internal constructor(type: Type, ctx: UsageContext) : super(
+        UndefinedName(),
+        type,
+        mutableListOf(),
+        mutableListOf(),
+        ctx
+    )
+
     internal constructor(retval: Value, ctx: UsageContext) : super(
         UndefinedName(),
         retval.type,
-        arrayOf(retval),
-        arrayOf(),
+        mutableListOf(retval),
+        mutableListOf(),
         ctx
     )
 

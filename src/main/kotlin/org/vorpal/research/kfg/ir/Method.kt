@@ -342,7 +342,14 @@ class Method : Node {
 
     override fun toString() = prototype
 
-    override fun hashCode() = defaultHashCode(name, klass, desc)
+//    override fun hashCode() = defaultHashCode(name, klass, desc)
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + klass.hashCode()
+        result = 31 * result + desc.hashCode()
+        return result
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

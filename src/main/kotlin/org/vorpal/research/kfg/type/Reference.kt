@@ -4,15 +4,15 @@ import org.vorpal.research.kfg.UnsupportedOperationException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
 
-interface Reference : Type {
+sealed class Reference : Type() {
     override val bitSize: Int
-        get() = Type.WORD
+        get() = WORD
 
-    override val isPrimary get() = false
+    override val isPrimitive get() = false
     override val isReference get() = true
 }
 
-open class ClassType(val klass: Class) : Reference {
+open class ClassType(val klass: Class) : Reference() {
     override val name = klass.fullName
 
     override fun toString() = name
@@ -34,7 +34,7 @@ open class ClassType(val klass: Class) : Reference {
     }
 }
 
-open class ArrayType(val component: Type) : Reference {
+open class ArrayType(val component: Type) : Reference() {
     override val name = "$component[]"
     override fun toString() = name
     override val asmDesc get() = "[${component.asmDesc}"
@@ -66,7 +66,7 @@ open class ArrayType(val component: Type) : Reference {
     }
 }
 
-object NullType : Reference {
+object NullType : Reference() {
     override val name = "null"
 
     override fun toString() = name

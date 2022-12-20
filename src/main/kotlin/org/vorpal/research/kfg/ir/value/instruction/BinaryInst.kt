@@ -10,7 +10,7 @@ class BinaryInst internal constructor(
     lhv: Value,
     rhv: Value,
     ctx: UsageContext
-) : Instruction(name, lhv.type, arrayOf(lhv, rhv), ctx) {
+) : Instruction(name, lhv.type, mutableListOf(lhv, rhv), ctx) {
 
     val lhv: Value
         get() = ops[0]

@@ -9,7 +9,7 @@ import org.vorpal.research.kthelper.assert.asserted
 abstract class Instruction internal constructor(
     name: Name,
     type: Type,
-    protected val ops: Array<Value>,
+    protected val ops: MutableList<Value>,
     ctx: UsageContext
 ) : Value(name, type), ValueUser, Iterable<Value> {
 
@@ -23,7 +23,7 @@ abstract class Instruction internal constructor(
     open val isTerminate = false
 
     val operands: List<Value>
-        get() = ops.toList()
+        get() = ops
 
     init {
         with(ctx) {
@@ -63,13 +63,13 @@ abstract class Instruction internal constructor(
 abstract class TerminateInst(
     name: Name,
     type: Type,
-    operands: Array<Value>,
-    protected val succs: Array<BasicBlock>,
+    operands: MutableList<Value>,
+    protected val succs: MutableList<BasicBlock>,
     ctx: UsageContext
 ) : Instruction(name, type, operands, ctx), BlockUser {
 
     val successors: List<BasicBlock>
-        get() = succs.toList()
+        get() = succs
 
     override val isTerminate = true
 

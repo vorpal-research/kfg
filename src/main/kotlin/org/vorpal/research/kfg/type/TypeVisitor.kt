@@ -7,20 +7,19 @@ interface TypeVisitor {
 
     fun visit(type: Type): Type = when (type) {
         is VoidType -> visitVoid(type)
-        is PrimaryType -> visitPrimary(type)
+        is PrimitiveType -> visitPrimary(type)
         is Reference -> visitReference(type)
         else -> unreachable("Unknown type: $type")
     }
 
     fun visitVoid(type: VoidType): Type = type
 
-    fun visitPrimary(type: PrimaryType) = when (type) {
-        is Integral -> visitIntegral(type)
+    fun visitPrimary(type: PrimitiveType) = when (type) {
+        is Integer -> visitIntegral(type)
         is Real -> visitReal(type)
-        else -> unreachable("Unknown primary type: $type")
     }
 
-    fun visitIntegral(type: Integral) = when (type) {
+    fun visitIntegral(type: Integer) = when (type) {
         is BoolType -> visitBool(type)
         is ByteType -> visitByte(type)
         is ShortType -> visitShort(type)
@@ -48,7 +47,6 @@ interface TypeVisitor {
         is NullType -> visitNull(type)
         is ClassType -> visitClass(type)
         is ArrayType -> visitArray(type)
-        else -> unreachable("Unknown reference type: $type")
     }
 
     fun visitNull(type: NullType): Type = type

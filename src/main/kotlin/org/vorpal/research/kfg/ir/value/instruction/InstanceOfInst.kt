@@ -5,8 +5,13 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
-class InstanceOfInst internal constructor(name: Name, type: Type, val targetType: Type, obj: Value, ctx: UsageContext) :
-    Instruction(name, type, arrayOf(obj), ctx) {
+class InstanceOfInst internal constructor(
+    name: Name,
+    type: Type,
+    val targetType: Type,
+    obj: Value,
+    ctx: UsageContext
+) : Instruction(name, type, mutableListOf(obj), ctx) {
 
     val operand: Value
         get() = ops[0]

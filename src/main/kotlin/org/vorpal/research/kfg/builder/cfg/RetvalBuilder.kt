@@ -11,7 +11,7 @@ import org.vorpal.research.kfg.ir.value.instruction.Instruction
 import org.vorpal.research.kfg.ir.value.instruction.InstructionBuilder
 import org.vorpal.research.kfg.ir.value.instruction.InstructionFactory
 import org.vorpal.research.kfg.ir.value.instruction.ReturnInst
-import org.vorpal.research.kfg.type.Integral
+import org.vorpal.research.kfg.type.Integer
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.type.mergeTypes
@@ -68,8 +68,8 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
 
                 val returnValue = when (type) {
                     returnType -> retval
-                    is Integral -> {
-                        ktassert(returnType is Integral, "Return value type is integral and method return type is $returnType")
+                    is Integer -> {
+                        ktassert(returnType is Integer, "Return value type is integral and method return type is $returnType")
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine

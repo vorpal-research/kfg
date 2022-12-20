@@ -64,8 +64,8 @@ fun main(args: Array<String>) {
             Flags.readAll,
             useCachingLoopManager = false,
             failOnError = false,
-            verifyIR = false,
-            checkClasses = false
+            verifyIR = true,
+            checkClasses = true
         )
     )
 
@@ -80,7 +80,7 @@ fun main(args: Array<String>) {
     jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
     executePipeline(classManager, Package.defaultPackage) {
         +MethodBuilder(classManager)
-//        +LoopAnalysis(classManager)
+//        +LoopAnsalysis(classManager)
 //        +LoopSimplifier(classManager)
         +ClassWriter(classManager, loader, writeTarget)
         +ClassChecker(classManager, loader, writeTarget)

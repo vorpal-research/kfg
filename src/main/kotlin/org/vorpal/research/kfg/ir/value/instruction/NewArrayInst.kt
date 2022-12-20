@@ -7,12 +7,16 @@ import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kthelper.assert.ktassert
 
-class NewArrayInst internal constructor(name: Name, type: Type, dimensions: Array<Value>, ctx: UsageContext) :
-    Instruction(name, type, dimensions, ctx) {
+class NewArrayInst internal constructor(
+    name: Name,
+    type: Type,
+    dimensions: List<Value>,
+    ctx: UsageContext
+) : Instruction(name, type, dimensions.toMutableList(), ctx) {
     val component: Type
 
     val dimensions: List<Value>
-        get() = ops.toList()
+        get() = ops
 
     val numDimensions: Int
         get() = ops.size

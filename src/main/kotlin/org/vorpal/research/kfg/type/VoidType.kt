@@ -1,11 +1,11 @@
 package org.vorpal.research.kfg.type
 
-object VoidType : Type {
+object VoidType : Type() {
     override val bitSize: Int
         get() = throw IllegalAccessError()
 
     override val name = "void"
-    override val isPrimary get() = false
+    override val isPrimitive get() = false
     override val isVoid get() = true
     override val asmDesc get() = "V"
 

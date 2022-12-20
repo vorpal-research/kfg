@@ -12,7 +12,7 @@ class BranchInst internal constructor(
     trueSuccessor: BasicBlock,
     falseSuccessor: BasicBlock,
     ctx: UsageContext
-) : TerminateInst(UndefinedName(), type, arrayOf(cond), arrayOf(trueSuccessor, falseSuccessor), ctx) {
+) : TerminateInst(UndefinedName(), type, mutableListOf(cond), mutableListOf(trueSuccessor, falseSuccessor), ctx) {
 
     val cond: Value
         get() = ops[0]
