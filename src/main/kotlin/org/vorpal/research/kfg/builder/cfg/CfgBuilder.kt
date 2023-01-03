@@ -44,6 +44,7 @@ private val AbstractInsnNode.throwsException
         else -> isExceptionThrowing(this.opcode)
     }
 
+@Suppress("UNUSED_PARAMETER")
 class CfgBuilder(
     override val cm: ClassManager,
     val method: Method
@@ -59,6 +60,7 @@ class CfgBuilder(
         val localPhis = hashMapOf<Int, PhiInst>()
 
         val isEmpty get() = locals.isEmpty() && stack.isEmpty()
+        @Suppress("unused")
         val isNotEmpty get() = !isEmpty
 
         fun clear() {
@@ -467,8 +469,8 @@ class CfgBuilder(
             }
 
             CHECKCAST -> {
-                val castable = pop()
-                val inst = castable `as` type
+                val castedValue = pop()
+                val inst = castedValue `as` type
                 addInstruction(bb, inst)
                 push(inst)
             }
@@ -831,13 +833,12 @@ class CfgBuilder(
         var bb: BasicBlock = BodyBlock("bb")
         var insnList = blockToNode.getOrPut(bb, ::arrayListOf)
 
-        var insnIndex = 0
-        for (insn in method.mn.instructions) {
+        for ((insnIndex, insn) in method.mn.instructions.withIndex()) {
             if (insn is LabelNode) {
                 when {
                     insn.next == null -> Unit
                     insn.previous == null -> {
-                        // register entry block if first insn of method is label
+                        // register entry block if first insn of method is a label
                         bb = nodeToBlock.getOrSet(insnIndex) { bb }
 
                         val entry = BodyBlock("entry")
@@ -918,7 +919,6 @@ class CfgBuilder(
             }
             insnList.add(insn)
             body.add(bb)
-            ++insnIndex
         }
         for (insn in method.mn.tryCatchBlocks) {
             val handleIndex = insn.handler.index
@@ -1140,9 +1140,8 @@ class CfgBuilder(
     private fun buildInstructions(body: MethodBody) {
         var previousNodeBlock = body.entry
         lateinit var currentBlock: BasicBlock
-        var index = 0
-        for (insn in method.mn.instructions) {
-            currentBlock = nodeToBlock[index] ?: break
+        for ((insnIndex, insn) in method.mn.instructions.withIndex()) {
+            currentBlock = nodeToBlock[insnIndex] ?: break
 
             if (currentBlock != previousNodeBlock) {
                 finishState(body, previousNodeBlock)
@@ -1150,25 +1149,24 @@ class CfgBuilder(
             }
 
             when (insn) {
-                is InsnNode -> convertInsn(insn, index)
-                is IntInsnNode -> convertIntInsn(insn, index)
+                is InsnNode -> convertInsn(insn, insnIndex)
+                is IntInsnNode -> convertIntInsn(insn, insnIndex)
                 is VarInsnNode -> convertVarInsn(insn)
-                is TypeInsnNode -> convertTypeInsn(insn, index)
-                is FieldInsnNode -> convertFieldInsn(insn, index)
-                is MethodInsnNode -> convertMethodInsn(insn, index)
-                is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn, index)
-                is JumpInsnNode -> convertJumpInsn(insn, index)
+                is TypeInsnNode -> convertTypeInsn(insn, insnIndex)
+                is FieldInsnNode -> convertFieldInsn(insn, insnIndex)
+                is MethodInsnNode -> convertMethodInsn(insn, insnIndex)
+                is InvokeDynamicInsnNode -> convertInvokeDynamicInsn(insn, insnIndex)
+                is JumpInsnNode -> convertJumpInsn(insn, insnIndex)
                 is LabelNode -> convertLabel(insn)
                 is LdcInsnNode -> convertLdcInsn(insn)
-                is IincInsnNode -> convertIincInsn(insn, index)
-                is TableSwitchInsnNode -> convertTableSwitchInsn(insn, index)
-                is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn, index)
-                is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn, index)
+                is IincInsnNode -> convertIincInsn(insn, insnIndex)
+                is TableSwitchInsnNode -> convertTableSwitchInsn(insn, insnIndex)
+                is LookupSwitchInsnNode -> convertLookupSwitchInsn(insn, insnIndex)
+                is MultiANewArrayInsnNode -> convertMultiANewArrayInsn(insn, insnIndex)
                 is LineNumberNode -> convertLineNumber(insn)
-                is FrameNode -> convertFrame(insn, index)
+                is FrameNode -> convertFrame(insn, insnIndex)
                 else -> throw InvalidOpcodeException("Unknown insn: ${insn.print()}")
             }
-            index++
         }
         finishState(body, previousNodeBlock)
         buildCyclePhis(body)
