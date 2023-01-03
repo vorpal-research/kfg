@@ -20,7 +20,6 @@ import org.vorpal.research.kfg.visitor.Loop
 import org.vorpal.research.kthelper.assert.unreachable
 import org.vorpal.research.kthelper.collection.queueOf
 import org.vorpal.research.kthelper.graph.LoopDetector
-import org.vorpal.research.kthelper.`try`
 import java.util.*
 import org.objectweb.asm.Handle as AsmHandle
 import org.objectweb.asm.Type as AsmType
@@ -60,6 +59,7 @@ class CfgBuilder(
         val localPhis = hashMapOf<Int, PhiInst>()
 
         val isEmpty get() = locals.isEmpty() && stack.isEmpty()
+
         @Suppress("unused")
         val isNotEmpty get() = !isEmpty
 
@@ -452,8 +452,7 @@ class CfgBuilder(
     private fun convertTypeInsn(insn: TypeInsnNode, insnIndex: Int) {
         val bb = nodeToBlock[insnIndex]!!
         val opcode = insn.opcode
-        val type = `try` { parseDesc(types, insn.desc) }
-            .getOrElse { types.getRefType(insn.desc) }
+        val type = parseDescOrNull(types, insn.desc) ?: types.getRefType(insn.desc)
         when (opcode) {
             NEW -> {
                 val inst = type.new()
@@ -489,7 +488,7 @@ class CfgBuilder(
     private fun convertFieldInsn(insn: FieldInsnNode, insnIndex: Int) {
         val bb = nodeToBlock[insnIndex]!!
         val opcode = insn.opcode
-        val fieldType = parseDesc(types, insn.desc)
+        val fieldType = parseDescOrNull(types, insn.desc) ?: unreachable("Unexpected type desc: ${insn.desc}")
         val klass = cm[insn.owner]
         when (opcode) {
             GETSTATIC -> {
@@ -632,7 +631,8 @@ class CfgBuilder(
             is Long -> push(values.getLong(cst))
             is String -> push(values.getString(cst))
             is AsmType -> {
-                val type = parseDesc(types, cst.descriptor)
+                val type = parseDescOrNull(types, cst.descriptor)
+                    ?: unreachable("Unexpected type desc: ${cst.descriptor}")
                 push(values.getClass(type))
             }
 
@@ -678,7 +678,8 @@ class CfgBuilder(
         val dimensions = arrayListOf<Value>()
         for (it in 0 until insn.dims)
             dimensions.add(pop())
-        val type = parseDesc(types, insn.desc)
+        val type = parseDescOrNull(types, insn.desc)
+            ?: unreachable("Unexpected type desc: ${insn.desc}")
         val inst = type.newArray(dimensions)
         addInstruction(bb, inst)
         push(inst)
@@ -1174,26 +1175,27 @@ class CfgBuilder(
     }
 
     private fun clearUses(body: MethodBody) {
-        visitedBlocks.clear()
-        locals.clear()
-        nodeToBlock.clear()
-        blockToNode.clear()
-        for ((_, frame) in frames) {
-            frame.clear()
-        }
-        frames.clear()
-        for ((_, frame) in unmappedBlocks) {
-            frame.clear()
-        }
-        unmappedBlocks.clear()
-
-        for (inst in body.flatten()) {
-            for (value in (inst.operands + inst)) {
-                value.users.filterNot { it is Instruction }.forEach {
-                    value.removeUser(it)
-                }
-            }
-        }
+//        visitedBlocks.clear()
+//        locals.clear()
+//        nodeToBlock.clear()
+//        blockToNode.clear()
+//        for ((_, frame) in frames) {
+//            frame.clear()
+//        }
+//        }
+//        frames.clear()
+//        for ((_, frame) in unmappedBlocks) {
+//            frame.clear()
+//        }
+//        unmappedBlocks.clear()
+//
+//        for (inst in body.flatten()) {
+//            for (value in (inst.operands + inst)) {
+//                value.users.filterNot { it is Instruction }.forEach {
+//                    value.removeUser(it)
+//                }
+//            }
+//        }
     }
 
     private fun buildLoops(body: MethodBody) {

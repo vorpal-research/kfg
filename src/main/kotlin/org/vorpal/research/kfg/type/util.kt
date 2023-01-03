@@ -4,7 +4,6 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.FrameNode
 import org.vorpal.research.kfg.InvalidOpcodeException
 import org.vorpal.research.kfg.InvalidStateException
-import org.vorpal.research.kfg.InvalidTypeException
 import java.util.regex.Pattern
 
 val FrameNode.frameType get() = FrameNodeHelper.getFrameType(this)
@@ -25,6 +24,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
             else -> mergeTypes(tf, filtered)
         }
     }
+
     types.size == 1 -> types.first()
     types.all { it is Integer } -> types.map { it as Integer }.maxByOrNull { it.width }
     types.all { it is ClassType } -> {
@@ -41,6 +41,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         }
         result
     }
+
     types.all { it is Reference } -> when {
         types.any { it is ClassType } -> tf.objectType
         types.map { it as ArrayType }.mapTo(mutableSetOf()) { it.component }.size == 1 -> types.first()
@@ -51,12 +52,14 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
                 else -> tf.getArrayType(merged)
             }
         }
+
         else -> tf.objectType
     }
+
     else -> null
 }
 
-fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
+fun parseDescOrNull(tf: TypeFactory, desc: String): Type? = when (desc[0]) {
     'V' -> tf.voidType
     'Z' -> tf.boolType
     'B' -> tf.byteType
@@ -66,12 +69,13 @@ fun parseDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
     'J' -> tf.longType
     'F' -> tf.floatType
     'D' -> tf.doubleType
-    'L' -> {
-        if (desc.last() != ';') throw InvalidTypeException(desc)
-        tf.getRefType(desc.drop(1).dropLast(1))
+    'L' -> when {
+        desc.last() != ';' -> null
+        else -> tf.getRefType(desc.drop(1).dropLast(1))
     }
-    '[' -> tf.getArrayType(parseDesc(tf, desc.drop(1)))
-    else -> throw InvalidTypeException(desc)
+
+    '[' -> parseDescOrNull(tf, desc.drop(1))?.asArray
+    else -> null
 }
 
 fun parsePrimaryType(tf: TypeFactory, opcode: Int): Type = when (opcode) {
@@ -103,7 +107,7 @@ fun parseMethodDesc(tf: TypeFactory, desc: String): Pair<List<Type>, Type> {
     val pattern = Pattern.compile("\\[*(V|Z|B|C|S|I|J|F|D|(L[^;]+;))")
     val matcher = pattern.matcher(desc)
     while (matcher.find()) {
-        args.add(parseDesc(tf, matcher.group(0)))
+        args.add(parseDescOrNull(tf, matcher.group(0))!!)
     }
     val returnType = args.last()
     return Pair(args.dropLast(1), returnType)

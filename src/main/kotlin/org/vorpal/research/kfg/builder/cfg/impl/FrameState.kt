@@ -8,7 +8,7 @@ import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
-import org.vorpal.research.kfg.type.parseDesc
+import org.vorpal.research.kfg.type.parseDescOrNull
 import org.vorpal.research.kthelper.assert.unreachable
 import java.util.*
 
@@ -63,7 +63,7 @@ fun parseFrameDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
     'J' -> tf.longType
     'F' -> tf.floatType
     'D' -> tf.doubleType
-    '[' -> tf.getArrayType(parseDesc(tf, desc.drop(1)))
+    '[' -> parseDescOrNull(tf, desc.drop(1))!!.asArray
     else -> tf.getRefType(desc)
 }
 

@@ -4,7 +4,7 @@ import org.objectweb.asm.tree.FieldNode
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
-import org.vorpal.research.kfg.type.parseDesc
+import org.vorpal.research.kfg.type.parseDescOrNull
 
 class Field : Node {
     val klass: Class
@@ -15,7 +15,7 @@ class Field : Node {
     constructor(cm: ClassManager, klass: Class, fn: FieldNode) : super(cm, fn.name, Modifiers(fn.access)) {
         this.fn = fn
         this.klass = klass
-        this.type = parseDesc(cm.type, fn.desc)
+        this.type = parseDescOrNull(cm.type, fn.desc)!!
         this.defaultValue = cm.value.getConstant(fn.value)
     }
 

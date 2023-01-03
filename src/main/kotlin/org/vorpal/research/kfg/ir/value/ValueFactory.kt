@@ -29,7 +29,7 @@ class ValueFactory internal constructor(val cm: ClassManager) {
     fun getFloat(value: Float): Value = FloatConstant(value, types.floatType)
     fun getDouble(value: Double): Value = DoubleConstant(value, types.doubleType)
     fun getString(value: String): Value = StringConstant(value, types.stringType)
-    fun getClass(desc: String): Value = ClassConstant(types.classType, parseDesc(types, desc))
+    fun getClass(desc: String): Value = ClassConstant(types.classType, parseDescOrNull(types, desc)!!)
     fun getClass(klass: Class): Value = ClassConstant(types.classType, types.getRefType(klass))
     fun getClass(type: Type): Value = ClassConstant(types.classType, type)
     fun getMethod(method: Method): Value = MethodConstant(method, types.getRefType("java/lang/invoke/MethodHandle"))
