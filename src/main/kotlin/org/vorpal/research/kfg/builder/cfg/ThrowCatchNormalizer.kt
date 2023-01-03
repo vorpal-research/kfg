@@ -9,7 +9,7 @@ class ThrowCatchNormalizer(override val cm: ClassManager, val ctx: UsageContext)
     override fun cleanup() {}
 
     override fun visitBody(body: MethodBody) = with(ctx) {
-        for (block in body.basicBlocks.toList()) {
+        for (block in body.basicBlocks) {
             if (block.size > 1) continue
             if (block.successors.size != 1) continue
             if (block.predecessors.size != 1) continue

@@ -26,7 +26,7 @@ data class MethodDescriptor(
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
             val (argTypes, returnType) = parseMethodDesc(tf, desc)
-            return MethodDescriptor(argTypes.toList(), returnType)
+            return MethodDescriptor(argTypes, returnType)
         }
     }
 
@@ -57,7 +57,7 @@ class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<Ba
     val bodyBlocks: List<BasicBlock>
         get() {
             val catches = catchBlocks
-            return innerBlocks.filter { it !in catches }.toList()
+            return innerBlocks.filter { it !in catches }
         }
 
     val catchBlocks: List<BasicBlock>

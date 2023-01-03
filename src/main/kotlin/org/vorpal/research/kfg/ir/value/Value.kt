@@ -2,7 +2,6 @@ package org.vorpal.research.kfg.ir.value
 
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.type.Type
-import org.vorpal.research.kthelper.defaultHashCode
 
 abstract class Value(val name: Name, val type: Type) : UsableValue() {
     val isNameDefined: Boolean
@@ -19,7 +18,11 @@ class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantN
         const val argPrefix = "arg\$"
     }
 
-    override fun hashCode() = defaultHashCode(name, type, method)
+    override fun hashCode(): Int {
+        var result = index
+        result = 31 * result + method.hashCode()
+        return result
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -30,7 +33,11 @@ class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantN
 }
 
 class ThisRef(type: Type) : Value(ConstantName("this"), type) {
-    override fun hashCode() = defaultHashCode(name, type)
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -107,7 +107,8 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
     private val outerClasses = hashMapOf<String, Class>()
     private val container2class = hashMapOf<Container, MutableSet<Class>>()
 
-    val concreteClasses get() = classes.values.filterIsInstance<ConcreteClass>().toSet()
+    val concreteClasses: Set<ConcreteClass>
+        get() = classes.values.filterIsInstanceTo(mutableSetOf())
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
         val container2ClassNode = containers.associateWith { it.parse(flags, config.failOnError, loader) }

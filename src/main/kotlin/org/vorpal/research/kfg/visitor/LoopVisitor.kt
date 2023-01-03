@@ -137,7 +137,7 @@ class LoopAnalysis(override val cm: ClassManager) : MethodVisitor {
 
     operator fun invoke(method: Method): List<Loop> {
         visit(method)
-        return loops.toList()
+        return loops
     }
 
     override fun visit(method: Method) {

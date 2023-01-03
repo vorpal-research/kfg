@@ -64,7 +64,7 @@ fun main(args: Array<String>) {
             Flags.readAll,
             useCachingLoopManager = false,
             failOnError = false,
-            verifyIR = true,
+            verifyIR = false,
             checkClasses = true
         )
     )
@@ -74,23 +74,23 @@ fun main(args: Array<String>) {
     }
     println(time)
 
-    val loader = URLClassLoader(jars.map { it.path.toUri().toURL() }.toTypedArray())
-    val target = Paths.get("instrumented/")
-    val writeTarget = Paths.get("written/")
-    jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
+//    val loader = URLClassLoader(jars.map { it.path.toUri().toURL() }.toTypedArray())
+//    val target = Paths.get("instrumented/")
+//    val writeTarget = Paths.get("written/")
+//    jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
     executePipeline(classManager, Package.defaultPackage) {
         +MethodBuilder(classManager)
-//        +LoopAnsalysis(classManager)
+//        +LoopAnalysis(classManager)
 //        +LoopSimplifier(classManager)
-        +ClassWriter(classManager, loader, writeTarget)
-        +ClassChecker(classManager, loader, writeTarget)
+//        +ClassWriter(classManager, loader, writeTarget)
+//        +ClassChecker(classManager, loader, writeTarget)
     }
-    jars.forEach { jar -> jar.update(classManager, target) }
+//    jars.forEach { jar -> jar.update(classManager, target) }
 
 
-    jars.forEach { jar ->
-        jar.extract(Paths.get("extracted").also {
-            it.toFile().mkdirs()
-        })
-    }
+//    jars.forEach { jar ->
+//        jar.extract(Paths.get("extracted").also {
+//            it.toFile().mkdirs()
+//        })
+//    }
 }
