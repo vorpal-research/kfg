@@ -15,6 +15,7 @@ import org.vorpal.research.kfg.visitor.LoopVisitor
 import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.unreachable
 
+@Suppress("unused")
 class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private lateinit var ctx: MethodUsageContext
 
@@ -36,7 +37,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
             if (cm.failOnError) throw KtException("Can't simplify loop with multiple entries")
             else return
         }
-        buildPreheader(loop)
+        buildPreHeader(loop)
         buildLatch(loop)
     }
 
@@ -112,21 +113,21 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
-    private fun buildPreheader(loop: Loop) = with(ctx) {
+    private fun buildPreHeader(loop: Loop) = with(ctx) {
         val header = loop.header
         val loopPredecessors = header.predecessors.filterTo(mutableSetOf()) { it !in loop }
         if (loopPredecessors.size == 1) return
 
-        val preheader = BodyBlock("loop.preheader")
-        header.handlers.forEach { mapToCatch(header, preheader, it) }
-        loopPredecessors.forEach { remapBlocks(it, header, preheader) }
-        preheader.linkForward(header)
+        val preHeader = BodyBlock("loop.preheader")
+        header.handlers.forEach { mapToCatch(header, preHeader, it) }
+        loopPredecessors.forEach { remapBlocks(it, header, preHeader) }
+        preHeader.linkForward(header)
 
-        remapPhis(header, loopPredecessors, preheader)
-        preheader += inst(cm) { goto(header) }
-        method.body.addBefore(header, preheader)
+        remapPhis(header, loopPredecessors, preHeader)
+        preHeader += inst(cm) { goto(header) }
+        method.body.addBefore(header, preHeader)
         if (loop.hasParent) {
-            loop.parent.addBlock(preheader)
+            loop.parent.addBlock(preHeader)
         }
     }
 

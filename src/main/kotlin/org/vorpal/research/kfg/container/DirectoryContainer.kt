@@ -14,6 +14,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.writeBytes
 
+@Suppress("unused")
 class DirectoryContainer(private val file: File, pkg: Package? = null) : Container {
     override val pkg: Package = pkg ?: commonPackage
     override val path: Path = file.toPath()

@@ -17,6 +17,7 @@ import java.util.jar.JarFile
 import java.util.jar.Manifest
 import kotlin.io.path.writeBytes
 
+@Suppress("unused")
 class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     private val file = JarFile(path.toFile())
     private val manifest = Manifest()

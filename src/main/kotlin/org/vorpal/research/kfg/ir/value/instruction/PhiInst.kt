@@ -11,7 +11,7 @@ class PhiInst internal constructor(
     operands: List<Value>,
     ctx: UsageContext
 ) : Instruction(name, type, operands.toMutableList(), ctx), BlockUser {
-    private val preds = predecessors.toMutableList()
+    private val predecessorBlocks = predecessors.toMutableList()
 
     init {
         with(ctx) {
@@ -20,7 +20,7 @@ class PhiInst internal constructor(
     }
 
     val predecessors: List<BasicBlock>
-        get() = preds
+        get() = predecessorBlocks
 
     val incomingValues: List<Value>
         get() = ops
@@ -40,19 +40,20 @@ class PhiInst internal constructor(
     override fun clone(ctx: UsageContext): Instruction = PhiInst(name.clone(), type, predecessors, operands, ctx)
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
-        (0..preds.lastIndex)
-            .filter { preds[it] == from }
+        (0..predecessorBlocks.lastIndex)
+            .filter { predecessorBlocks[it] == from }
             .forEach {
-                preds[it].removeUser(this@PhiInst)
-                preds[it] = to.get()
+                predecessorBlocks[it].removeUser(this@PhiInst)
+                predecessorBlocks[it] = to.get()
                 to.addUser(this@PhiInst)
             }
     }
 
+    @Suppress("unused")
     fun replaceAllUsesWith(ctx: UsageContext, to: UsableValue) = with(ctx) {
         this@PhiInst.replaceAllUsesWith(to)
         if (to is BlockUser) {
-            for (it in preds) {
+            for (it in predecessorBlocks) {
                 it.removeUser(this@PhiInst)
                 it.addUser(to)
             }

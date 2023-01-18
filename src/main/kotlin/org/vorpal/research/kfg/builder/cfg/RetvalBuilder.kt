@@ -63,26 +63,26 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
             else -> {
                 val type = mergeTypes(types, incomings.values.mapTo(mutableSetOf()) { it.type }) ?: returnType
 
-                val retval = phi("retval", type, incomings)
-                instructions.add(retval)
+                val returnValuePhi = phi("retval", type, incomings)
+                instructions.add(returnValuePhi)
 
                 val returnValue = when (type) {
-                    returnType -> retval
+                    returnType -> returnValuePhi
                     is Integer -> {
                         ktassert(returnType is Integer, "Return value type is integral and method return type is $returnType")
 
                         // if return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine
                         if (abs(type.bitSize - returnType.bitSize) >= Type.WORD) {
-                            val retvalCasted = retval.cast("retval.casted", returnType)
+                            val retvalCasted = returnValuePhi.cast("retval.casted", returnType)
                             instructions.add(retvalCasted)
                             retvalCasted
                         } else {
-                            retval
+                            returnValuePhi
                         }
                     }
                     else -> {
-                        val retvalCasted = retval.cast("retval.casted", returnType)
+                        val retvalCasted = returnValuePhi.cast("retval.casted", returnType)
                         instructions.add(retvalCasted)
                         retvalCasted
                     }

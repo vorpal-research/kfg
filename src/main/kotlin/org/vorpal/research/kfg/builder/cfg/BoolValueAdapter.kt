@@ -11,6 +11,7 @@ import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 
+@Suppress("unused")
 class BoolValueAdapter(
     override val cm: ClassManager,
     override val ctx: UsageContext
