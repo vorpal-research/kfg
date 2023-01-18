@@ -416,7 +416,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             }.toTypedArray()
         )
         val operands = inst.operands
-        addOperandsToStack(operands.reversed())
+        addOperandsToStack(operands)
         currentInsnList.add(insn)
         stackPop(operands.size)
         stackPush(inst)
