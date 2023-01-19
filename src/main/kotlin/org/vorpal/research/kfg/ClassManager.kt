@@ -35,7 +35,7 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
 
     constructor(name: String) : this(
         name.removeSuffix(EXPANSION_STR)
-            .removeSuffix(EXPANSION_STR)
+            .removeSuffix(SEPARATOR_STR)
             .split(SEPARATOR)
             .filter { it.isNotBlank() },
         name.lastOrNull() != EXPANSION
