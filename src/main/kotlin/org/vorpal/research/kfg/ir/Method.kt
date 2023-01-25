@@ -44,6 +44,7 @@ data class MethodDescriptor(
     override fun toString() = "(${args.joinToString { it.name }}): ${returnType.name}"
 }
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<BasicBlock>, BlockUser, Viewable {
     private val innerBlocks = arrayListOf<BasicBlock>()
     private val innerCatches = hashSetOf<CatchBlock>()
@@ -208,6 +209,7 @@ class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<Ba
         }
 }
 
+@Suppress("unused")
 class Method : Node {
     val klass: Class
     internal val mn: MethodNode
@@ -276,8 +278,8 @@ class Method : Node {
     }
 
     private fun processNodeParameters(methodNode: MethodNode): List<Parameter> = buildList {
-        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations
-        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations
+        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations ?: arrayOfNulls(mn.parameters.size)
+        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations ?: arrayOfNulls(mn.parameters.size)
 
         for ((index, param) in mn.parameters.withIndex()) {
             val parameterAnnotationsNodes = invisibleParameterAnnotations[index].orEmpty() +

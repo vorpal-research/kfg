@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.vorpal.research.kfg
 
 import org.vorpal.research.kfg.container.asContainer
