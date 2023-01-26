@@ -32,8 +32,8 @@ class TableSwitchInst internal constructor(
     val max: Value
         get() = ops[2]
 
-    val default get() = succs[0]
-    val branches get() = succs.drop(1)
+    val default get() = internalSuccessors[0]
+    val branches get() = internalSuccessors.drop(1)
 
     val range: IntRange
         get() = (min as IntConstant).value..(max as IntConstant).value

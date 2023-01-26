@@ -65,7 +65,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
             val targetPhi = inst(cm) { phi(phi.type, targetIncomings) }
             target.insertBefore(phi, targetPhi)
             phi.replaceAllUsesWith(targetPhi)
-            phi.clearUses()
+            phi.clearAllUses()
             target -= phi
         }
     }
@@ -79,7 +79,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
             val newPhi = inst(cm) { phi(phi.type, incomings) }
             catch.insertBefore(phi, newPhi)
             phi.replaceAllUsesWith(newPhi)
-            phi.clearUses()
+            phi.clearAllUses()
             catch -= phi
         }
     }
@@ -107,7 +107,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                 val newPhi = inst(cm) { phi(phi.type, incomings) }
                 catch.insertBefore(phi, newPhi)
                 phi.replaceAllUsesWith(newPhi)
-                phi.clearUses()
+                phi.clearAllUses()
                 catch -= phi
             }
         }
@@ -158,7 +158,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             val newPhi = inst(cm) { phi(phi.type, incomings) }
                             catch.insertBefore(phi, newPhi)
                             phi.replaceAllUsesWith(newPhi)
-                            phi.clearUses()
+                            phi.clearAllUses()
                             catch -= phi
                         }
                     }
@@ -226,7 +226,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             val newPhi = inst(cm) { phi(phi.type, incomings) }
                             catch.insertBefore(phi, newPhi)
                             phi.replaceAllUsesWith(newPhi)
-                            phi.clearUses()
+                            phi.clearAllUses()
                             catch -= phi
                         }
                     }

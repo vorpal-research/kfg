@@ -46,7 +46,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         val incomings = hashMapOf<BasicBlock, Value>()
         for ((bb, returnInst) in returnValues) {
             bb.remove(returnInst)
-            returnInst.clearUses()
+            returnInst.clearAllUses()
             bb.linkForward(returnBlock)
             if (returnInst.hasReturnValue)
                 incomings[bb] = returnInst.returnValue

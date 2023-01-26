@@ -50,13 +50,13 @@ class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : Metho
 
                 phi.replaceAllUsesWith(newPhi)
                 parent.replace(phi, newPhi)
-                phi.clearUses()
+                phi.clearAllUses()
             }
 
             body.remove(block)
             for (inst in block.toList()) {
                 block.remove(inst)
-                inst.clearUses()
+                inst.clearAllUses()
             }
             predecessor.removeSuccessor(block)
             block.removeSuccessor(successor)

@@ -23,6 +23,7 @@ data class MethodDescriptor(
     val returnType: Type
 ) {
     private val hash = defaultHashCode(args, returnType)
+
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {
             val (argTypes, returnType) = parseMethodDesc(tf, desc)
@@ -172,13 +173,19 @@ class MethodBody(val method: Method) : PredecessorGraph<BasicBlock>, Iterable<Ba
     }
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
-        (0 until innerBlocks.size)
-            .filter { basicBlocks[it] == from }
-            .forEach {
-                innerBlocks[it].removeUser(this@MethodBody)
-                innerBlocks[it] = to.get()
+        for (index in innerBlocks.indices) {
+            if (basicBlocks[index] == from) {
+                innerBlocks[index].removeUser(this@MethodBody)
+                innerBlocks[index] = to.get()
                 to.addUser(this@MethodBody)
             }
+        }
+    }
+
+    override fun clearBlockUses(ctx: BlockUsageContext) = with(ctx) {
+        innerBlocks.forEach {
+            it.removeUser(this@MethodBody)
+        }
     }
 
     override val graphView: List<GraphView>
@@ -308,6 +315,7 @@ class Method : Node {
     private fun getParametersStubs(annotations: Array<List<AnnotationNode>>): List<Parameter> {
         return annotations.mapIndexed { index, parameterAnnotations ->
             val type = cm.type.voidType
+
             @Suppress("UselessCallOnNotNull")  // interoperability error: parameterAnnotations may be null
             val annotationsOfParameter = parameterAnnotations.orEmpty().map { annotationNode ->
                 MethodParameterAnnotation.get(annotationNode, cm)
@@ -352,6 +360,7 @@ class Method : Node {
         result = 31 * result + desc.hashCode()
         return result
     }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

@@ -40,13 +40,13 @@ class PhiInst internal constructor(
     override fun clone(ctx: UsageContext): Instruction = PhiInst(name.clone(), type, predecessors, operands, ctx)
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
-        (0..predecessorBlocks.lastIndex)
-            .filter { predecessorBlocks[it] == from }
-            .forEach {
-                predecessorBlocks[it].removeUser(this@PhiInst)
-                predecessorBlocks[it] = to.get()
+        for (index in predecessorBlocks.indices) {
+            if (predecessorBlocks[index] == from) {
+                predecessorBlocks[index].removeUser(this@PhiInst)
+                predecessorBlocks[index] = to.get()
                 to.addUser(this@PhiInst)
             }
+        }
     }
 
     @Suppress("unused")
@@ -57,6 +57,12 @@ class PhiInst internal constructor(
                 it.removeUser(this@PhiInst)
                 it.addUser(to)
             }
+        }
+    }
+
+    override fun clearBlockUses(ctx: BlockUsageContext) = with(ctx) {
+        predecessors.forEach {
+            it.removeUser(this@PhiInst)
         }
     }
 }

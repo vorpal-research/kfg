@@ -1,3 +1,5 @@
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
+
 package org.vorpal.research.kfg.ir
 
 import org.vorpal.research.kfg.ir.value.*
@@ -249,6 +251,15 @@ sealed class BasicBlock(
         }
         terminator.replaceUsesOf(ctx, from, to)
     }
+
+    override fun clearBlockUses(ctx: BlockUsageContext) = with(ctx) {
+        predecessors.forEach {
+            it.removeUser(this@BasicBlock)
+        }
+        successors.forEach {
+            it.removeUser(this@BasicBlock)
+        }
+    }
 }
 
 class BodyBlock(name: String) : BasicBlock(BlockName(name)) {
@@ -336,6 +347,13 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
             from.removeUser(this@CatchBlock)
             innerThrowers.add(to.get())
             to.addUser(this@CatchBlock)
+        }
+    }
+
+    override fun clearBlockUses(ctx: BlockUsageContext) = with(ctx) {
+        super.clearBlockUses(ctx)
+        throwers.forEach {
+            it.removeUser(this@CatchBlock)
         }
     }
 }

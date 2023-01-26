@@ -63,7 +63,7 @@ internal class FrameStack(
         return res
     }
 
-    override fun clearUses(ctx: UsageContext) {
+    override fun clearValueUses(ctx: ValueUsageContext) {
         stack.forEach { it.removeUser(this) }
     }
 }

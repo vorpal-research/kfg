@@ -6,11 +6,12 @@ interface User
 
 interface ValueUser : User {
     fun replaceUsesOf(ctx: ValueUsageContext, from: UsableValue, to: UsableValue)
-    fun clearUses(ctx: UsageContext)
+    fun clearValueUses(ctx: ValueUsageContext)
 }
 
 interface BlockUser : User {
     fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock)
+    fun clearBlockUses(ctx: BlockUsageContext)
 }
 
 abstract class Usable<T> {

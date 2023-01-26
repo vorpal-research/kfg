@@ -31,7 +31,19 @@ interface UsageContext : ValueUsageContext, BlockUsageContext {
     /**
      * user wrappers
      */
-    fun ValueUser.clearUses() = this.clearUses(this@UsageContext)
+    fun ValueUser.clearValueUses() {
+        this.clearValueUses(this@UsageContext)
+    }
+
+    fun BlockUser.clearBlockUses() {
+        this.clearBlockUses(this@UsageContext)
+    }
+
+    fun User.clearAllUses() {
+        if (this is ValueUser) this.clearValueUses(this@UsageContext)
+        if (this is BlockUser) this.clearBlockUses(this@UsageContext)
+    }
+
     fun ValueUser.replaceUsesOf(from: UsableValue, to: UsableValue) = this.replaceUsesOf(this@UsageContext, from, to)
     fun BlockUser.replaceUsesOf(from: UsableBlock, to: UsableBlock) = this.replaceUsesOf(this@UsageContext, from, to)
 
@@ -80,6 +92,7 @@ interface UsageContext : ValueUsageContext, BlockUsageContext {
     fun inst(cm: ClassManager, body: InstructionBuilder.() -> Instruction): Instruction = inst(cm, this, body)
 }
 
+@Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractUsageContext : UsageContext {
     protected var privateValueUsers = IdentityHashMap<UsableValue, MutableSet<ValueUser>>()
         private set
@@ -180,6 +193,7 @@ class MethodUsageContext(val method: Method) : AbstractUsageContext(), Closeable
     override fun close() = clear()
 }
 
+@Suppress("MemberVisibilityCanBePrivate", "unused")
 open class ExtendableUsageContext(vararg method: Method) : AbstractUsageContext(), Closeable {
     protected val methods = method.toMutableSet()
 

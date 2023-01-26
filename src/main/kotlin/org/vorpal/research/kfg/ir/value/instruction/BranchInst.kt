@@ -18,10 +18,10 @@ class BranchInst internal constructor(
         get() = ops[0]
 
     val trueSuccessor: BasicBlock
-        get() = succs[0]
+        get() = internalSuccessors[0]
 
     val falseSuccessor: BasicBlock
-        get() = succs[1]
+        get() = internalSuccessors[1]
 
     override fun print() = "if ($cond) goto ${trueSuccessor.name} else ${falseSuccessor.name}"
     override fun clone(ctx: UsageContext): Instruction = BranchInst(cond, type, trueSuccessor, falseSuccessor, ctx)

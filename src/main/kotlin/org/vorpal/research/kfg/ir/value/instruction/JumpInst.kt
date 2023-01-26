@@ -12,7 +12,7 @@ class JumpInst internal constructor(
 ) : TerminateInst(UndefinedName(), type, mutableListOf(), mutableListOf(successor), ctx) {
 
     val successor: BasicBlock
-        get() = succs[0]
+        get() = internalSuccessors[0]
 
     override fun print() = "goto ${successor.name}"
     override fun clone(ctx: UsageContext): Instruction = JumpInst(type, successor, ctx)

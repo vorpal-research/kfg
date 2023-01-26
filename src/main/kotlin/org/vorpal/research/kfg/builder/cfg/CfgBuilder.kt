@@ -978,13 +978,13 @@ class CfgBuilder(
                     phi.replaceAllUsesWith(actual)
                     phi.operands.forEach { it.removeUser(phi) }
                     block.remove(phi)
-                    phi.clearUses()
+                    phi.clearAllUses()
                 } else {
                     val newPhi = phi(phi.name, phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
                     phi.operands.forEach { it.removeUser(phi) }
                     block.replace(phi, newPhi)
-                    phi.clearUses()
+                    phi.clearAllUses()
                 }
             }
 
@@ -1004,13 +1004,13 @@ class CfgBuilder(
                     phi.replaceAllUsesWith(actual)
                     phi.operands.forEach { it.removeUser(phi) }
                     block.remove(phi)
-                    phi.clearUses()
+                    phi.clearAllUses()
                 } else {
                     val newPhi = phi(phi.type, incomings)
                     phi.replaceAllUsesWith(newPhi)
                     phi.operands.forEach { it.removeUser(phi) }
                     block.replace(phi, newPhi)
-                    phi.clearUses()
+                    phi.clearAllUses()
                 }
             }
         }
@@ -1023,7 +1023,7 @@ class CfgBuilder(
                 for (value in values) {
                     value?.parentUnsafe?.remove(value)
                     queue.remove(value)
-                    value.clearUses()
+                    value.clearAllUses()
                 }
             }
         }
@@ -1039,7 +1039,7 @@ class CfgBuilder(
                     val first = incomingsSet.first()
                     if (first == top) continue
                     top.replaceAllUsesWith(first)
-                    top.clearUses()
+                    top.clearAllUses()
                     if (first is PhiInst) queue.add(first)
                     top.parentUnsafe?.remove(top) ?: continue@loop
                     for (operand in operands) {
@@ -1056,7 +1056,7 @@ class CfgBuilder(
                             else -> incomingsSet.first()
                         }
                     )
-                    top.clearUses()
+                    top.clearAllUses()
                     for (operand in instUsers) {
                         if (operand is PhiInst) {
                             queue.add(operand)
@@ -1065,7 +1065,7 @@ class CfgBuilder(
                 }
 
                 instUsers.isEmpty() -> {
-                    operands.forEach { it.removeUser(top) }
+                    top.clearAllUses()
                     top.parentUnsafe?.remove(top) ?: continue@loop
                     for (operand in operands) {
                         if (operand is PhiInst) {
@@ -1075,7 +1075,7 @@ class CfgBuilder(
                 }
 
                 instUsers.size == 1 && instUsers.first() == top -> {
-                    operands.forEach { it.removeUser(top) }
+                    top.clearAllUses()
                     top.parentUnsafe?.remove(top)
                     for (operand in operands) {
                         if (operand is PhiInst && operand == top) {
@@ -1175,27 +1175,26 @@ class CfgBuilder(
     }
 
     private fun clearUses(body: MethodBody) {
-//        visitedBlocks.clear()
-//        locals.clear()
-//        nodeToBlock.clear()
-//        blockToNode.clear()
-//        for ((_, frame) in frames) {
-//            frame.clear()
-//        }
-//        }
-//        frames.clear()
-//        for ((_, frame) in unmappedBlocks) {
-//            frame.clear()
-//        }
-//        unmappedBlocks.clear()
-//
-//        for (inst in body.flatten()) {
-//            for (value in (inst.operands + inst)) {
-//                value.users.filterNot { it is Instruction }.forEach {
-//                    value.removeUser(it)
-//                }
-//            }
-//        }
+        visitedBlocks.clear()
+        locals.clear()
+        nodeToBlock.clear()
+        blockToNode.clear()
+        for ((_, frame) in frames) {
+            frame.clear()
+        }
+        frames.clear()
+        for ((_, frame) in unmappedBlocks) {
+            frame.clear()
+        }
+        unmappedBlocks.clear()
+
+        for (inst in body.flatten()) {
+            for (value in (inst.operands + inst)) {
+                value.users.filterNot { it is Instruction }.forEach {
+                    value.removeUser(it)
+                }
+            }
+        }
     }
 
     private fun buildLoops(body: MethodBody) {

@@ -25,10 +25,10 @@ class SwitchInst internal constructor(
         get() = ops[0]
 
     val default: BasicBlock
-        get() = succs[0]
+        get() = internalSuccessors[0]
 
     val branches: Map<Value, BasicBlock>
-        get() = ops.drop(1).zip(succs.drop(1)).toMap()
+        get() = ops.drop(1).zip(internalSuccessors.drop(1)).toMap()
 
     override fun print(): String {
         val sb = StringBuilder()

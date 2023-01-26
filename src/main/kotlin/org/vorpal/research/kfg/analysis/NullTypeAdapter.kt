@@ -20,7 +20,7 @@ class NullTypeAdapter(override val cm: ClassManager, val ctx: UsageContext) : Me
             val newPhi = inst(cm) { phi(actualType, inst.incomings) }
             inst.parent.insertBefore(inst, newPhi)
             inst.replaceAllUsesWith(newPhi)
-            inst.clearUses()
+            inst.clearAllUses()
             inst.parent -= inst
         }
     }

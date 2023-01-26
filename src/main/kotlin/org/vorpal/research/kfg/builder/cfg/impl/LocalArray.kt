@@ -50,7 +50,7 @@ internal class LocalArray(
         fromKeys.clear()
     }
 
-    override fun clearUses(ctx: UsageContext) {
+    override fun clearValueUses(ctx: ValueUsageContext) {
         entries.forEach { it.value.removeUser(this) }
     }
 }
