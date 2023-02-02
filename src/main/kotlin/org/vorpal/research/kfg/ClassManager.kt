@@ -1,3 +1,5 @@
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
+
 package org.vorpal.research.kfg
 
 import org.objectweb.asm.tree.ClassNode
@@ -12,7 +14,6 @@ import org.vorpal.research.kfg.ir.value.instruction.InstructionFactory
 import org.vorpal.research.kfg.type.SystemTypeNames
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.util.Flags
-import org.vorpal.research.kthelper.defaultHashCode
 import java.io.File
 
 data class Package(val components: List<String>, val isConcrete: Boolean) {
@@ -79,7 +80,12 @@ data class Package(val components: List<String>, val isConcrete: Boolean) {
         }
     }
 
-    override fun hashCode() = defaultHashCode(components, isConcrete)
+    override fun hashCode(): Int {
+        var result = components.hashCode()
+        result = 31 * result + isConcrete.hashCode()
+        return result
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other?.javaClass != this.javaClass) return false

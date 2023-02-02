@@ -6,7 +6,7 @@
 
     <groupId>org.vorpal.research</groupId>
     <artifactId>kfg</artifactId>
-    <version>0.4.3</version>
+    <version>0.4.4</version>
 
     <properties>
         <jvm.version>1.8</jvm.version>
@@ -16,12 +16,12 @@
         <maven.compiler.source>${jvm.version}</maven.compiler.source>
         <maven.compiler.target>${jvm.version}</maven.compiler.target>
 
-        <kotlin.version>1.7.20</kotlin.version>
+        <kotlin.version>1.8.0</kotlin.version>
         <compiler-plugin.version>3.5.1</compiler-plugin.version>
 
         <exec.main>org.vorpal.research.kfg.MainKt</exec.main>
 
-        <kt-helper.version>0.1.6</kt-helper.version>
+        <kt-helper.version>0.1.7</kt-helper.version>
         <asm.version>9.4</asm.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>

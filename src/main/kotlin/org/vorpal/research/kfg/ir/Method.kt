@@ -13,7 +13,6 @@ import org.vorpal.research.kfg.util.jsrInlined
 import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.ktassert
 import org.vorpal.research.kthelper.collection.queueOf
-import org.vorpal.research.kthelper.defaultHashCode
 import org.vorpal.research.kthelper.graph.GraphView
 import org.vorpal.research.kthelper.graph.PredecessorGraph
 import org.vorpal.research.kthelper.graph.Viewable
@@ -22,7 +21,7 @@ data class MethodDescriptor(
     val args: List<Type>,
     val returnType: Type
 ) {
-    private val hash = defaultHashCode(args, returnType)
+    private val hash = args.hashCode() * 31 + returnType.hashCode()
 
     companion object {
         fun fromDesc(tf: TypeFactory, desc: String): MethodDescriptor {

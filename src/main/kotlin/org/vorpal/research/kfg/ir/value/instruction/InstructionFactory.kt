@@ -5,8 +5,8 @@ import org.vorpal.research.kfg.ir.*
 import org.vorpal.research.kfg.ir.value.*
 import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.Type
-import org.vorpal.research.kthelper.collection.ListBuilder
 
+@Suppress("MemberVisibilityCanBePrivate", "unused")
 class InstructionFactory internal constructor(val cm: ClassManager) {
     private val types get() = cm.type
 
@@ -129,8 +129,8 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
     fun getExitMonitor(ctx: UsageContext, owner: Value): Instruction = ExitMonitorInst(types.voidType, owner, ctx)
 
     fun getJump(ctx: UsageContext, successor: BasicBlock): Instruction = JumpInst(types.voidType, successor, ctx)
-    fun getBranch(ctx: UsageContext, cond: Value, trueSucc: BasicBlock, falseSucc: BasicBlock): Instruction =
-        BranchInst(cond, types.voidType, trueSucc, falseSucc, ctx)
+    fun getBranch(ctx: UsageContext, cond: Value, trueSuccessor: BasicBlock, falseSuccessor: BasicBlock): Instruction =
+        BranchInst(cond, types.voidType, trueSuccessor, falseSuccessor, ctx)
 
     fun getSwitch(ctx: UsageContext, key: Value, default: BasicBlock, branches: Map<Value, BasicBlock>): Instruction {
         val temp = branches.toList()
@@ -275,6 +275,7 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
 
 }
 
+@Suppress("unused")
 interface InstructionBuilder {
     val cm: ClassManager
     val ctx: UsageContext
@@ -669,11 +670,12 @@ class InstructionBuilderImpl(
 class InstructionListBuilderImpl(
     override val cm: ClassManager,
     override val ctx: UsageContext
-) : ListBuilder<Instruction>(), InstructionBuilder
+) : MutableList<Instruction> by mutableListOf(), InstructionBuilder
 
 fun inst(cm: ClassManager, ctx: UsageContext, body: InstructionBuilder.() -> Instruction): Instruction =
     InstructionBuilderImpl(cm, ctx).body()
 
+@Suppress("unused")
 fun insts(
     cm: ClassManager,
     ctx: UsageContext,
