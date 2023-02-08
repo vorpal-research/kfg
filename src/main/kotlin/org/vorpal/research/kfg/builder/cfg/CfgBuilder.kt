@@ -791,7 +791,7 @@ class CfgBuilder(
         stack.clear()
         locals.clear()
 
-        lastFrame = when (insn.type) {
+        lastFrame = when (insn.frameType) {
             F_NEW -> FrameState.parse(types, method, insn)
             F_FULL -> FrameState.parse(types, method, insn)
             F_APPEND -> lastFrame.appendFrame(insn)
@@ -1094,7 +1094,7 @@ class CfgBuilder(
                 ?: unreachable("Block ${block.name} does not define required local $index")
             value.replaceAllUsesWith(actualValue)
         }
-        for ((index, value) in mappedFrame.stack.withIndex()) {
+        for ((index, value) in mappedFrame.stack.toList().withIndex()) {
             val actualValue = stack[index]
             value.replaceAllUsesWith(actualValue)
         }

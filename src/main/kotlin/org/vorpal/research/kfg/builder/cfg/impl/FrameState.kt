@@ -24,6 +24,7 @@ private object TopType : Type() {
 
     override val isConcrete: Boolean
         get() = true
+
     override fun isSubtypeOf(other: Type) = false
 }
 
@@ -39,6 +40,7 @@ private object UninitializedThisType : Type() {
 
     override val isConcrete: Boolean
         get() = true
+
     override fun isSubtypeOf(other: Type) = false
 }
 
@@ -53,18 +55,24 @@ private fun parsePrimitiveType(tf: TypeFactory, opcode: Int) = when (opcode) {
     else -> unreachable("Unknown opcode in primitive type parsing: $opcode")
 }
 
-fun parseFrameDesc(tf: TypeFactory, desc: String): Type = when (desc[0]) {
-    'V' -> tf.voidType
-    'Z' -> tf.boolType
-    'B' -> tf.byteType
-    'C' -> tf.charType
-    'S' -> tf.shortType
-    'I' -> tf.intType
-    'J' -> tf.longType
-    'F' -> tf.floatType
-    'D' -> tf.doubleType
-    '[' -> parseDescOrNull(tf, desc.drop(1))!!.asArray
-    else -> tf.getRefType(desc)
+fun parseFrameDesc(tf: TypeFactory, desc: String): Type = when (desc.length) {
+    1 -> when (desc[0]) {
+        'V' -> tf.voidType
+        'Z' -> tf.boolType
+        'B' -> tf.byteType
+        'C' -> tf.charType
+        'S' -> tf.shortType
+        'I' -> tf.intType
+        'J' -> tf.longType
+        'F' -> tf.floatType
+        'D' -> tf.doubleType
+        else -> unreachable("Unknown primitive type descriptor: $desc")
+    }
+
+    else -> when (desc[0]) {
+        '[' -> parseDescOrNull(tf, desc.drop(1))!!.asArray
+        else -> tf.getRefType(desc)
+    }
 }
 
 private fun parseType(types: TypeFactory, any: Any): Type = when (any) {
@@ -82,6 +90,7 @@ private fun parseType(types: TypeFactory, any: Any): Type = when (any) {
         }
         parseFrameDesc(types, newNode.desc)
     }
+
     else -> unreachable("Unexpected local type $any")
 }
 
@@ -111,10 +120,11 @@ private fun List<*>?.parseStack(types: TypeFactory): SortedMap<Int, Type> {
 }
 
 internal data class FrameState(
-        val types: TypeFactory,
-        val method: Method,
-        private val innerLocal: SortedMap<Int, Type>,
-        private val innerStack: SortedMap<Int, Type>) {
+    val types: TypeFactory,
+    val method: Method,
+    private val innerLocal: SortedMap<Int, Type>,
+    private val innerStack: SortedMap<Int, Type>
+) {
     val local: SortedMap<Int, Type> get() = innerLocal.filtered
     val stack: SortedMap<Int, Type> get() = innerStack.filtered
 
@@ -128,16 +138,16 @@ internal data class FrameState(
 
     companion object {
         fun parse(types: TypeFactory, method: Method, inst: FrameNode) = FrameState(
-                types,
-                method,
-                inst.local.parseLocals(types),
-                inst.stack.parseStack(types)
+            types,
+            method,
+            inst.local.parseLocals(types),
+            inst.stack.parseStack(types)
         )
 
         fun parse(types: TypeFactory, method: Method, locals: Map<Int, Value>, stack: List<Value>) = FrameState(
-                types,
-                method,
-                locals.mapValues { it.value.type }.toSortedMap(),
+            types,
+            method,
+            locals.mapValues { it.value.type }.toSortedMap(),
             stack.withIndex().associate { it.index to it.value.type }.toSortedMap()
         )
     }
