@@ -17,6 +17,7 @@ import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kfg.util.print
 import org.vorpal.research.kfg.visitor.Loop
+import org.vorpal.research.kthelper.assert.ktassert
 import org.vorpal.research.kthelper.assert.unreachable
 import org.vorpal.research.kthelper.collection.queueOf
 import org.vorpal.research.kthelper.graph.LoopDetector
@@ -141,8 +142,9 @@ class CfgBuilder(
     private fun createLocalPhis(bb: BasicBlock, predFrames: List<BlockFrame>, definedLocals: Map<Int, Type>) {
         for ((local, type) in definedLocals) {
             val incomings = predFrames.associate {
-                it.bb to (it.locals[local]
-                    ?: unreachable("Predecessor frame does not contain a local value $local"))
+                val value = it.locals[local]
+                ktassert(value != null, "Predecessor frame does not contain a local value $value")
+                it.bb to value!!
             }
 
             val incomingValues = incomings.values.toSet()
@@ -392,7 +394,9 @@ class CfgBuilder(
     }
 
     private fun convertLocalLoad(insn: VarInsnNode) {
-        push(locals[insn.`var`]!!)
+        val local = locals[insn.`var`]
+        ktassert(local != null, "Local variable ${insn.`var`} is not defined")
+        push(local!!)
     }
 
     private fun convertLocalStore(insn: VarInsnNode) {
