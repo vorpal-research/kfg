@@ -147,8 +147,8 @@ internal data class FrameState(
         fun parse(types: TypeFactory, method: Method, locals: Map<Int, Value>, stack: List<Value>) = FrameState(
             types,
             method,
-            locals.mapValues { it.value.type }.toSortedMap(),
-            stack.withIndex().associate { it.index to it.value.type }.toSortedMap()
+            locals.mapValuesTo(sortedMapOf()) { it.value.type },
+            stack.withIndex().associateTo(sortedMapOf()) { it.index to it.value.type }
         )
     }
 
@@ -161,15 +161,20 @@ internal data class FrameState(
             else -> maxKey + 1
         }
         val appendedLocals = inst.local.parseLocals(types)
-        val newLocals = this.innerLocal.toMutableMap()
+        val newLocals = this.innerLocal.toSortedMap()
         for ((index, type) in appendedLocals) {
             newLocals[insertKey + index] = type
         }
-        return copy(innerLocal = newLocals.toSortedMap(), innerStack = sortedMapOf())
+        return copy(innerLocal = newLocals, innerStack = sortedMapOf())
     }
 
     fun dropFrame(inst: FrameNode): FrameState {
-        val newLocals = this.innerLocal.toList().dropLast(inst.local.size).toMap().toSortedMap()
+        val newLocals = sortedMapOf<Int, Type>()
+        val maxSize = this.innerLocal.size - inst.local.size
+        for ((index, type) in this.innerLocal) {
+            if (newLocals.size == maxSize) break
+            newLocals[index] = type
+        }
         return copy(innerLocal = newLocals, innerStack = sortedMapOf())
     }
 

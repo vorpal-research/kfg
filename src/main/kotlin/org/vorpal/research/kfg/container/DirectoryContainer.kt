@@ -41,7 +41,7 @@ class DirectoryContainer(private val file: File, pkg: Package? = null) : Contain
     private val File.fullClassName: String get() = this.relativeTo(file).path.removeSuffix(".class")
     private val File.pkg: Package get() = Package(fullClassName.dropLastWhile { it != Package.SEPARATOR })
 
-    private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
+    private inline fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
         action()
     }.getOrElse {
         if (failOnError) throw UnsupportedCfgException()

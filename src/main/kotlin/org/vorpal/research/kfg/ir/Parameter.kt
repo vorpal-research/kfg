@@ -65,7 +65,7 @@ data class MethodParameterAnnotation(
             val values = annotationNode.values.orEmpty()
                 .filterIndexed { index, _ -> index.mod(2) == 1 }
 
-            return MethodParameterAnnotation(type, mapOf(*(keys zip values).toTypedArray()))
+            return MethodParameterAnnotation(type, (keys zip values).toMap())
         }
 
         private fun getAnnotationFullName(desc: String): String {

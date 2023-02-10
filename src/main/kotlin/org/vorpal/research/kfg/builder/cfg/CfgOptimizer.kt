@@ -37,7 +37,7 @@ class CfgOptimizer(override val cm: ClassManager, val ctx: UsageContext) : Metho
                 catch.removeThrower(block)
             }
 
-            val blockPhiUsers = block.users.mapNotNull { it as? PhiInst }
+            val blockPhiUsers = block.users.filterIsInstance<PhiInst>()
             for (phi in blockPhiUsers) {
                 val parent = phi.parentUnsafe ?: continue
 

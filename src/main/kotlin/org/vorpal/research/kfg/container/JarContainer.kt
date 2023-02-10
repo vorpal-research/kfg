@@ -58,7 +58,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
         }
     }
 
-    private fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
+    private inline fun <T> failSafeAction(failOnError: Boolean, action: () -> T): T? = `try`<T?> {
         action()
     }.getOrElse {
         if (failOnError) throw UnsupportedCfgException()

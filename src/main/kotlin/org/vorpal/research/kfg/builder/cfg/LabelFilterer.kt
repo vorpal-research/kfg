@@ -4,6 +4,7 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.tree.LabelNode
 import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
+import org.vorpal.research.kthelper.collection.mapIndexedNotNullTo
 
 internal class LabelFilterer(private val mn: MethodNode) {
 
@@ -24,12 +25,16 @@ internal class LabelFilterer(private val mn: MethodNode) {
         }
 
         val clonedLabelsList = instructionList.map { if (it is LabelNode) LabelNode(Label()) else null }
-        val newReplacements = clonedLabelsList.withIndex().mapNotNull { (index, label) ->
+        val newReplacements = clonedLabelsList.mapIndexedNotNullTo(mutableMapOf()) { index, label ->
             if (label != null) {
-                instructionList[index] as LabelNode to if (replacementsList[index] != -1) clonedLabelsList[replacementsList[index]]!!
-                else label
+                val first = instructionList[index] as LabelNode
+                val second = when {
+                    replacementsList[index] != -1 -> clonedLabelsList[replacementsList[index]]!!
+                    else -> label
+                }
+                first to second
             } else null
-        }.toMap()
+        }
 
         for ((index, inst) in instructionList.withIndex()) {
             val newInst = when (inst) {

@@ -160,6 +160,14 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         return PhiInst(Slot(), type, temp.map { it.first }, temp.map { it.second }, ctx)
     }
 
+    fun getPhi(ctx: UsageContext, name: Name, type: Type, blocks: List<BasicBlock>, values: List<Value>): Instruction {
+        return PhiInst(name, type, blocks, values, ctx)
+    }
+
+    fun getPhi(ctx: UsageContext, type: Type, blocks: List<BasicBlock>, values: List<Value>): Instruction {
+        return PhiInst(Slot(), type, blocks, values, ctx)
+    }
+
     fun getCall(
         ctx: UsageContext,
         opcode: CallOpcode,
@@ -543,6 +551,12 @@ interface InstructionBuilder {
         instructions.getPhi(ctx, name, type, incomings)
 
     fun phi(name: Name, type: Type, incomings: Map<BasicBlock, Value>) = instructions.getPhi(ctx, name, type, incomings)
+
+    fun phi(name: Name, type: Type, blocks: List<BasicBlock>, values: List<Value>) =
+        instructions.getPhi(ctx, name, type, blocks, values)
+
+    fun phi(type: Type, blocks: List<BasicBlock>, values: List<Value>) =
+        instructions.getPhi(ctx, type, blocks, values)
 
     fun Method.call(klass: Class, opcode: CallOpcode, args: List<Value>) =
         instructions.getCall(ctx, opcode, this, klass, args, !returnType.isVoid)

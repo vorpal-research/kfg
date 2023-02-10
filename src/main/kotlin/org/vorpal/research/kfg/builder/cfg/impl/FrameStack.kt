@@ -36,12 +36,17 @@ internal class FrameStack(
     }
 
     override fun remove(element: Value): Boolean {
-        stack.filter { it == element }.forEach { it.removeUser(this) }
+        stack.forEach {
+            if (it == element) it.removeUser(this)
+        }
         return stack.remove(element)
     }
 
     override fun removeAll(elements: Collection<Value>): Boolean {
-        stack.filter { it in elements }.forEach { it.removeUser(this) }
+        val removeSet = elements.toSet()
+        stack.forEach {
+            if (it in removeSet) it.removeUser(this)
+        }
         return stack.removeAll(elements)
     }
 
@@ -52,7 +57,10 @@ internal class FrameStack(
     }
 
     override fun retainAll(elements: Collection<Value>): Boolean {
-        stack.filter { it !in elements }.forEach { it.removeUser(this) }
+        val removeSet = elements.toSet()
+        stack.forEach {
+            if (it !in removeSet) it.removeUser(this)
+        }
         return stack.retainAll(elements)
     }
 

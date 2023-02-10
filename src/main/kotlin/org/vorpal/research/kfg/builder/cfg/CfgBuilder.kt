@@ -87,7 +87,7 @@ class CfgBuilder(
 
     private val AbstractInsnNode.index get() = abstractNodeIndices.getOrPut(this) { method.mn.instructions.indexOf(this) }
 
-    private fun pop() = stack.removeAt(stack.lastIndex)
+    private fun pop() = stack.removeLast()
     private fun push(value: Value) = stack.add(value)
     private fun peek() = stack.last()
 
@@ -107,19 +107,20 @@ class CfgBuilder(
         predFrames: List<BlockFrame>,
         stackState: SortedMap<Int, Type>
     ) {
-        val predStacks = predFrames.associate { it.bb to it.stack.takeLast(stackState.size) }
+        val predecessors = predFrames.map { it.bb }
+        val predecessorValues = predFrames.indices.map { predFrames[it].stack.takeLast(stackState.size) }
         for ((index, type) in stackState) {
-            val incomings = predStacks.map { it.key to it.value[index] }.toMap()
-            val incomingValues = incomings.values.toSet()
+            val incomingValues = predecessorValues.map { it[index] }
+            val incomingValuesSet = incomingValues.toSet()
             when {
-                incomingValues.isEmpty() -> {
-                    val newPhi = phi(type, incomings)
+                incomingValuesSet.isEmpty() -> {
+                    val newPhi = phi(type, predecessors, incomingValues)
                     addInstruction(bb, newPhi)
                     push(newPhi)
                 }
 
-                incomingValues.size > 1 -> {
-                    val newPhi = phi(type, incomings)
+                incomingValuesSet.size > 1 -> {
+                    val newPhi = phi(type, predecessors, incomingValues)
                     addInstruction(bb, newPhi)
                     push(newPhi)
                 }
@@ -132,7 +133,7 @@ class CfgBuilder(
     private fun createStackCyclePhis(bb: BasicBlock, stackState: SortedMap<Int, Type>) {
         val sf = frames.getValue(bb)
         for ((_, type) in stackState) {
-            val phi = phi(type, mapOf())
+            val phi = phi(type, emptyList(), emptyList())
             addInstruction(bb, phi)
             push(phi)
             sf.stackPhis.add(phi as PhiInst)
@@ -141,21 +142,22 @@ class CfgBuilder(
 
     private fun createLocalPhis(bb: BasicBlock, predFrames: List<BlockFrame>, definedLocals: Map<Int, Type>) {
         for ((local, type) in definedLocals) {
-            val incomings = predFrames.associate {
-                val value = it.locals[local]
+            val predecessors = predFrames.map { it.bb }
+            val predecessorValues = predFrames.indices.map {
+                val value = predFrames[it].locals[local]
                 ktassert(value != null, "Predecessor frame does not contain a local value $value")
-                it.bb to value!!
+                value!!
             }
 
-            val incomingValues = incomings.values.toSet()
+            val predecessorValuesSet = predecessorValues.toSet()
             when {
-                incomingValues.size > 1 -> {
-                    val newPhi = phi(type, incomings)
+                predecessorValuesSet.size > 1 -> {
+                    val newPhi = phi(type, predecessors, predecessorValues)
                     addInstruction(bb, newPhi)
                     locals[local] = newPhi
                 }
 
-                else -> locals[local] = incomingValues.first()
+                else -> locals[local] = predecessorValues.first()
             }
         }
     }
@@ -163,7 +165,7 @@ class CfgBuilder(
     private fun createLocalCyclePhis(bb: BasicBlock, definedLocals: Map<Int, Type>) {
         val sf = frames.getValue(bb)
         for ((index, type) in definedLocals) {
-            val phi = phi(type, mapOf())
+            val phi = phi(type, emptyList(), emptyList())
             addInstruction(bb, phi)
             locals[index] = phi
             sf.localPhis[index] = phi as PhiInst
@@ -571,8 +573,10 @@ class CfgBuilder(
             org.objectweb.asm.Type.DOUBLE -> types.doubleType
             org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
             org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].asType
-            org.objectweb.asm.Type.METHOD -> MethodDescriptor(this.argumentTypes.map { it.asKfgType }
-                .map { it as Type }, this.returnType.asKfgType as Type)
+            org.objectweb.asm.Type.METHOD -> MethodDescriptor(
+                this.argumentTypes.map { it.asKfgType as Type },
+                this.returnType.asKfgType as Type
+            )
 
             else -> unreachable("Unknown type: $this")
         }
@@ -699,10 +703,10 @@ class CfgBuilder(
     private fun BlockFrame.getMappingFrame(frameState: FrameState): BlockFrame = unmappedBlocks.getOrPut(bb) {
         val newFrame = BlockFrame(bb)
         for ((index, type) in frameState.local) {
-            newFrame.locals[index] = phi(type, mapOf())
+            newFrame.locals[index] = phi(type, emptyList(), emptyList())
         }
         for ((_, type) in frameState.stack) {
-            newFrame.stack.add(phi(type, mapOf()))
+            newFrame.stack.add(phi(type, emptyList(), emptyList()))
         }
         newFrame
     }
@@ -724,12 +728,12 @@ class CfgBuilder(
                 predFrames.isEmpty() -> {
                     val frame = frames.getValue(block)
                     for ((_, element) in this.stack) {
-                        val generated = phi(element, mapOf())
+                        val generated = phi(element, emptyList(), emptyList())
                         push(generated)
                         frame.stack.add(generated)
                     }
                     for ((key, element) in this.local) {
-                        val generated = phi(element, mapOf())
+                        val generated = phi(element, emptyList(), emptyList())
                         locals[key] = generated
                         frame.locals[key] = generated
                     }
@@ -767,7 +771,7 @@ class CfgBuilder(
                 predFrames.isEmpty() -> {
                     val frame = frames.getValue(block)
                     for ((key, element) in this.local) {
-                        val generated = phi(element, mapOf())
+                        val generated = phi(element, emptyList(), emptyList())
                         locals[key] = generated
                         frame.locals[key] = generated
                     }
@@ -1179,26 +1183,26 @@ class CfgBuilder(
     }
 
     private fun clearUses(body: MethodBody) {
-        visitedBlocks.clear()
-        locals.clear()
-        nodeToBlock.clear()
-        blockToNode.clear()
-        for ((_, frame) in frames) {
-            frame.clear()
-        }
-        frames.clear()
-        for ((_, frame) in unmappedBlocks) {
-            frame.clear()
-        }
-        unmappedBlocks.clear()
-
-        for (inst in body.flatten()) {
-            for (value in (inst.operands + inst)) {
-                value.users.filterNot { it is Instruction }.forEach {
-                    value.removeUser(it)
-                }
-            }
-        }
+//        visitedBlocks.clear()
+//        locals.clear()
+//        nodeToBlock.clear()
+//        blockToNode.clear()
+//        for ((_, frame) in frames) {
+//            frame.clear()
+//        }
+//        frames.clear()
+//        for ((_, frame) in unmappedBlocks) {
+//            frame.clear()
+//        }
+//        unmappedBlocks.clear()
+//
+//        for (inst in body.flatten()) {
+//            for (value in (inst.operands + inst)) {
+//                value.users.filterNot { it is Instruction }.forEach {
+//                    value.removeUser(it)
+//                }
+//            }
+//        }
     }
 
     private fun buildLoops(body: MethodBody) {

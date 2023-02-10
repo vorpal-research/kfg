@@ -48,8 +48,9 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     }
 
     private fun remapPhis(target: BasicBlock, from: Set<BasicBlock>, to: BasicBlock) = with(ctx) {
-        for (phi in target.instructions.mapNotNull { it as? PhiInst }) {
-            val fromIncomings = phi.incomings.filter { it.key in from }
+        for (phi in target.instructions.filterIsInstance<PhiInst>()) {
+            val incomings = phi.incomings
+            val fromIncomings = incomings.filterKeys { it in from }
             val fromValues = fromIncomings.values.toSet()
             val toValue = when (fromValues.size) {
                 1 -> fromValues.first()
@@ -60,7 +61,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                 }
             }
 
-            val targetIncomings = phi.incomings.filter { it.key !in from }.toMutableMap()
+            val targetIncomings = incomings.filterTo(mutableMapOf()) { it.key !in from }
             targetIncomings[to] = toValue
             val targetPhi = inst(cm) { phi(phi.type, targetIncomings) }
             target.insertBefore(phi, targetPhi)
@@ -73,7 +74,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
     private fun mapToCatch(original: BasicBlock, new: BasicBlock, catch: CatchBlock) = with(ctx) {
         new.linkThrowing(catch)
 
-        for (phi in catch.mapNotNull { it as? PhiInst }) {
+        for (phi in catch.filterIsInstance<PhiInst>()) {
             val incomings = phi.incomings.toMutableMap()
             incomings[new] = incomings[original]!!
             val newPhi = inst(cm) { phi(phi.type, incomings) }
@@ -89,7 +90,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         originals: Set<BasicBlock>,
         new: BasicBlock
     ): Value {
-        val originalIncomings = incomings.filter { (key, _) -> key in originals }.toMap()
+        val originalIncomings = incomings.filterKeys { key -> key in originals }
         return new.filterIsInstance<PhiInst>().firstOrNull { newPhi ->
             val incs = newPhi.incomings
             originalIncomings.all { (key, value) -> incs[key] == value }
@@ -100,7 +101,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         for (catch in originals.flatMapTo(mutableSetOf()) { it.handlers }) {
             new.linkThrowing(catch)
 
-            for (phi in catch.mapNotNull { it as? PhiInst }) {
+            for (phi in catch.filterIsInstance<PhiInst>()) {
                 val incomings = phi.incomings.toMutableMap()
                 val newIncoming = parseNewIncoming(incomings, originals, new)
                 incomings[new] = newIncoming

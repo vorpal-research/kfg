@@ -12,6 +12,7 @@ import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
+import org.vorpal.research.kthelper.collection.mapToArray
 import org.vorpal.research.kthelper.collection.stackOf
 import org.objectweb.asm.Handle as AsmHandle
 import org.objectweb.asm.Type as AsmType
@@ -350,7 +351,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val default = inst.default.label
         val branches = inst.branches
         val keys = branches.keys.map { (it as IntConstant).value }.sorted().toIntArray()
-        val labels = keys.map { branches[values.getInt(it)]!!.label }.toTypedArray()
+        val labels = keys.mapToArray { branches[values.getInt(it)]!!.label }
         val insn = LookupSwitchInsnNode(default, keys, labels)
         currentInsnList.add(insn)
         stackPop()
@@ -401,7 +402,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             inst.methodName,
             inst.methodDescriptor.asmDesc,
             inst.bootstrapMethod.asAsmHandle,
-            *inst.bootstrapMethodArgs.map {
+            *inst.bootstrapMethodArgs.mapToArray {
                 when (it) {
                     is IntConstant -> it.value
                     is FloatConstant -> it.value
@@ -413,7 +414,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
                     is Handle -> it.asAsmHandle
                     else -> unreachable("Unknown arg of bsm: $it")
                 }
-            }.toTypedArray()
+            }
         )
         val operands = inst.operands
         addOperandsToStack(operands)
@@ -429,7 +430,7 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
         val min = (inst.min as IntConstant).value
         val max = (inst.max as IntConstant).value
         val default = inst.default.label
-        val labels = inst.branches.map { it.label }.toTypedArray()
+        val labels = inst.branches.mapToArray { it.label }
         val insn = TableSwitchInsnNode(min, max, default, *labels)
         currentInsnList.add(insn)
         stackPop()
