@@ -117,11 +117,19 @@ class ClassManager(val config: KfgConfig = KfgConfigBuilder().build()) {
         get() = classes.values.filterIsInstanceTo(mutableSetOf())
 
     fun initialize(loader: ClassLoader, vararg containers: Container) {
+        initialize(loader, containers.toList())
+    }
+
+    fun initialize(vararg containers: Container) {
+        initialize(containers.toList())
+    }
+
+    fun initialize(loader: ClassLoader, containers: List<Container>) {
         val container2ClassNode = containers.associateWith { it.parse(flags, config.failOnError, loader) }
         initialize(container2ClassNode)
     }
 
-    fun initialize(vararg containers: Container) {
+    fun initialize(containers: List<Container>) {
         val container2ClassNode = containers.associateWith { it.parse(flags) }
         initialize(container2ClassNode)
     }
