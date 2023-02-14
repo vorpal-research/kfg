@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.vorpal.research.kfg.ir
 
 import org.objectweb.asm.tree.ClassNode
@@ -10,6 +12,7 @@ import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kthelper.assert.ktassert
 
+@Suppress("MemberVisibilityCanBePrivate")
 abstract class Class : Node {
     protected data class MethodKey(val name: String, val desc: MethodDescriptor) {
         constructor(tf: TypeFactory, name: String, desc: String) : this(name, MethodDescriptor.fromDesc(tf, desc))
@@ -107,6 +110,7 @@ abstract class Class : Node {
 
     internal fun init() {
         this.innerClassesMap.putAll(cn.innerClasses.map { it.name to Modifiers(it.access) }.toMutableSet())
+        this.outerClassName = cn.outerClass
         for (fieldNode in cn.fields) {
             val field = Field(cm, this, fieldNode)
             innerFields[field.name to field.type] = field
@@ -171,6 +175,10 @@ abstract class Class : Node {
 
     fun removeField(field: Field) = innerFields.remove(field.name to field.type)
     fun removeMethod(method: Method) = innerMethods.remove(method.name to method.desc)
+
+    fun addInnerClass(klass: Class, modifiers: Modifiers) {
+        innerClassesMap[klass.fullName] = modifiers
+    }
 
     override fun toString() = fullName
     override fun hashCode() = fullName.hashCode()
