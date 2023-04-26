@@ -40,7 +40,7 @@ class TableSwitchInst internal constructor(
 
     override fun print() = buildString {
         append("tableswitch ($index) {")
-        for ((index, successor) in branches.withIndex()) {
+        for ((index, successor) in range.zip(branches)) {
             append("$index -> ${successor.name}; ")
         }
         append("else -> ${default.name}}")
