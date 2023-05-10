@@ -6,6 +6,7 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kthelper.assert.asserted
 
+@Suppress("MemberVisibilityCanBePrivate")
 class FieldLoadInst : Instruction {
     val field: Field
     val isStatic: Boolean

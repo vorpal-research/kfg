@@ -6,7 +6,15 @@ import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnsupportedCfgException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
-import org.vorpal.research.kfg.util.*
+import org.vorpal.research.kfg.util.Flags
+import org.vorpal.research.kfg.util.allEntries
+import org.vorpal.research.kfg.util.classLoader
+import org.vorpal.research.kfg.util.hasFrameInfo
+import org.vorpal.research.kfg.util.isClass
+import org.vorpal.research.kfg.util.longestCommonPrefix
+import org.vorpal.research.kfg.util.readClassNode
+import org.vorpal.research.kfg.util.recomputeFrames
+import org.vorpal.research.kfg.util.write
 import org.vorpal.research.kthelper.`try`
 import org.vorpal.research.kthelper.write
 import java.io.File

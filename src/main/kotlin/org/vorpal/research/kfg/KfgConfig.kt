@@ -1,15 +1,18 @@
 package org.vorpal.research.kfg
 
-import org.apache.commons.cli.*
+import org.apache.commons.cli.CommandLine
+import org.apache.commons.cli.DefaultParser
+import org.apache.commons.cli.HelpFormatter
+import org.apache.commons.cli.Option
+import org.apache.commons.cli.Options
+import org.apache.commons.cli.ParseException
 import org.vorpal.research.kfg.util.Flags
 import org.vorpal.research.kthelper.KtException
 import org.vorpal.research.kthelper.assert.ktassert
 import java.io.PrintWriter
 import java.io.StringWriter
 
-class InvalidKfgConfigException(msg: String) : KtException(msg) {
-    constructor() : this("")
-}
+class InvalidKfgConfigException(msg: String) : KtException(msg)
 
 data class KfgConfig(
         val flags: Flags = Flags.readAll,
@@ -24,6 +27,7 @@ data class KfgConfig(
     }
 }
 
+@Suppress("unused")
 class KfgConfigBuilder private constructor(private val current: KfgConfig) {
     constructor() : this(KfgConfig())
 
@@ -36,6 +40,7 @@ class KfgConfigBuilder private constructor(private val current: KfgConfig) {
     fun build() = current
 }
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class KfgConfigParser(args: Array<String>) {
     private val options = Options()
     private val cmd: CommandLine

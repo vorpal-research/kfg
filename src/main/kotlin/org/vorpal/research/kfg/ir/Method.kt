@@ -5,7 +5,10 @@ import org.objectweb.asm.tree.MethodNode
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.builder.cfg.CfgBuilder
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.ir.value.BlockUsageContext
+import org.vorpal.research.kfg.ir.value.BlockUser
+import org.vorpal.research.kfg.ir.value.SlotTracker
+import org.vorpal.research.kfg.ir.value.UsableBlock
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kfg.type.parseMethodDesc
@@ -238,7 +241,7 @@ class Method : Node {
 
     // we need this suppresses, because when setter
     // is called from constructor field is actually null
-    @Suppress("SAFE_CALL_WILL_CHANGE_NULLABILITY", "UNNECESSARY_SAFE_CALL")
+    @Suppress("UNNECESSARY_SAFE_CALL")
     var desc: MethodDescriptor
         set(value) {
             field?.let { klass.updateMethod(field, value, this) }

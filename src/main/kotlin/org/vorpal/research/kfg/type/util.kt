@@ -8,6 +8,7 @@ import java.util.regex.Pattern
 
 val FrameNode.frameType get() = FrameNodeHelper.getFrameType(this)
 
+@Suppress("RecursivePropertyAccessor")
 val Type.internalDesc: String
     get() = when {
         this.isPrimitive -> this.asmDesc
@@ -127,6 +128,7 @@ private fun parseNamedType(tf: TypeFactory, name: String): Type? = when (name) {
     else -> null
 }
 
+@Suppress("unused")
 fun parseStringToType(tf: TypeFactory, name: String): Type {
     var arrCount = 0
     val end = name.dropLastWhile {
@@ -141,6 +143,8 @@ fun parseStringToType(tf: TypeFactory, name: String): Type {
     return subtype
 }
 
+@Suppress("unused")
+@Deprecated("Unused")
 val Type.expandedBitSize
     get() = when (this) {
         is ClassType -> klass.fields.fold(0) { acc, field -> acc + field.type.bitSize }

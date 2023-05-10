@@ -5,6 +5,7 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
+@Suppress("MemberVisibilityCanBePrivate")
 class InstanceOfInst internal constructor(
     name: Name,
     type: Type,

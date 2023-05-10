@@ -10,6 +10,7 @@ import org.vorpal.research.kfg.type.VoidType
 import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.assert.ktassert
 
+@Suppress("MemberVisibilityCanBePrivate")
 class CallInst : Instruction {
     val opcode: CallOpcode
     val method: Method

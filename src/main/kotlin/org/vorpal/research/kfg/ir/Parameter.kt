@@ -21,9 +21,7 @@ open class Parameter(
         if (index != other.index) return false
         if (type != other.type) return false
         if (asmDesc != other.asmDesc) return false
-        if (annotations != other.annotations) return false
-
-        return true
+        return annotations == other.annotations
     }
 
     override fun hashCode(): Int {

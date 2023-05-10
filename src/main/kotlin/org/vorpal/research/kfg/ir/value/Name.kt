@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.vorpal.research.kfg.ir.value
 
 import org.vorpal.research.kfg.ir.BasicBlock
@@ -40,7 +42,7 @@ data class ConstantName(val name: String) : Name() {
     override fun toString() = name
 }
 
-class UndefinedName() : Name() {
+class UndefinedName : Name() {
     override fun clone() = this
     override fun toString(): String {
         return if (index == -1) "UNDEFINED_${System.identityHashCode(this)}" else "undefined$index"
@@ -51,8 +53,9 @@ class SlotTracker(private val methodBody: MethodBody) {
     private val blocks = hashMapOf<String, Int>()
     private val strings = hashMapOf<String, Int>()
     private var slots: Int = 0
-    private var undefs: Int = 0
+    private var undefinedNames: Int = 0
 
+    @Suppress("unused")
     constructor(method: Method) : this(method.body)
 
     fun addBlock(block: BasicBlock) {
@@ -75,7 +78,7 @@ class SlotTracker(private val methodBody: MethodBody) {
                 strings[name.name] = result + 1
                 result
             }
-            is UndefinedName -> undefs++
+            is UndefinedName -> undefinedNames++
             else -> -1
         }
     }
@@ -89,7 +92,7 @@ class SlotTracker(private val methodBody: MethodBody) {
         strings.clear()
         slots = 0
         blocks.clear()
-        undefs = 0
+        undefinedNames = 0
         for (bb in methodBody) {
             addBlock(bb)
             for (inst in bb) {
@@ -97,7 +100,7 @@ class SlotTracker(private val methodBody: MethodBody) {
                     val name = value.name
                     name.index = when (name) {
                         is Slot -> slots++
-                        is UndefinedName -> undefs++
+                        is UndefinedName -> undefinedNames++
                         is StringName -> {
                             val result = strings.getOrDefault(name.name, 0)
                             strings[name.name] = result + 1
@@ -111,6 +114,7 @@ class SlotTracker(private val methodBody: MethodBody) {
     }
 }
 
+@Suppress("unused")
 class NameMapper(val method: Method) {
     private val stringToName = hashMapOf<String, Name>()
     private val nameToValue = hashMapOf<Name, Value>()

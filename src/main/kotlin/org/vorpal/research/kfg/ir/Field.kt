@@ -37,9 +37,7 @@ class Field : Node {
         other as Field
 
         if (klass != other.klass) return false
-        if (type != other.type) return false
-
-        return true
+        return type == other.type
     }
 
     override fun hashCode(): Int {

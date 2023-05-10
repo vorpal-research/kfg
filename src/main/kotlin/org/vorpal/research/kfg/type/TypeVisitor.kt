@@ -2,6 +2,7 @@ package org.vorpal.research.kfg.type
 
 import org.vorpal.research.kthelper.assert.unreachable
 
+@Suppress("unused")
 interface TypeVisitor {
     val types: TypeFactory
 

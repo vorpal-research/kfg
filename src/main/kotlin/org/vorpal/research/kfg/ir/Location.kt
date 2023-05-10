@@ -2,6 +2,7 @@ package org.vorpal.research.kfg.ir
 
 import org.vorpal.research.kfg.Package
 
+@Suppress("MemberVisibilityCanBePrivate")
 data class Location(val pkg: Package, val file: String, val line: Int) {
     companion object {
         val UNKNOWN_PACKAGE = Package.defaultPackage

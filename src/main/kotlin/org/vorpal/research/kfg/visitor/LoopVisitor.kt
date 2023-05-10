@@ -31,15 +31,26 @@ interface LoopVisitor : MethodVisitor {
     }
 }
 
-data class LoopNode(val parent: Loop, val block: BasicBlock) : PredecessorGraph.PredecessorVertex<LoopNode> {
+data class LoopNode(
+    val parent: Loop,
+    val block: BasicBlock
+) : PredecessorGraph.PredecessorVertex<LoopNode> {
     override val predecessors: Set<LoopNode>
-        get() = block.predecessors.filter { it in parent.body }.mapTo(mutableSetOf()) { LoopNode(parent, it) }
+        get() = block.predecessors
+            .filter { it in parent.body }
+            .mapTo(mutableSetOf()) { LoopNode(parent, it) }
 
     override val successors: Set<LoopNode>
-        get() = block.successors.filter { it in parent.body }.mapTo(mutableSetOf()) { LoopNode(parent, it) }
+        get() = block.successors
+            .filter { it in parent.body }
+            .mapTo(mutableSetOf()) { LoopNode(parent, it) }
 }
 
-class Loop(val header: BasicBlock, val body: MutableSet<BasicBlock>) : PredecessorGraph<LoopNode>, Iterable<LoopNode>, Viewable {
+@Suppress("MemberVisibilityCanBePrivate", "unused")
+class Loop(
+    val header: BasicBlock,
+    val body: MutableSet<BasicBlock>
+) : PredecessorGraph<LoopNode>, Iterable<LoopNode>, Viewable {
     internal var parentUnsafe: Loop? = null
 
     val parent get() = asserted(hasParent) { parentUnsafe!! }

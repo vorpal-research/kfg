@@ -6,7 +6,17 @@ import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnsupportedCfgException
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.ConcreteClass
-import org.vorpal.research.kfg.util.*
+import org.vorpal.research.kfg.util.Flags
+import org.vorpal.research.kfg.util.JarBuilder
+import org.vorpal.research.kfg.util.classLoader
+import org.vorpal.research.kfg.util.hasFrameInfo
+import org.vorpal.research.kfg.util.isClass
+import org.vorpal.research.kfg.util.isManifest
+import org.vorpal.research.kfg.util.longestCommonPrefix
+import org.vorpal.research.kfg.util.pkg
+import org.vorpal.research.kfg.util.readClassNode
+import org.vorpal.research.kfg.util.recomputeFrames
+import org.vorpal.research.kfg.util.write
 import org.vorpal.research.kthelper.`try`
 import java.io.File
 import java.io.FileInputStream
@@ -134,6 +144,7 @@ class JarContainer(override val path: Path, pkg: Package? = null) : Container {
     }
 
     override fun update(cm: ClassManager, target: Path, loader: ClassLoader): JarContainer {
+        @Suppress("BooleanLiteralArgument")
         unpack(cm, target, false, false, false, loader)
 
         val absolutePath = target.toAbsolutePath()

@@ -7,6 +7,7 @@ import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kthelper.assert.ktassert
 
+@Suppress("MemberVisibilityCanBePrivate")
 class NewArrayInst internal constructor(
     name: Name,
     type: Type,

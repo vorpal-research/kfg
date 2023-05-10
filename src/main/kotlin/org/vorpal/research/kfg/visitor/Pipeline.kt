@@ -72,7 +72,7 @@ class PackagePipeline(
 
 class MultiplePackagePipeline(
     cm: ClassManager,
-    val targets: List<Package>,
+    private val targets: List<Package>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     override fun run() {
@@ -118,6 +118,7 @@ open class MethodPipeline(
     private val classTargets = targets.map { it.klass }.toMutableSet()
     override val pipeline = pipeline.map { it.methodWrap() }.toMutableList()
 
+    @Suppress("MemberVisibilityCanBePrivate")
     protected fun NodeVisitor.methodWrap(): ClassVisitor = when (val visitor = this) {
         is ClassVisitor -> object : ClassVisitor {
             override val cm get() = this@MethodPipeline.cm
@@ -189,6 +190,7 @@ fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.
 fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
     buildPipeline(cm, target, init).run()
 
+@Suppress("unused")
 fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
     buildPipeline(cm, targets, init).run()
 

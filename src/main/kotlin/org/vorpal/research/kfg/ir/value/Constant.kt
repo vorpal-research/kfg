@@ -12,9 +12,7 @@ class BoolConstant(val value: Boolean, type: Type) : Constant(value.toString(), 
 
         other as BoolConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -27,9 +25,7 @@ class ByteConstant(val value: Byte, type: Type) : Constant(value.toString(), typ
 
         other as ByteConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -42,9 +38,7 @@ class ShortConstant(val value: Short, type: Type) : Constant(value.toString(), t
 
         other as ShortConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -57,9 +51,7 @@ class IntConstant(val value: Int, type: Type) : Constant(value.toString(), type)
 
         other as IntConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -72,9 +64,7 @@ class LongConstant(val value: Long, type: Type) : Constant(value.toString(), typ
 
         other as LongConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -87,9 +77,7 @@ class CharConstant(val value: Char, type: Type) : Constant(value.toString(), typ
 
         other as CharConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -102,9 +90,7 @@ class FloatConstant(val value: Float, type: Type) : Constant(value.toString(), t
 
         other as FloatConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -117,9 +103,7 @@ class DoubleConstant(val value: Double, type: Type) : Constant(value.toString(),
 
         other as DoubleConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -132,9 +116,7 @@ class StringConstant(val value: String, type: Type) : Constant("\"$value\"", typ
 
         other as StringConstant
 
-        if (value != other.value) return false
-
-        return true
+        return value == other.value
     }
 
     override fun hashCode(): Int = value.hashCode()
@@ -147,9 +129,7 @@ class MethodConstant(val method: Method, type: Type) : Constant(method.name, typ
 
         other as MethodConstant
 
-        if (method != other.method) return false
-
-        return true
+        return method == other.method
     }
 
     override fun hashCode(): Int = method.hashCode()

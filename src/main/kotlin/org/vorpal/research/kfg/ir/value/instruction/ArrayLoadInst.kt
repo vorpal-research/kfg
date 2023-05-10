@@ -13,6 +13,7 @@ class ArrayLoadInst internal constructor(
     ctx: UsageContext
 ) : Instruction(name, type, mutableListOf(arrayRef, index), ctx) {
 
+    @Suppress("MemberVisibilityCanBePrivate")
     val arrayRef: Value
         get() = ops[0]
 

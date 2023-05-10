@@ -5,6 +5,7 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
+@Suppress("MemberVisibilityCanBePrivate")
 class ThrowInst internal constructor(type: Type, exc: Value, ctx: UsageContext) :
     TerminateInst(UndefinedName(), type, mutableListOf(exc), mutableListOf(), ctx) {
 

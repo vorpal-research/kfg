@@ -1,8 +1,16 @@
 package org.vorpal.research.kfg.ir.value.instruction
 
 import org.vorpal.research.kfg.ClassManager
-import org.vorpal.research.kfg.ir.*
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.ir.BasicBlock
+import org.vorpal.research.kfg.ir.Class
+import org.vorpal.research.kfg.ir.Field
+import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodDescriptor
+import org.vorpal.research.kfg.ir.value.Name
+import org.vorpal.research.kfg.ir.value.Slot
+import org.vorpal.research.kfg.ir.value.StringName
+import org.vorpal.research.kfg.ir.value.UsageContext
+import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.ArrayType
 import org.vorpal.research.kfg.type.Type
 

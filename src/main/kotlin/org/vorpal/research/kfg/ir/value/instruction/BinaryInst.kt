@@ -4,6 +4,7 @@ import org.vorpal.research.kfg.ir.value.Name
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 
+@Suppress("MemberVisibilityCanBePrivate")
 class BinaryInst internal constructor(
     name: Name,
     val opcode: BinaryOpcode,

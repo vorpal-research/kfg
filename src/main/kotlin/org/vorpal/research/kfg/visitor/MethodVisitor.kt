@@ -3,13 +3,39 @@ package org.vorpal.research.kfg.visitor
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.MethodBody
-import org.vorpal.research.kfg.ir.value.instruction.*
+import org.vorpal.research.kfg.ir.value.instruction.ArrayLoadInst
+import org.vorpal.research.kfg.ir.value.instruction.ArrayStoreInst
+import org.vorpal.research.kfg.ir.value.instruction.BinaryInst
+import org.vorpal.research.kfg.ir.value.instruction.BranchInst
+import org.vorpal.research.kfg.ir.value.instruction.CallInst
+import org.vorpal.research.kfg.ir.value.instruction.CastInst
+import org.vorpal.research.kfg.ir.value.instruction.CatchInst
+import org.vorpal.research.kfg.ir.value.instruction.CmpInst
+import org.vorpal.research.kfg.ir.value.instruction.EnterMonitorInst
+import org.vorpal.research.kfg.ir.value.instruction.ExitMonitorInst
+import org.vorpal.research.kfg.ir.value.instruction.FieldLoadInst
+import org.vorpal.research.kfg.ir.value.instruction.FieldStoreInst
+import org.vorpal.research.kfg.ir.value.instruction.InstanceOfInst
+import org.vorpal.research.kfg.ir.value.instruction.Instruction
+import org.vorpal.research.kfg.ir.value.instruction.InvokeDynamicInst
+import org.vorpal.research.kfg.ir.value.instruction.JumpInst
+import org.vorpal.research.kfg.ir.value.instruction.NewArrayInst
+import org.vorpal.research.kfg.ir.value.instruction.NewInst
+import org.vorpal.research.kfg.ir.value.instruction.PhiInst
+import org.vorpal.research.kfg.ir.value.instruction.ReturnInst
+import org.vorpal.research.kfg.ir.value.instruction.SwitchInst
+import org.vorpal.research.kfg.ir.value.instruction.TableSwitchInst
+import org.vorpal.research.kfg.ir.value.instruction.TerminateInst
+import org.vorpal.research.kfg.ir.value.instruction.ThrowInst
+import org.vorpal.research.kfg.ir.value.instruction.UnaryInst
+import org.vorpal.research.kfg.ir.value.instruction.UnknownValueInst
+import org.vorpal.research.kfg.ir.value.instruction.UnreachableInst
 import org.vorpal.research.kthelper.assert.unreachable
 
 interface MethodVisitor : NodeVisitor {
 
     fun visit(method: Method) {
-        super<NodeVisitor>.visit(method)
+        super.visit(method)
         visitBody(method.body)
     }
 

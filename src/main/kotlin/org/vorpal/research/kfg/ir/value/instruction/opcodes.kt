@@ -128,6 +128,7 @@ enum class CmpOpcode(val opcode: String) {
     override fun toString() = opcode
 }
 
+@Suppress("unused")
 fun toCallOpcode(opcode: Int): CallOpcode = when (opcode) {
     Opcodes.INVOKEINTERFACE -> CallOpcode.INTERFACE
     Opcodes.INVOKESTATIC -> CallOpcode.STATIC

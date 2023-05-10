@@ -7,6 +7,7 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
+@Suppress("MemberVisibilityCanBePrivate")
 class TableSwitchInst internal constructor(
     type: Type,
     index: Value,

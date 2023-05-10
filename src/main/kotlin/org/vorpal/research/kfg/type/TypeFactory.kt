@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package org.vorpal.research.kfg.type
 
 import org.vorpal.research.kfg.ClassManager
@@ -34,6 +36,7 @@ class TypeFactory internal constructor(val cm: ClassManager) {
     val doubleType: PrimitiveType
         get() = DoubleType
 
+    @Suppress("MemberVisibilityCanBePrivate")
     val primitiveTypes: Set<PrimitiveType> by lazy {
         setOf(
             boolType,
@@ -57,6 +60,7 @@ class TypeFactory internal constructor(val cm: ClassManager) {
     fun getRefType(cname: String): Type = getRefType(cm[cname])
     fun getArrayType(component: Type): Type = component.asArray
 
+    @Suppress("MemberVisibilityCanBePrivate")
     fun getWrapper(type: PrimitiveType): Type = when (type) {
         is BoolType -> boolWrapper
         is ByteType -> byteWrapper

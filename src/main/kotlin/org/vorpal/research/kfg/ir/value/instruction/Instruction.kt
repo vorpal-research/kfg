@@ -2,7 +2,15 @@ package org.vorpal.research.kfg.ir.value.instruction
 
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Location
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.ir.value.BlockUsageContext
+import org.vorpal.research.kfg.ir.value.BlockUser
+import org.vorpal.research.kfg.ir.value.Name
+import org.vorpal.research.kfg.ir.value.UsableBlock
+import org.vorpal.research.kfg.ir.value.UsableValue
+import org.vorpal.research.kfg.ir.value.UsageContext
+import org.vorpal.research.kfg.ir.value.Value
+import org.vorpal.research.kfg.ir.value.ValueUsageContext
+import org.vorpal.research.kfg.ir.value.ValueUser
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kthelper.assert.asserted
 

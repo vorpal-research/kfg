@@ -5,6 +5,7 @@ import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.type.Type
 
+@Suppress("MemberVisibilityCanBePrivate")
 class ExitMonitorInst internal constructor(type: Type, owner: Value, ctx: UsageContext) :
     Instruction(UndefinedName(), type, mutableListOf(owner), ctx) {
 

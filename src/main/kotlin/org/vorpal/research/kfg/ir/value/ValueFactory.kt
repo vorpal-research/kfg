@@ -3,9 +3,22 @@ package org.vorpal.research.kfg.ir.value
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
-import org.vorpal.research.kfg.type.*
+import org.vorpal.research.kfg.type.BoolType
+import org.vorpal.research.kfg.type.ByteType
+import org.vorpal.research.kfg.type.CharType
+import org.vorpal.research.kfg.type.DoubleType
+import org.vorpal.research.kfg.type.FloatType
+import org.vorpal.research.kfg.type.IntType
+import org.vorpal.research.kfg.type.LongType
+import org.vorpal.research.kfg.type.Reference
+import org.vorpal.research.kfg.type.ShortType
+import org.vorpal.research.kfg.type.Type
+import org.vorpal.research.kfg.type.classType
+import org.vorpal.research.kfg.type.parseDescOrNull
+import org.vorpal.research.kfg.type.stringType
 import org.vorpal.research.kthelper.assert.unreachable
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class ValueFactory internal constructor(val cm: ClassManager) {
     val types get() = cm.type
 

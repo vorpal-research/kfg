@@ -48,4 +48,33 @@ object SystemTypeNames {
     const val stringBuffer = "java/lang/StringBuffer"
     const val linkedHashSet = "java/util/LinkedHashSet"
     const val linkedHashMap = "java/util/LinkedHashMap"
+
+    const val abstractCollectionClass = "java/util/AbstractCollection"
+    const val abstractListClass = "java/util/AbstractList"
+    const val abstractQueueClass = "java/util/AbstractQueue"
+    const val abstractSetClass = "java/util/AbstractSet"
+    const val abstractMapClass = "java/util/AbstractMap"
+
+    const val abstractStringBuilderClass = "java/lang/AbstractStringBuilder"
+    const val numberClass = "java/lang/Number"
+
+    const val atomicBooleanClass = "java/util/concurrent/atomic/AtomicBoolean"
+    const val atomicIntegerClass = "java/util/concurrent/atomic/AtomicInteger"
+    const val atomicIntegerArrayClass = "java/util/concurrent/atomic/AtomicIntegerArray"
+    const val atomicLongClass = "java/util/concurrent/atomic/AtomicLong"
+    const val atomicLongArrayClass = "java/util/concurrent/atomic/AtomicLongArray"
+    const val atomicReferenceClass = "java/util/concurrent/atomic/AtomicReference"
+    const val atomicReferenceArrayClass = "java/util/concurrent/atomic/AtomicReferenceArray"
+    const val atomicStampedReferenceClass = "java/util/concurrent/atomic/AtomicStampedReference"
+
+    const val nullptrClass = "java/lang/NullPointerException"
+    const val arrayIndexOOBClass = "java/lang/ArrayIndexOutOfBoundsException"
+    const val negativeArrayClass = "java/lang/NegativeArraySizeException"
+    const val classCastClass = "java/lang/ClassCastException"
+    const val stringIndexOOB = "java/lang/StringIndexOutOfBoundsException"
+
+    const val numberFormatClass = "java/lang/NumberFormatException"
+    const val illegalArgumentClass = "java/lang/IllegalArgumentException"
+
+    const val runtimeException = "java/lang/RuntimeException"
 }

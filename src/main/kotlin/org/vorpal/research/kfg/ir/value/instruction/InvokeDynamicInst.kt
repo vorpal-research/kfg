@@ -11,6 +11,7 @@ data class Handle(val tag: Int, val method: Method, val isInterface: Boolean) {
     override fun toString() = "@$method"
 }
 
+@Suppress("MemberVisibilityCanBePrivate")
 class InvokeDynamicInst(
     name: Name,
     val methodName: String,

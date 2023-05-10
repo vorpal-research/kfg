@@ -14,7 +14,11 @@ import org.vorpal.research.kfg.builder.asm.ClassBuilder
 import org.vorpal.research.kfg.builder.cfg.LabelFilterer
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kthelper.`try`
-import java.io.*
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.jar.JarEntry
@@ -55,6 +59,7 @@ internal val MethodNode.jsrInlined: MethodNode
 
 class ClassReadError(msg: String) : KfgException(msg)
 
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 data class Flags(val value: Int) : Comparable<Flags> {
     companion object {
         val readAll = Flags(0)
