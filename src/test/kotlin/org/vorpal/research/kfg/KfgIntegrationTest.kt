@@ -8,20 +8,24 @@ import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.usageContext
 import org.vorpal.research.kfg.visitor.ClassVisitor
 import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kthelper.collection.queueOf
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.*
-import kotlin.test.*
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 // simple test: run kfg on itself and check nothing fails
 class KfgIntegrationTest {
     private val out = ByteArrayOutputStream()
     private val err = ByteArrayOutputStream()
 
-    val pkg = Package.parse("org.vorpal.research.kfg.*")
-    lateinit var jar: JarContainer
+    private val pkg = Package.parse("org.vorpal.research.kfg.*")
+    private lateinit var jar: JarContainer
     lateinit var cm: ClassManager
 
     @BeforeTest
@@ -110,9 +114,9 @@ class KfgIntegrationTest {
         val klass = cm.concreteClasses.random()
         val targetClasses = run {
             val result = mutableSetOf<Class>(klass)
-            val queue = ArrayDeque<Class>(listOf(klass))
+            val queue = queueOf<Class>(klass)
             while (queue.isNotEmpty()) {
-                val first = queue.pollFirst()
+                val first = queue.poll()
                 result += first
                 queue.addAll(first.innerClasses.keys.filterNot { it in result })
             }

@@ -1,19 +1,131 @@
 package org.vorpal.research.kfg.builder.cfg
 
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.Opcodes.*
-import org.objectweb.asm.tree.*
-import org.vorpal.research.kfg.*
+import org.objectweb.asm.Opcodes.ACONST_NULL
+import org.objectweb.asm.Opcodes.ALOAD
+import org.objectweb.asm.Opcodes.ANEWARRAY
+import org.objectweb.asm.Opcodes.ARRAYLENGTH
+import org.objectweb.asm.Opcodes.ASTORE
+import org.objectweb.asm.Opcodes.ATHROW
+import org.objectweb.asm.Opcodes.BIPUSH
+import org.objectweb.asm.Opcodes.CHECKCAST
+import org.objectweb.asm.Opcodes.D2F
+import org.objectweb.asm.Opcodes.D2I
+import org.objectweb.asm.Opcodes.D2L
+import org.objectweb.asm.Opcodes.DCMPG
+import org.objectweb.asm.Opcodes.DCONST_0
+import org.objectweb.asm.Opcodes.DCONST_1
+import org.objectweb.asm.Opcodes.DNEG
+import org.objectweb.asm.Opcodes.DREM
+import org.objectweb.asm.Opcodes.DUP
+import org.objectweb.asm.Opcodes.DUP2
+import org.objectweb.asm.Opcodes.DUP2_X1
+import org.objectweb.asm.Opcodes.DUP2_X2
+import org.objectweb.asm.Opcodes.DUP_X1
+import org.objectweb.asm.Opcodes.DUP_X2
+import org.objectweb.asm.Opcodes.F2D
+import org.objectweb.asm.Opcodes.F2I
+import org.objectweb.asm.Opcodes.F2L
+import org.objectweb.asm.Opcodes.FCONST_0
+import org.objectweb.asm.Opcodes.FCONST_2
+import org.objectweb.asm.Opcodes.F_APPEND
+import org.objectweb.asm.Opcodes.F_CHOP
+import org.objectweb.asm.Opcodes.F_FULL
+import org.objectweb.asm.Opcodes.F_NEW
+import org.objectweb.asm.Opcodes.F_SAME
+import org.objectweb.asm.Opcodes.F_SAME1
+import org.objectweb.asm.Opcodes.GETFIELD
+import org.objectweb.asm.Opcodes.GETSTATIC
+import org.objectweb.asm.Opcodes.GOTO
+import org.objectweb.asm.Opcodes.I2B
+import org.objectweb.asm.Opcodes.I2C
+import org.objectweb.asm.Opcodes.I2D
+import org.objectweb.asm.Opcodes.I2F
+import org.objectweb.asm.Opcodes.I2L
+import org.objectweb.asm.Opcodes.I2S
+import org.objectweb.asm.Opcodes.IADD
+import org.objectweb.asm.Opcodes.IALOAD
+import org.objectweb.asm.Opcodes.IASTORE
+import org.objectweb.asm.Opcodes.ICONST_0
+import org.objectweb.asm.Opcodes.ICONST_5
+import org.objectweb.asm.Opcodes.ICONST_M1
+import org.objectweb.asm.Opcodes.IFEQ
+import org.objectweb.asm.Opcodes.IFLE
+import org.objectweb.asm.Opcodes.IFNONNULL
+import org.objectweb.asm.Opcodes.IFNULL
+import org.objectweb.asm.Opcodes.IF_ACMPNE
+import org.objectweb.asm.Opcodes.IF_ICMPEQ
+import org.objectweb.asm.Opcodes.ILOAD
+import org.objectweb.asm.Opcodes.INEG
+import org.objectweb.asm.Opcodes.INSTANCEOF
+import org.objectweb.asm.Opcodes.INVOKEINTERFACE
+import org.objectweb.asm.Opcodes.INVOKESPECIAL
+import org.objectweb.asm.Opcodes.INVOKESTATIC
+import org.objectweb.asm.Opcodes.INVOKEVIRTUAL
+import org.objectweb.asm.Opcodes.IRETURN
+import org.objectweb.asm.Opcodes.ISHL
+import org.objectweb.asm.Opcodes.ISTORE
+import org.objectweb.asm.Opcodes.L2D
+import org.objectweb.asm.Opcodes.L2F
+import org.objectweb.asm.Opcodes.L2I
+import org.objectweb.asm.Opcodes.LCMP
+import org.objectweb.asm.Opcodes.LCONST_0
+import org.objectweb.asm.Opcodes.LCONST_1
+import org.objectweb.asm.Opcodes.LXOR
+import org.objectweb.asm.Opcodes.MONITORENTER
+import org.objectweb.asm.Opcodes.MONITOREXIT
+import org.objectweb.asm.Opcodes.NEW
+import org.objectweb.asm.Opcodes.NEWARRAY
+import org.objectweb.asm.Opcodes.NOP
+import org.objectweb.asm.Opcodes.POP
+import org.objectweb.asm.Opcodes.POP2
+import org.objectweb.asm.Opcodes.PUTFIELD
+import org.objectweb.asm.Opcodes.PUTSTATIC
+import org.objectweb.asm.Opcodes.RET
+import org.objectweb.asm.Opcodes.RETURN
+import org.objectweb.asm.Opcodes.SALOAD
+import org.objectweb.asm.Opcodes.SASTORE
+import org.objectweb.asm.Opcodes.SIPUSH
+import org.objectweb.asm.Opcodes.SWAP
+import org.objectweb.asm.tree.AbstractInsnNode
+import org.objectweb.asm.tree.FieldInsnNode
+import org.objectweb.asm.tree.FrameNode
+import org.objectweb.asm.tree.IincInsnNode
+import org.objectweb.asm.tree.InsnNode
+import org.objectweb.asm.tree.IntInsnNode
+import org.objectweb.asm.tree.InvokeDynamicInsnNode
+import org.objectweb.asm.tree.JumpInsnNode
+import org.objectweb.asm.tree.LabelNode
+import org.objectweb.asm.tree.LdcInsnNode
+import org.objectweb.asm.tree.LineNumberNode
+import org.objectweb.asm.tree.LookupSwitchInsnNode
+import org.objectweb.asm.tree.MethodInsnNode
+import org.objectweb.asm.tree.MultiANewArrayInsnNode
+import org.objectweb.asm.tree.TableSwitchInsnNode
+import org.objectweb.asm.tree.TypeInsnNode
+import org.objectweb.asm.tree.VarInsnNode
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.InvalidOpcodeException
+import org.vorpal.research.kfg.InvalidOperandException
+import org.vorpal.research.kfg.InvalidStateException
+import org.vorpal.research.kfg.UnsupportedOperationException
 import org.vorpal.research.kfg.analysis.IRVerifier
 import org.vorpal.research.kfg.analysis.NullTypeAdapter
 import org.vorpal.research.kfg.builder.cfg.impl.FrameStack
 import org.vorpal.research.kfg.builder.cfg.impl.FrameState
 import org.vorpal.research.kfg.builder.cfg.impl.LocalArray
-import org.vorpal.research.kfg.ir.*
+import org.vorpal.research.kfg.ir.BasicBlock
+import org.vorpal.research.kfg.ir.BodyBlock
+import org.vorpal.research.kfg.ir.CatchBlock
+import org.vorpal.research.kfg.ir.Location
+import org.vorpal.research.kfg.ir.Method
+import org.vorpal.research.kfg.ir.MethodBody
+import org.vorpal.research.kfg.ir.MethodDescriptor
 import org.vorpal.research.kfg.ir.value.AbstractUsageContext
 import org.vorpal.research.kfg.ir.value.UsageContext
 import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.ir.value.instruction.*
+import org.vorpal.research.kfg.objectClass
 import org.vorpal.research.kfg.type.*
 import org.vorpal.research.kfg.util.print
 import org.vorpal.research.kfg.visitor.Loop
@@ -560,6 +672,7 @@ class CfgBuilder(
     private val AsmHandle.asHandle: Handle
         get() = Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc), this.isInterface)
 
+    @Suppress("RecursivePropertyAccessor", "RecursivePropertyAccessor")
     private val AsmType.asKfgType: Any
         get() = when (this.sort) {
             org.objectweb.asm.Type.VOID -> types.voidType
@@ -581,7 +694,6 @@ class CfgBuilder(
             else -> unreachable("Unknown type: $this")
         }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode, insnIndex: Int) {
         val bb = nodeToBlock[insnIndex]!!
         val desc = MethodDescriptor.fromDesc(types, insn.desc)
@@ -711,7 +823,6 @@ class CfgBuilder(
         newFrame
     }
 
-    @Suppress("UNUSED_PARAMETER")
     private fun convertFrame(insn: FrameNode, insnIndex: Int) {
         val block = nodeToBlock[insnIndex]!!
         val predecessors = when (block) {

@@ -241,11 +241,16 @@ class Method : Node {
 
     // we need this suppresses, because when setter
     // is called from constructor field is actually null
-    @Suppress("UNNECESSARY_SAFE_CALL")
-    var desc: MethodDescriptor
+    private var descInternal: MethodDescriptor? = null
         set(value) {
-            field?.let { klass.updateMethod(field, value, this) }
+            field?.let { klass.updateMethod(it, value!!, this) }
             field = value
+        }
+
+    var desc: MethodDescriptor
+        get() = descInternal!!
+        set(value) {
+            descInternal = value
         }
     var parameters = listOf<Parameter>()
     var exceptions = setOf<Class>()
