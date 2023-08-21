@@ -20,7 +20,7 @@ import org.vorpal.research.kthelper.assert.ktassert
 import kotlin.math.abs
 
 class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContext) : MethodVisitor, InstructionBuilder {
-    private val returnValues = hashMapOf<BasicBlock, ReturnInst>()
+    private val returnValues = linkedMapOf<BasicBlock, ReturnInst>()
     override val instructions: InstructionFactory
         get() = cm.instruction
     override val types: TypeFactory
@@ -43,7 +43,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
 
         val returnBlock = BodyBlock("bb.return")
 
-        val incomings = hashMapOf<BasicBlock, Value>()
+        val incomings = linkedMapOf<BasicBlock, Value>()
         for ((bb, returnInst) in returnValues) {
             bb.remove(returnInst)
             returnInst.clearAllUses()
