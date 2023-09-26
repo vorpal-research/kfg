@@ -303,7 +303,7 @@ class Method : Node {
                 MethodParameterAnnotation.get(annotationNode, cm)
             }
 
-            add(Parameter(cm, index, param.name, desc.args[index], Modifiers(param.access), annotations))
+            add(Parameter(cm, index, param?.name ?: "", desc.args[index], Modifiers(param?.access ?: 0), annotations))
         }
     }
 
