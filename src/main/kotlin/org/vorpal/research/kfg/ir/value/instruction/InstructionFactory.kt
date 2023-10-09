@@ -4,6 +4,7 @@ import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Field
+import org.vorpal.research.kfg.ir.Location
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.MethodDescriptor
 import org.vorpal.research.kfg.ir.value.Name
@@ -682,6 +683,10 @@ interface InstructionBuilder {
      * unknown value wrapper
      */
     fun unknownValue(name: Name, type: Type) = instructions.getUnknownValueInst(ctx, name, type)
+
+    fun Instruction.withLocation(location: Location) {
+        this.location = location
+    }
 }
 
 class InstructionBuilderImpl(

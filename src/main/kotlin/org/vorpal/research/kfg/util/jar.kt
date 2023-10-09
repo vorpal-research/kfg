@@ -196,6 +196,12 @@ internal fun ClassNode.write(
         this.writeBytes(this@write.toByteArray(loader, flags, checkClass))
     }
 
+fun Class.toByteArray(
+    loader: ClassLoader,
+    flags: Flags = Flags.writeComputeAll,
+    checkClass: Boolean = false
+): ByteArray = ClassBuilder(cm, this).build().toByteArray(loader, flags, checkClass)
+
 fun Class.write(
     cm: ClassManager, loader: ClassLoader,
     path: Path = Paths.get("$fullName.class"),

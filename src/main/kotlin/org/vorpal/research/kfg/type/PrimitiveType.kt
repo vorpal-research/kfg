@@ -32,7 +32,7 @@ object BoolType : Integer() {
     override val signed = false
     override val asmDesc = "Z"
 
-    override fun isSubtypeOf(other: Type) = other is BoolType
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = other is BoolType
 }
 
 object ByteType : Integer() {
@@ -42,7 +42,7 @@ object ByteType : Integer() {
     override val isByte = true
     override val asmDesc = "B"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is ByteType -> true
         is ShortType, is IntType, is LongType, is Real -> true
         else -> false
@@ -56,7 +56,7 @@ object ShortType : Integer() {
     override val isShort = true
     override val asmDesc = "S"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is ShortType -> true
         is IntType, is LongType, is Real -> true
         else -> false
@@ -70,7 +70,7 @@ object IntType : Integer() {
     override val isInt = true
     override val asmDesc = "I"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is IntType -> true
         is LongType, is Real -> true
         else -> false
@@ -86,7 +86,7 @@ object LongType : Integer() {
     override val isDWord = true
     override val asmDesc = "J"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is LongType -> true
         is Real -> true
         else -> false
@@ -100,7 +100,7 @@ object CharType : Integer() {
     override val isChar = true
     override val asmDesc = "C"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is CharType -> true
         is IntType, is LongType, is Real -> true
         else -> false
@@ -124,7 +124,7 @@ object FloatType : Real() {
     override val name = "float"
     override val asmDesc = "F"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is FloatType -> true
         is DoubleType -> true
         else -> false
@@ -137,7 +137,7 @@ object DoubleType : Real() {
     override val isDWord = true
     override val asmDesc = "D"
 
-    override fun isSubtypeOf(other: Type) = when (other) {
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = when (other) {
         is DoubleType -> true
         else -> false
     }

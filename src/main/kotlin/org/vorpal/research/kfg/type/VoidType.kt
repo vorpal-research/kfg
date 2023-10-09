@@ -14,5 +14,5 @@ object VoidType : Type() {
     override fun toString(): String = name
 
     override val isConcrete get() = true
-    override fun isSubtypeOf(other: Type) = false
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = false
 }

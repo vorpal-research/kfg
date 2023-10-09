@@ -8,6 +8,7 @@ import org.vorpal.research.kfg.InvalidStateException
 import org.vorpal.research.kfg.Package
 import org.vorpal.research.kfg.UnknownInstanceException
 import org.vorpal.research.kfg.type.ClassType
+import org.vorpal.research.kfg.type.SystemTypeNames
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
 import org.vorpal.research.kthelper.assert.ktassert
@@ -126,8 +127,8 @@ abstract class Class : Node {
 
     val asType: ClassType by lazy { ClassType(this) }
 
-    abstract fun isAncestorOf(other: Class): Boolean
-    fun isInheritorOf(other: Class) = other.isAncestorOf(this)
+    abstract fun isAncestorOf(other: Class, outerClassBehavior: Boolean = true): Boolean
+    fun isInheritorOf(other: Class, outerClassBehavior: Boolean = true) = other.isAncestorOf(this, outerClassBehavior)
 
     abstract fun getFieldConcrete(name: String, type: Type): Field?
     abstract fun getMethodConcrete(name: String, desc: MethodDescriptor): Method?
@@ -246,13 +247,13 @@ class ConcreteClass : Class {
         }
     }
 
-    override fun isAncestorOf(other: Class): Boolean {
+    override fun isAncestorOf(other: Class, outerClassBehavior: Boolean): Boolean {
         if (this == other) return true
         else {
             other.superClass?.let {
                 if (isAncestorOf(it)) return true
             }
-            for (it in other.interfaces) if (isAncestorOf(it)) return true
+            for (it in other.interfaces) if (isAncestorOf(it, outerClassBehavior)) return true
         }
         return false
     }
@@ -277,5 +278,9 @@ class OuterClass(
         }
     }
 
-    override fun isAncestorOf(other: Class) = true
+    override fun isAncestorOf(other: Class, outerClassBehavior: Boolean) = when (this.fullName) {
+        other.fullName -> true
+        SystemTypeNames.objectClass -> true
+        else -> outerClassBehavior
+    }
 }

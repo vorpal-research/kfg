@@ -35,8 +35,9 @@ abstract class Type {
     abstract val bitSize: Int
 
     abstract val isConcrete: Boolean
-    abstract fun isSubtypeOf(other: Type): Boolean
-    fun isSupertypeOf(other: Type): Boolean = other.isSubtypeOf(this)
+    abstract fun isSubtypeOf(other: Type, outerClassBehavior: Boolean = true): Boolean
+    fun isSupertypeOf(other: Type, outerClassBehavior: Boolean = true): Boolean =
+        other.isSubtypeOf(this, outerClassBehavior)
 
     val asArray: ArrayType by lazy {
         ArrayType(this)

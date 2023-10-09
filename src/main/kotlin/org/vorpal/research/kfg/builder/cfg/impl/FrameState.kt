@@ -25,7 +25,7 @@ private object TopType : Type() {
     override val isConcrete: Boolean
         get() = true
 
-    override fun isSubtypeOf(other: Type) = false
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = false
 }
 
 private object UninitializedThisType : Type() {
@@ -41,7 +41,7 @@ private object UninitializedThisType : Type() {
     override val isConcrete: Boolean
         get() = true
 
-    override fun isSubtypeOf(other: Type) = false
+    override fun isSubtypeOf(other: Type, outerClassBehavior: Boolean) = false
 }
 
 private fun parsePrimitiveType(tf: TypeFactory, opcode: Int) = when (opcode) {

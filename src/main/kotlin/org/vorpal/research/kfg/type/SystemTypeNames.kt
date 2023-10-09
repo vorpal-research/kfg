@@ -77,4 +77,7 @@ object SystemTypeNames {
     const val illegalArgumentClass = "java/lang/IllegalArgumentException"
 
     const val runtimeException = "java/lang/RuntimeException"
+
+    const val cloneableClass = "java/lang/Cloneable"
+    const val serializableClass = "java/io/Serializable"
 }
