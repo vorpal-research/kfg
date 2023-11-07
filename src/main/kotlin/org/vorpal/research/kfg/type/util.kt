@@ -17,12 +17,20 @@ val Type.internalDesc: String
         else -> throw InvalidStateException("Unknown type ${this.name}")
     }
 
-fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
-    tf.nullType in types -> {
-        val filtered = types.filterNotTo(mutableSetOf()) { it == tf.nullType }
+@Suppress("RecursivePropertyAccessor")
+val Type.typeFactory: TypeFactory? get() = when (this) {
+    is PrimitiveType -> null
+    is ClassType -> klass.cm.type
+    is ArrayType -> component.typeFactory
+    else -> null
+}
+
+fun commonSupertype(types: Set<Type>): Type? = when {
+    NullType in types -> {
+        val filtered = types.filterNotTo(mutableSetOf()) { it == NullType }
         when {
-            filtered.isEmpty() -> tf.nullType
-            else -> mergeTypes(tf, filtered)
+            filtered.isEmpty() -> NullType
+            else -> commonSupertype(filtered)
         }
     }
 
@@ -30,6 +38,7 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
     types.all { it is Integer } -> types.maxByOrNull { (it as Integer).width }
     types.all { it is ClassType } -> {
         val classes = types.map { it as ClassType }
+        val tf = classes.firstNotNullOf { it.typeFactory }
         var result = tf.objectType
         for (i in classes.indices) {
             val isAncestor = classes.fold(true) { acc, klass ->
@@ -43,18 +52,21 @@ fun mergeTypes(tf: TypeFactory, types: Set<Type>): Type? = when {
         result
     }
 
-    types.all { it is Reference } -> when {
-        types.any { it is ClassType } -> tf.objectType
-        types.map { it as ArrayType }.mapTo(mutableSetOf()) { it.component }.size == 1 -> types.first()
-        types.all { it is ArrayType } -> {
-            val components = types.mapTo(mutableSetOf()) { (it as ArrayType).component }
-            when (val merged = mergeTypes(tf, components)) {
-                null -> tf.objectType
-                else -> tf.getArrayType(merged)
+    types.all { it is Reference } -> {
+        val tf = types.firstNotNullOfOrNull { it.typeFactory }
+        when {
+            types.any { it is ClassType } -> tf?.objectType
+            types.map { it as ArrayType }.mapTo(mutableSetOf()) { it.component }.size == 1 -> types.first()
+            types.all { it is ArrayType } -> {
+                val components = types.mapTo(mutableSetOf()) { (it as ArrayType).component }
+                when (val merged = commonSupertype(components)) {
+                    null -> tf?.objectType
+                    else -> merged.asArray
+                }
             }
-        }
 
-        else -> tf.objectType
+            else -> tf?.objectType
+        }
     }
 
     else -> null

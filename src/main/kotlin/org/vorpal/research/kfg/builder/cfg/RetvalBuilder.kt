@@ -14,7 +14,7 @@ import org.vorpal.research.kfg.ir.value.instruction.ReturnInst
 import org.vorpal.research.kfg.type.Integer
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kfg.type.TypeFactory
-import org.vorpal.research.kfg.type.mergeTypes
+import org.vorpal.research.kfg.type.commonSupertype
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.ktassert
 import kotlin.math.abs
@@ -61,7 +61,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
         val returnInstruction = when {
             returnType.isVoid -> `return`()
             else -> {
-                val type = mergeTypes(types, incomings.values.mapTo(mutableSetOf()) { it.type }) ?: returnType
+                val type = commonSupertype(incomings.values.mapTo(mutableSetOf()) { it.type }) ?: returnType
 
                 val returnValuePhi = phi("retval", type, incomings)
                 instructions.add(returnValuePhi)
