@@ -22,7 +22,7 @@
         <exec.main>org.vorpal.research.kfg.MainKt</exec.main>
 
         <kt-helper.version>0.1.13</kt-helper.version>
-        <asm.version>9.4</asm.version>
+        <asm.version>9.6</asm.version>
         <commons-cli.version>1.5.0</commons-cli.version>
         <jdot.version>1.0</jdot.version>
     </properties>
