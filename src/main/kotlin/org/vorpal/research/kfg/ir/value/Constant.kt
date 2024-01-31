@@ -83,7 +83,7 @@ class CharConstant(val value: Char, type: Type) : Constant(value.toString(), typ
     override fun hashCode(): Int = value.hashCode()
 }
 
-class FloatConstant(val value: Float, type: Type) : Constant(value.toString(), type) {
+class FloatConstant(val value: Float, type: Type) : Constant("${value}f", type) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
