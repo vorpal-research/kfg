@@ -10,16 +10,16 @@ internal class LabelFilterer(private val mn: MethodNode) {
 
     fun build(): MethodNode {
         val instructionList = mn.instructions
-        val replacementsList = MutableList(instructionList.size()) { -1 }
+        val replacementList = MutableList(instructionList.size()) { -1 }
 
         val new = MethodNode(mn.access, mn.name, mn.desc, mn.signature, mn.exceptions.toTypedArray())
         var prev: Int = -1
         for ((index, inst) in instructionList.withIndex()) {
             if (prev != -1 && inst is LabelNode) {
                 var actualPrev = prev
-                while (replacementsList[actualPrev] != -1)
-                    actualPrev = replacementsList[actualPrev]
-                replacementsList[index] = actualPrev
+                while (replacementList[actualPrev] != -1)
+                    actualPrev = replacementList[actualPrev]
+                replacementList[index] = actualPrev
             }
             prev = if (inst is LabelNode) index else -1
         }
@@ -29,7 +29,7 @@ internal class LabelFilterer(private val mn: MethodNode) {
             if (label != null) {
                 val first = instructionList[index] as LabelNode
                 val second = when {
-                    replacementsList[index] != -1 -> clonedLabelsList[replacementsList[index]]!!
+                    replacementList[index] != -1 -> clonedLabelsList[replacementList[index]]!!
                     else -> label
                 }
                 first to second
@@ -39,7 +39,7 @@ internal class LabelFilterer(private val mn: MethodNode) {
         for ((index, inst) in instructionList.withIndex()) {
             val newInst = when (inst) {
                 is LabelNode -> when {
-                    replacementsList[index] != -1 -> null
+                    replacementList[index] != -1 -> null
                     clonedLabelsList[index] != null -> clonedLabelsList[index]!!
                     else -> inst.clone(newReplacements)
                 }

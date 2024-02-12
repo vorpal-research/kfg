@@ -11,6 +11,7 @@ import org.vorpal.research.kfg.visitor.ClassVisitor
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kfg.visitor.executePipeline
 import org.vorpal.research.kthelper.tryOrNull
+import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -58,7 +59,7 @@ fun main(args: Array<String>) {
     val cfg = tryOrNull { KfgConfigParser(args) } ?: return
 
     val jars = cfg.getStringValue("jar")
-        .split(System.getProperty("path.separator"))
+        .split(File.pathSeparator)
         .map { Paths.get(it).asContainer()!! }
 
     val classManager = ClassManager(

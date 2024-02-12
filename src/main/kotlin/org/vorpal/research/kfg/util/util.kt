@@ -3,13 +3,13 @@ package org.vorpal.research.kfg.util
 import kotlin.math.min
 
 private infix fun String.lcp(other: String): String {
-    var indx = 0
+    var index = 0
     val max = min(this.length, other.length)
-    while (indx < max) {
-        if (this[indx] != other[indx]) break
-        ++indx
+    while (index < max) {
+        if (this[index] != other[index]) break
+        ++index
     }
-    return this.substring(0, indx)
+    return this.substring(0, index)
 }
 
 // very bad implementation

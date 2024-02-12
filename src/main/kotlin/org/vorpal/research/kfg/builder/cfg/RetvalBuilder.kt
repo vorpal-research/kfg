@@ -71,7 +71,7 @@ class RetvalBuilder(override val cm: ClassManager, override val ctx: UsageContex
                     is Integer -> {
                         ktassert(returnType is Integer, "Return value type is integral and method return type is $returnType")
 
-                        // if return type is Int and return value type is Long (or vice versa), we need casting
+                        // if the return type is Int and return value type is Long (or vice versa), we need casting
                         // otherwise it's fine
                         if (abs(type.bitSize - returnType.bitSize) >= Type.WORD) {
                             val retvalCasted = returnValuePhi.cast("retval.casted", returnType)

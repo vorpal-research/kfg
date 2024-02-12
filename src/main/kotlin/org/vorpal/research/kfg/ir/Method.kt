@@ -239,8 +239,6 @@ class Method : Node {
         }
     }
 
-    // we need this suppresses, because when setter
-    // is called from constructor field is actually null
     private var descInternal: MethodDescriptor? = null
         set(value) {
             field?.let { klass.updateMethod(it, value!!, this) }

@@ -150,7 +150,7 @@ private val AbstractInsnNode.isTerminate
         else -> isTerminateInst(this.opcode)
     }
 
-private val AbstractInsnNode.throwsException
+private val AbstractInsnNode.canThrowException
     get() = when {
         this.isDebugNode -> false
         else -> isExceptionThrowing(this.opcode)
@@ -958,7 +958,7 @@ class CfgBuilder(
                 when {
                     insn.next == null -> Unit
                     insn.previous == null -> {
-                        // register entry block if first insn of method is a label
+                        // register entry block if a first insn of method is a label
                         bb = nodeToBlock.getOrSet(insnIndex) { bb }
 
                         val entry = BodyBlock("entry")
@@ -1028,7 +1028,7 @@ class CfgBuilder(
                     }
 
                     else -> {
-                        if (insn.throwsException && (insn.next != null)) {
+                        if (insn.canThrowException && (insn.next != null)) {
                             val next = nodeToBlock.getOrSet(insnIndex + 1) { BodyBlock("bb") }
                             if (!insn.isTerminate) {
                                 bb.linkForward(next)

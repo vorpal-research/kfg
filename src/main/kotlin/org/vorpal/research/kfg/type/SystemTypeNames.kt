@@ -1,5 +1,6 @@
 package org.vorpal.research.kfg.type
 
+@Suppress("ConstPropertyName")
 object SystemTypeNames {
     const val classClass = "java/lang/Class"
 

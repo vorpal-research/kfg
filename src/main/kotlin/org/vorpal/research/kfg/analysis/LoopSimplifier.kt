@@ -132,7 +132,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
         }
     }
 
-    // this is fucking hell, never look at this code
+    // this is hell, never look at this code
     private fun mapCatchEntries(
         originals: Set<BasicBlock>,
         new: BasicBlock,
@@ -148,8 +148,8 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                 val newDiff = newEntries - oldEntries
                 val oldDiff = oldEntries - newEntries
                 when {
-                    // first case --- all of old latches were entries of catch block,
-                    // and they are replaced with single latch
+                    // first case --- all the old latches were entries of catch block,
+                    // and they are replaced with a single latch
                     oldDiff == originals && newDiff == setOf(new) -> {
                         for (phi in catch.filterIsInstance<PhiInst>()) {
                             val incomings = phi.incomings.toMutableMap()
@@ -163,11 +163,10 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             catch -= phi
                         }
                     }
-                    // second case --- some of old latches became new entries because
+                    // second case --- some of the old latches became new entries because
                     // the new latch became thrower of the catch;
-                    // some fucked up ship awaits you ahead
                     oldDiff.isEmpty() -> {
-                        // first we need to find all values from old throwers that are used in catch body
+                        // first, we need to find all values from old throwers that are used in catch body
                         // without phis
                         val catchBody = catch.body
                         val catchExits = catchBody.flatMap { it.successors }.filterTo(mutableSetOf()) { it !in catchBody }
@@ -179,16 +178,16 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             .filterIsInstance<Instruction>()
                             .filterTo(mutableSetOf()) { it.parent !in catchBody }
 
-                        // for each external operand we need to manually add phi instruction
+                        // for each external operand, we need to manually add phi instruction
                         // with default mappings for new entries
                         for (operand in bodyOperands) {
-                            // build incomings map for the new operand phi
+                            // build a map of incoming values for the new operand phi
                             val incomings = catch.allPredecessors.associateWith {
                                 when (it) {
-                                    // if this is new entry, map it to default
+                                    // if this is a new entry, map it to default
                                     in newDiff -> cm.value.getZero(operand.type)
 
-                                    // if this is latch, we need to find (or create) corresponding phi for the operand
+                                    // if this is a latch, we need to find (or create) corresponding phi for the operand
                                     new -> new.filterIsInstance<PhiInst>()
                                         .firstOrNull { phi -> operand in phi.incomingValues }
                                         ?: run {
@@ -207,7 +206,7 @@ class LoopSimplifier(override val cm: ClassManager) : LoopVisitor {
                             val newPhi = inst(cm) { phi(operand.type, incomings) }
                             catch.insertBefore(catch.first(), newPhi)
 
-                            // replace all uses of operand in catch body and it's exits with the new phi
+                            // replace all uses of operand in catch body, and it's exits with the new phi
                             for (user in operand.users.toSet()) {
                                 if (
                                     user is Instruction

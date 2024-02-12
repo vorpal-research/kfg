@@ -45,7 +45,7 @@ class StubParameter(
 }
 
 /**
- * @param arguments: argument is a pair of name to value where value could be one of java's primitive type wrapper
+ * @param arguments a pair of names to value where value could be one of java's primitive type wrappers
  * (Integer, Long, ...), String, Reference, Enum or Array
  */
 data class MethodParameterAnnotation(

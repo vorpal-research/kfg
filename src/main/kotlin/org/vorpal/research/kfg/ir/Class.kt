@@ -145,7 +145,7 @@ abstract class Class : Node {
 
     /**
      * creates a new field with given name and type and adds is to this klass
-     * @throws InvalidStateException if there already exists field with given parameters
+     * @throws InvalidStateException if there already exists a field with given parameters
      */
     fun addField(name: String, type: Type): Field {
         if ((name to type) in innerFields) throw InvalidStateException("Field $name: $type already exists in $this")

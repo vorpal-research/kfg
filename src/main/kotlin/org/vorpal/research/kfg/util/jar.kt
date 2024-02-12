@@ -196,6 +196,7 @@ internal fun ClassNode.write(
         this.writeBytes(this@write.toByteArray(loader, flags, checkClass))
     }
 
+@Suppress("unused")
 fun Class.toByteArray(
     loader: ClassLoader,
     flags: Flags = Flags.writeComputeAll,
