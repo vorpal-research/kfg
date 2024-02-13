@@ -20,7 +20,7 @@ The latest release of the KFG is available through [Vorpal GitHub Packages repos
 Add the link to the repository to your `pom.xml`:
 ```xml
 <repository>
-    <id>github-vorpal-research-kotlin-maven</id>
+    <id>github-apal-research-kotlin-maven</id>
     <url>https://maven.apal-research.com</url>
 </repository>
 ```
