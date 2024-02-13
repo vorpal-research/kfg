@@ -189,8 +189,8 @@
 
     <repositories>
         <repository>
-            <id>github-vorpal-research-kotlin-maven</id>
-            <url>https://maven.pkg.github.com/vorpal-research/kotlin-maven</url>
+            <id>github-apal-research-kotlin-maven</id>
+            <url>https://maven.apal-research.com</url>
         </repository>
     </repositories>
 
