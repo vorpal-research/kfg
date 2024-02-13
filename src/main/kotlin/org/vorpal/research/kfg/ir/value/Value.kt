@@ -13,9 +13,9 @@ abstract class Value(val name: Name, val type: Type) : UsableValue() {
     override fun get() = this
 }
 
-class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantName("$argPrefix$index"), type) {
+class Argument(val index: Int, val method: Method, type: Type) : Value(ConstantName("$ARG_PREFIX$index"), type) {
     companion object {
-        const val argPrefix = "arg\$"
+        const val ARG_PREFIX = "arg\$"
     }
 
     override fun hashCode(): Int {
