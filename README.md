@@ -21,7 +21,7 @@ Add the link to the repository to your `pom.xml`:
 ```xml
 <repository>
     <id>github-vorpal-research-kotlin-maven</id>
-    <url>https://maven.vorpal-research.science</url>
+    <url>https://maven.apal-research.com</url>
 </repository>
 ```
 
