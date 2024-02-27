@@ -7,7 +7,9 @@ import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.value.usageContext
 import org.vorpal.research.kfg.visitor.ClassVisitor
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.executeClassPipeline
+import org.vorpal.research.kfg.visitor.executeMethodPipeline
+import org.vorpal.research.kfg.visitor.executePackagePipeline
 import org.vorpal.research.kthelper.collection.queueOf
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -91,7 +93,7 @@ class KfgIntegrationTest {
     @Test
     fun packagePipelineTest() {
         val visitedClasses = mutableSetOf<Class>()
-        executePipeline(cm, pkg) {
+        executePackagePipeline(cm, pkg) {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
@@ -124,7 +126,7 @@ class KfgIntegrationTest {
         }
 
         val visitedClasses = mutableSetOf<Class>()
-        executePipeline(cm, klass) {
+        executeClassPipeline(cm, klass) {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm
@@ -153,7 +155,7 @@ class KfgIntegrationTest {
         val targetMethods = klass.getMethods(klass.methods.random().name)
 
         val visitedMethods = mutableSetOf<Method>()
-        executePipeline(cm, targetMethods) {
+        executeMethodPipeline(cm, targetMethods) {
             +object : ClassVisitor {
                 override val cm: ClassManager
                     get() = this@KfgIntegrationTest.cm

@@ -34,6 +34,7 @@ abstract class Pipeline(val cm: ClassManager, pipeline: List<NodeVisitor> = arra
                 visitor.visit(method)
             }
         }
+
         else -> object : ClassVisitor {
             override val cm get() = this@Pipeline.cm
 
@@ -72,7 +73,7 @@ class PackagePipeline(
 
 class MultiplePackagePipeline(
     cm: ClassManager,
-    private val targets: List<Package>,
+    private val targets: Collection<Package>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     override fun run() {
@@ -87,13 +88,13 @@ class MultiplePackagePipeline(
 
 class ClassPipeline(
     cm: ClassManager,
-    target: Class,
+    initialTargets: Collection<Class>,
     pipeline: List<NodeVisitor> = arrayListOf()
 ) : Pipeline(cm, pipeline) {
     private val targets = mutableSetOf<Class>()
 
     init {
-        val classQueue = dequeOf(target)
+        val classQueue = dequeOf(initialTargets)
         while (classQueue.isNotEmpty()) {
             val top = classQueue.pollFirst()
             targets += top
@@ -139,6 +140,7 @@ open class MethodPipeline(
                 }
             }
         }
+
         is MethodVisitor -> object : ClassVisitor {
             override val cm get() = this@MethodPipeline.cm
 
@@ -153,6 +155,7 @@ open class MethodPipeline(
                 }
             }
         }
+
         else -> this.wrap()
     }
 
@@ -167,35 +170,47 @@ open class MethodPipeline(
     }
 }
 
-fun buildPipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline =
+fun buildPackagePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit): Pipeline =
     PackagePipeline(cm, target).also {
         it.init()
     }
 
-fun buildPipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit): Pipeline =
+fun buildPackagePipeline(cm: ClassManager, targets: Collection<Package>, init: Pipeline.() -> Unit): Pipeline =
     MultiplePackagePipeline(cm, targets).also {
         it.init()
     }
 
-fun buildPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline =
-    ClassPipeline(cm, target).also {
+fun buildClassPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit): Pipeline =
+    buildClassPipeline(cm, listOf(target), init)
+
+fun buildClassPipeline(cm: ClassManager, targets: Collection<Class>, init: Pipeline.() -> Unit): Pipeline =
+    ClassPipeline(cm, targets).also {
         it.init()
     }
 
-fun buildPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline =
+fun buildMethodPipeline(cm: ClassManager, target: Method, init: Pipeline.() -> Unit): Pipeline =
+    buildMethodPipeline(cm, listOf(target), init)
+
+fun buildMethodPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit): Pipeline =
     MethodPipeline(cm, targets).also {
         it.init()
     }
 
-fun executePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, target, init).run()
+fun executePackagePipeline(cm: ClassManager, target: Package, init: Pipeline.() -> Unit) =
+    buildPackagePipeline(cm, target, init).run()
 
 @Suppress("unused")
-fun executePipeline(cm: ClassManager, targets: List<Package>, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, targets, init).run()
+fun executePackagePipeline(cm: ClassManager, targets: Collection<Package>, init: Pipeline.() -> Unit) =
+    buildPackagePipeline(cm, targets, init).run()
 
-fun executePipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, target, init).run()
+fun executeClassPipeline(cm: ClassManager, target: Class, init: Pipeline.() -> Unit) =
+    buildClassPipeline(cm, target, init).run()
 
-fun executePipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
-    buildPipeline(cm, targets, init).run()
+fun executeClassPipeline(cm: ClassManager, targets: Collection<Class>, init: Pipeline.() -> Unit) =
+    buildClassPipeline(cm, targets, init).run()
+
+fun executeMethodPipeline(cm: ClassManager, target: Method, init: Pipeline.() -> Unit) =
+    buildMethodPipeline(cm, target, init).run()
+
+fun executeMethodPipeline(cm: ClassManager, targets: Collection<Method>, init: Pipeline.() -> Unit) =
+    buildMethodPipeline(cm, targets, init).run()
