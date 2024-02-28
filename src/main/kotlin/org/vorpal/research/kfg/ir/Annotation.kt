@@ -116,5 +116,5 @@ data class TypeAnnotation(
     override val type: Type,
     override val values: Map<String, AnnotationConstant>,
     val typeRef: Int,
-    val typePath: TypePath
+    val typePath: TypePath?
 ) : AnnotationBase
