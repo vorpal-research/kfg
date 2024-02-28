@@ -1,6 +1,6 @@
 package org.vorpal.research.kfg.type
 
-@Suppress("ConstPropertyName")
+@Suppress("ConstPropertyName", "unused")
 object SystemTypeNames {
     const val classClass = "java/lang/Class"
     const val fieldClass = "java/lang/reflect/Field"
@@ -94,4 +94,9 @@ object SystemTypeNames {
 
     const val charsetClass = "java/nio/charset/Charset"
     const val standardCharsetsClass = "java/nio/charset/StandardCharsets"
+
+    const val collectionsClass = "java/util/Collections"
+    const val objectsClass = "java/lang/Objects"
+    const val filesClass = "java/nio/file/Files"
+    const val pathsClass = "java/nio/file/Paths"
 }
