@@ -6,6 +6,7 @@ import org.objectweb.asm.tree.MethodNode
 import org.objectweb.asm.tree.TryCatchBlockNode
 import org.objectweb.asm.util.Textifier
 import org.objectweb.asm.util.TraceMethodVisitor
+import org.vorpal.research.kfg.type.SystemTypeNames
 import java.io.PrintWriter
 import java.io.StringWriter
 
@@ -41,5 +42,5 @@ fun TryCatchBlockNode.print() = buildString {
     append("${start.print().dropLast(1)} ")
     append("${end.print().dropLast(1)} ")
     append("${handler.print().dropLast(1)} ")
-    appendLine(type ?: "java/lang/Throwable")
+    appendLine(type ?: SystemTypeNames.throwableClass)
 }

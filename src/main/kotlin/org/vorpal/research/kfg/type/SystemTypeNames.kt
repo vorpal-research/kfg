@@ -8,6 +8,8 @@ object SystemTypeNames {
 
     const val systemClass = "java/lang/System"
 
+    const val throwableClass = "java/lang/Throwable"
+
     const val stringClass = "java/lang/String"
     const val objectClass = "java/lang/Object"
     const val booleanClass = "java/lang/Boolean"

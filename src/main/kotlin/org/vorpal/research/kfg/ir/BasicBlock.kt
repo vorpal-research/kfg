@@ -2,9 +2,15 @@
 
 package org.vorpal.research.kfg.ir
 
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.ir.value.BlockName
+import org.vorpal.research.kfg.ir.value.BlockUsageContext
+import org.vorpal.research.kfg.ir.value.BlockUser
+import org.vorpal.research.kfg.ir.value.UsableBlock
+import org.vorpal.research.kfg.ir.value.UsageContext
+import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.ir.value.instruction.Instruction
 import org.vorpal.research.kfg.ir.value.instruction.TerminateInst
+import org.vorpal.research.kfg.type.SystemTypeNames
 import org.vorpal.research.kfg.type.Type
 import org.vorpal.research.kthelper.assert.asserted
 import org.vorpal.research.kthelper.assert.ktassert
@@ -338,7 +344,7 @@ class CatchBlock(name: String, val exception: Type) : BasicBlock(BlockName(name)
     }
 
     companion object {
-        const val defaultException = "java/lang/Throwable"
+        val defaultException get() = SystemTypeNames.throwableClass
     }
 
     override fun replaceUsesOf(ctx: BlockUsageContext, from: UsableBlock, to: UsableBlock) = with(ctx) {
