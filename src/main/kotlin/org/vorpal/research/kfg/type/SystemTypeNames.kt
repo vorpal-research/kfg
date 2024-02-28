@@ -3,6 +3,10 @@ package org.vorpal.research.kfg.type
 @Suppress("ConstPropertyName")
 object SystemTypeNames {
     const val classClass = "java/lang/Class"
+    const val fieldClass = "java/lang/reflect/Field"
+    const val methodClass = "java/lang/reflect/Method"
+
+    const val systemClass = "java/lang/System"
 
     const val stringClass = "java/lang/String"
     const val objectClass = "java/lang/Object"
@@ -16,6 +20,8 @@ object SystemTypeNames {
     const val doubleClass = "java/lang/Double"
 
     const val collectionClass = "java/util/Collection"
+    const val iteratorClass = "java/util/Iterator"
+    const val listIteratorClass = "java/util/ListIterator"
 
     const val listClass = "java/util/List"
     const val arrayListClass = "java/util/ArrayList"
@@ -44,7 +50,6 @@ object SystemTypeNames {
     const val unmodifiableSet = "java/util/Collections\$UnmodifiableSet"
     const val unmodifiableMap = "java/util/Collections\$UnmodifiableMap"
     const val charSequence = "java/lang/CharSequence"
-    const val field = "java/lang/reflect/Field"
     const val stringBuilder = "java/lang/StringBuilder"
     const val stringBuffer = "java/lang/StringBuffer"
     const val linkedHashSet = "java/util/LinkedHashSet"
@@ -81,4 +86,12 @@ object SystemTypeNames {
 
     const val cloneableClass = "java/lang/Cloneable"
     const val serializableClass = "java/io/Serializable"
+
+    const val fileClass = "java/io/File"
+    const val printStreamClass = "java/io/PrintStream"
+    const val outputStreamClass = "java/io/OutputStream"
+    const val fileOutputStreamClass = "java/io/FileOutputStream"
+
+    const val charsetClass = "java/nio/charset/Charset"
+    const val standardCharsetsClass = "java/nio/charset/StandardCharsets"
 }
