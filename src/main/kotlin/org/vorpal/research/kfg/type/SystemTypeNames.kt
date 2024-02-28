@@ -98,5 +98,6 @@ object SystemTypeNames {
     const val collectionsClass = "java/util/Collections"
     const val objectsClass = "java/lang/Objects"
     const val filesClass = "java/nio/file/Files"
+    const val pathClass = "java/nio/file/Path"
     const val pathsClass = "java/nio/file/Paths"
 }
