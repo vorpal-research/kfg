@@ -9,7 +9,7 @@ import org.vorpal.research.kfg.util.Flags
 import org.vorpal.research.kfg.util.write
 import org.vorpal.research.kfg.visitor.ClassVisitor
 import org.vorpal.research.kfg.visitor.MethodVisitor
-import org.vorpal.research.kfg.visitor.executePipeline
+import org.vorpal.research.kfg.visitor.executePackagePipeline
 import org.vorpal.research.kthelper.tryOrNull
 import java.io.File
 import java.net.URLClassLoader
@@ -81,7 +81,7 @@ fun main(args: Array<String>) {
 //    val target = Paths.get("instrumented/")
 //    val writeTarget = Paths.get("written/")
 //    jars.forEach { jar -> jar.unpack(classManager, target, true, classManager.failOnError) }
-    executePipeline(classManager, Package.defaultPackage) {
+    executePackagePipeline(classManager, Package.defaultPackage) {
         +MethodBuilder(classManager)
 //        +LoopAnalysis(classManager)
 //        +LoopSimplifier(classManager)
