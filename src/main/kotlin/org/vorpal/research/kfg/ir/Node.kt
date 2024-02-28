@@ -186,11 +186,19 @@ value class Modifiers(val value: Int) {
     )
 }
 
-abstract class Node(val cm: ClassManager, val name: String, modifiers: Modifiers) {
+abstract class Node(
+    val cm: ClassManager,
+    val name: String,
+    modifiers: Modifiers,
+) {
+    protected abstract val innerAnnotations: MutableSet<Annotation>
+    protected abstract val innerTypeAnnotations: MutableSet<TypeAnnotation>
     var modifiers: Modifiers = modifiers
         protected set
 
     abstract val asmDesc: String
+    val annotations: Set<Annotation> get() = innerAnnotations
+    val typeAnnotations: Set<TypeAnnotation> get() = innerTypeAnnotations
 
     var isPublic: Boolean
         get() = modifiers.isPublic
@@ -299,4 +307,18 @@ abstract class Node(val cm: ClassManager, val name: String, modifiers: Modifiers
         set(value) {
             modifiers = modifiers.setEnum(value)
         }
+
+    protected open fun addAnnotation(annotation: Annotation) {
+        this.innerAnnotations += annotation
+    }
+    protected open fun addTypeAnnotation(annotation: TypeAnnotation) {
+        this.innerTypeAnnotations += annotation
+    }
+
+    protected open fun removeAnnotation(annotation: Annotation) {
+        this.innerAnnotations -= annotation
+    }
+    protected open fun removeTypeAnnotation(annotation: TypeAnnotation) {
+        this.innerTypeAnnotations -= annotation
+    }
 }

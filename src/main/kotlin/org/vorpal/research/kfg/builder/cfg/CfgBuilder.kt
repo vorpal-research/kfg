@@ -127,6 +127,7 @@ import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.objectClass
 import org.vorpal.research.kfg.type.*
+import org.vorpal.research.kfg.util.getAsKfgType
 import org.vorpal.research.kfg.util.print
 import org.vorpal.research.kfg.visitor.Loop
 import org.vorpal.research.kthelper.assert.ktassert
@@ -672,38 +673,16 @@ class CfgBuilder(
     private val AsmHandle.asHandle: Handle
         get() = Handle(this.tag, cm[this.owner].getMethod(this.name, this.desc), this.isInterface)
 
-    @Suppress("RecursivePropertyAccessor", "RecursivePropertyAccessor")
-    private val AsmType.asKfgType: Any
-        get() = when (this.sort) {
-            org.objectweb.asm.Type.VOID -> types.voidType
-            org.objectweb.asm.Type.BOOLEAN -> types.boolType
-            org.objectweb.asm.Type.CHAR -> types.charType
-            org.objectweb.asm.Type.BYTE -> types.byteType
-            org.objectweb.asm.Type.SHORT -> types.shortType
-            org.objectweb.asm.Type.INT -> types.intType
-            org.objectweb.asm.Type.FLOAT -> types.floatType
-            org.objectweb.asm.Type.LONG -> types.longType
-            org.objectweb.asm.Type.DOUBLE -> types.doubleType
-            org.objectweb.asm.Type.ARRAY -> types.getArrayType(this.elementType.asKfgType as Type)
-            org.objectweb.asm.Type.OBJECT -> cm[this.className.replace('.', '/')].asType
-            org.objectweb.asm.Type.METHOD -> MethodDescriptor(
-                this.argumentTypes.map { it.asKfgType as Type },
-                this.returnType.asKfgType as Type
-            )
-
-            else -> unreachable("Unknown type: $this")
-        }
-
     private fun convertInvokeDynamicInsn(insn: InvokeDynamicInsnNode, insnIndex: Int) {
         val bb = nodeToBlock[insnIndex]!!
         val desc = MethodDescriptor.fromDesc(types, insn.desc)
         val bsmMethod = insn.bsm.asHandle
         val bsmArgs = insn.bsmArgs.map {
             when (it) {
-                is Number -> it.asValue
-                is String -> it.asValue
-                is AsmType -> it.asKfgType
-                is AsmHandle -> it.asHandle
+                is Number -> NumberBsmArgument(it.asValue)
+                is String -> StringBsmArgument(it.asValue)
+                is AsmType -> TypeBsmArgument(it.getAsKfgType(cm))
+                is AsmHandle -> HandleBsmArgument(it.asHandle)
                 else -> unreachable("Unknown arg of bsm: $it")
             }
         }.reversed()

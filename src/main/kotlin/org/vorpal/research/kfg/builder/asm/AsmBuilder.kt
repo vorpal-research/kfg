@@ -1,19 +1,120 @@
 package org.vorpal.research.kfg.builder.asm
 
-import org.objectweb.asm.Opcodes.*
+import org.objectweb.asm.Opcodes.ACONST_NULL
+import org.objectweb.asm.Opcodes.ANEWARRAY
+import org.objectweb.asm.Opcodes.ARRAYLENGTH
+import org.objectweb.asm.Opcodes.ASTORE
+import org.objectweb.asm.Opcodes.ATHROW
+import org.objectweb.asm.Opcodes.BIPUSH
+import org.objectweb.asm.Opcodes.CHECKCAST
+import org.objectweb.asm.Opcodes.D2F
+import org.objectweb.asm.Opcodes.D2I
+import org.objectweb.asm.Opcodes.D2L
+import org.objectweb.asm.Opcodes.DCMPG
+import org.objectweb.asm.Opcodes.DCMPL
+import org.objectweb.asm.Opcodes.DCONST_0
+import org.objectweb.asm.Opcodes.DCONST_1
+import org.objectweb.asm.Opcodes.F2D
+import org.objectweb.asm.Opcodes.F2I
+import org.objectweb.asm.Opcodes.F2L
+import org.objectweb.asm.Opcodes.FCMPG
+import org.objectweb.asm.Opcodes.FCMPL
+import org.objectweb.asm.Opcodes.FCONST_0
+import org.objectweb.asm.Opcodes.FCONST_1
+import org.objectweb.asm.Opcodes.FCONST_2
+import org.objectweb.asm.Opcodes.GETFIELD
+import org.objectweb.asm.Opcodes.GETSTATIC
+import org.objectweb.asm.Opcodes.GOTO
+import org.objectweb.asm.Opcodes.I2B
+import org.objectweb.asm.Opcodes.I2C
+import org.objectweb.asm.Opcodes.I2D
+import org.objectweb.asm.Opcodes.I2F
+import org.objectweb.asm.Opcodes.I2L
+import org.objectweb.asm.Opcodes.I2S
+import org.objectweb.asm.Opcodes.IALOAD
+import org.objectweb.asm.Opcodes.IASTORE
+import org.objectweb.asm.Opcodes.ICONST_0
+import org.objectweb.asm.Opcodes.ICONST_1
+import org.objectweb.asm.Opcodes.IF_ACMPEQ
+import org.objectweb.asm.Opcodes.IF_ACMPNE
+import org.objectweb.asm.Opcodes.IF_ICMPEQ
+import org.objectweb.asm.Opcodes.IF_ICMPGE
+import org.objectweb.asm.Opcodes.IF_ICMPGT
+import org.objectweb.asm.Opcodes.IF_ICMPLE
+import org.objectweb.asm.Opcodes.IF_ICMPLT
+import org.objectweb.asm.Opcodes.IF_ICMPNE
+import org.objectweb.asm.Opcodes.ILOAD
+import org.objectweb.asm.Opcodes.INEG
+import org.objectweb.asm.Opcodes.INSTANCEOF
+import org.objectweb.asm.Opcodes.INVOKEINTERFACE
+import org.objectweb.asm.Opcodes.IRETURN
+import org.objectweb.asm.Opcodes.ISTORE
+import org.objectweb.asm.Opcodes.L2D
+import org.objectweb.asm.Opcodes.L2F
+import org.objectweb.asm.Opcodes.L2I
+import org.objectweb.asm.Opcodes.LCMP
+import org.objectweb.asm.Opcodes.LCONST_0
+import org.objectweb.asm.Opcodes.MONITORENTER
+import org.objectweb.asm.Opcodes.MONITOREXIT
+import org.objectweb.asm.Opcodes.NEW
+import org.objectweb.asm.Opcodes.NEWARRAY
+import org.objectweb.asm.Opcodes.NOP
+import org.objectweb.asm.Opcodes.PUTFIELD
+import org.objectweb.asm.Opcodes.PUTSTATIC
+import org.objectweb.asm.Opcodes.RETURN
+import org.objectweb.asm.Opcodes.SIPUSH
 import org.objectweb.asm.Type.getType
-import org.objectweb.asm.tree.*
-import org.vorpal.research.kfg.*
+import org.objectweb.asm.tree.AbstractInsnNode
+import org.objectweb.asm.tree.AnnotationNode
+import org.objectweb.asm.tree.FieldInsnNode
+import org.objectweb.asm.tree.InsnList
+import org.objectweb.asm.tree.InsnNode
+import org.objectweb.asm.tree.IntInsnNode
+import org.objectweb.asm.tree.InvokeDynamicInsnNode
+import org.objectweb.asm.tree.JumpInsnNode
+import org.objectweb.asm.tree.LabelNode
+import org.objectweb.asm.tree.LdcInsnNode
+import org.objectweb.asm.tree.LookupSwitchInsnNode
+import org.objectweb.asm.tree.MethodInsnNode
+import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.MultiANewArrayInsnNode
+import org.objectweb.asm.tree.ParameterNode
+import org.objectweb.asm.tree.TableSwitchInsnNode
+import org.objectweb.asm.tree.TryCatchBlockNode
+import org.objectweb.asm.tree.TypeInsnNode
+import org.objectweb.asm.tree.VarInsnNode
+import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.InvalidOpcodeException
+import org.vorpal.research.kfg.InvalidOperandException
+import org.vorpal.research.kfg.InvalidStateException
+import org.vorpal.research.kfg.UnknownInstanceException
+import org.vorpal.research.kfg.ir.AnnotationBase
 import org.vorpal.research.kfg.ir.BasicBlock
 import org.vorpal.research.kfg.ir.Method
 import org.vorpal.research.kfg.ir.MethodDescriptor
-import org.vorpal.research.kfg.ir.value.*
+import org.vorpal.research.kfg.ir.value.BoolConstant
+import org.vorpal.research.kfg.ir.value.ByteConstant
+import org.vorpal.research.kfg.ir.value.CharConstant
+import org.vorpal.research.kfg.ir.value.ClassConstant
+import org.vorpal.research.kfg.ir.value.Constant
+import org.vorpal.research.kfg.ir.value.DoubleConstant
+import org.vorpal.research.kfg.ir.value.FloatConstant
+import org.vorpal.research.kfg.ir.value.IntConstant
+import org.vorpal.research.kfg.ir.value.LongConstant
+import org.vorpal.research.kfg.ir.value.MethodConstant
+import org.vorpal.research.kfg.ir.value.NullConstant
+import org.vorpal.research.kfg.ir.value.ShortConstant
+import org.vorpal.research.kfg.ir.value.StringConstant
+import org.vorpal.research.kfg.ir.value.Value
 import org.vorpal.research.kfg.ir.value.instruction.*
 import org.vorpal.research.kfg.type.*
+import org.vorpal.research.kfg.util.DefaultTypeHolder
+import org.vorpal.research.kfg.util.MethodDescriptorHolder
 import org.vorpal.research.kfg.visitor.MethodVisitor
 import org.vorpal.research.kthelper.assert.unreachable
 import org.vorpal.research.kthelper.collection.mapToArray
 import org.vorpal.research.kthelper.collection.stackOf
+import org.vorpal.research.kthelper.logging.log
 import org.objectweb.asm.Handle as AsmHandle
 import org.objectweb.asm.Type as AsmType
 
@@ -394,7 +495,6 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             isInterface
         )
 
-    private val Type.asAsmType: AsmType get() = getType(this.asmDesc)
     private val MethodDescriptor.asAsmType: AsmType get() = getType(this.asmDesc)
 
     override fun visitInvokeDynamicInst(inst: InvokeDynamicInst) {
@@ -404,15 +504,19 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             inst.bootstrapMethod.asAsmHandle,
             *inst.bootstrapMethodArgs.mapToArray {
                 when (it) {
-                    is IntConstant -> it.value
-                    is FloatConstant -> it.value
-                    is LongConstant -> it.value
-                    is DoubleConstant -> it.value
-                    is StringConstant -> it.value
-                    is Type -> it.asAsmType
-                    is MethodDescriptor -> it.asAsmType
-                    is Handle -> it.asAsmHandle
-                    else -> unreachable("Unknown arg of bsm: $it")
+                    is NumberBsmArgument -> when (val number = it.number) {
+                        is IntConstant -> number.value
+                        is FloatConstant -> number.value
+                        is LongConstant -> number.value
+                        is DoubleConstant -> number.value
+                        else -> unreachable { log.error("Unknown number constant in bsm method") }
+                    }
+                    is StringBsmArgument -> (it.string as StringConstant).value
+                    is TypeBsmArgument -> when (val type = it.typeHolder) {
+                        is DefaultTypeHolder -> type.type
+                        is MethodDescriptorHolder -> type.desc.asAsmType
+                    }
+                    is HandleBsmArgument -> it.handle.asAsmHandle
                 }
             }
         )
@@ -552,7 +656,36 @@ class AsmBuilder(override val cm: ClassManager, val method: Method) : MethodVisi
             bb.insnList.forEach { insnList.add(it) }
             bb.terminateInsnList.forEach { insnList.add(it) }
         }
-        method.mn.parameters = method.parameters.map { ParameterNode(it.name, it.modifiers.value) }
+        method.mn.visibleParameterAnnotations = method.parameters.mapToArray { arrayListOf() }
+        method.mn.invisibleParameterAnnotations = method.parameters.mapToArray { arrayListOf() }
+        method.mn.parameters = method.parameters.mapIndexed { index, param ->
+            param.annotations.forEach {
+                val list: MutableList<AnnotationNode> = when {
+                    it.visible -> method.mn.visibleParameterAnnotations[index]
+                    else -> method.mn.invisibleParameterAnnotations[index]
+                }
+                list += AnnotationBase.toAnnotationNode(it)
+            }
+            ParameterNode(param.name, param.modifiers.value)
+        }
+        method.mn.visibleAnnotations = mutableListOf()
+        method.mn.invisibleAnnotations = mutableListOf()
+        method.mn.visibleTypeAnnotations = mutableListOf()
+        method.mn.invisibleTypeAnnotations = mutableListOf()
+        method.annotations.forEach {
+            val list = when {
+                it.visible -> method.mn.visibleAnnotations
+                else -> method.mn.invisibleAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
+        method.typeAnnotations.forEach {
+            val list = when {
+                it.visible -> method.mn.visibleTypeAnnotations
+                else -> method.mn.invisibleTypeAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
         method.mn.exceptions = method.exceptions.map { it.fullName }
         method.mn.instructions = insnList
         method.mn.tryCatchBlocks = buildTryCatchBlocks()

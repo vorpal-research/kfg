@@ -243,7 +243,7 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = InvokeDynamicInst(name, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
@@ -253,7 +253,7 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = getInvokeDynamic(
         ctx,
@@ -270,7 +270,7 @@ class InstructionFactory internal constructor(val cm: ClassManager) {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = InvokeDynamicInst(methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands, ctx)
 
@@ -622,7 +622,7 @@ interface InstructionBuilder {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = instructions.getInvokeDynamic(
         ctx,
@@ -639,7 +639,7 @@ interface InstructionBuilder {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = instructions.getInvokeDynamic(
         ctx,
@@ -655,7 +655,7 @@ interface InstructionBuilder {
         methodName: String,
         methodDescriptor: MethodDescriptor,
         bootstrapMethod: Handle,
-        bootstrapMethodArgs: List<Any>,
+        bootstrapMethodArgs: List<BootstrapMethodArgument>,
         operands: List<Value>
     ) = instructions.getInvokeDynamic(ctx, methodName, methodDescriptor, bootstrapMethod, bootstrapMethodArgs, operands)
 

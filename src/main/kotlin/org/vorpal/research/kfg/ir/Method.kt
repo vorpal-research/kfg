@@ -1,7 +1,7 @@
 package org.vorpal.research.kfg.ir
 
-import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.ParameterNode
 import org.vorpal.research.kfg.ClassManager
 import org.vorpal.research.kfg.KfgException
 import org.vorpal.research.kfg.builder.cfg.CfgBuilder
@@ -253,6 +253,9 @@ class Method : Node {
     var parameters = listOf<Parameter>()
     var exceptions = setOf<Class>()
 
+    override val innerAnnotations = mutableSetOf<Annotation>()
+    override val innerTypeAnnotations = mutableSetOf<TypeAnnotation>()
+
     companion object {
         const val CONSTRUCTOR_NAME = "<init>"
         const val STATIC_INIT_NAME = "<clinit>"
@@ -266,8 +269,20 @@ class Method : Node {
         this.klass = klass
         this.mn = node.jsrInlined
         this.desc = MethodDescriptor.fromDesc(cm.type, node.desc)
-        this.parameters = getParameters(mn)
+        this.parameters = getParameters(cm, mn, argTypes)
         this.exceptions = mn.exceptions.mapTo(mutableSetOf()) { cm[it] }
+        node.visibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = true)
+        }
+        node.invisibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = false)
+        }
+        node.visibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = true)
+        }
+        node.invisibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = false)
+        }
     }
 
     constructor(
@@ -280,53 +295,6 @@ class Method : Node {
         this.klass = klass
         this.mn = MethodNode(modifiers.value, name, desc.asmDesc, null, null)
         this.desc = desc
-    }
-
-    private fun getParameters(methodNode: MethodNode): List<Parameter> {
-        return when {
-            mn.parameters.isNotEmpty() -> processNodeParameters(methodNode)
-            else -> processImplicitNodeParameters(methodNode)
-        }
-    }
-
-    private fun processNodeParameters(methodNode: MethodNode): List<Parameter> = buildList {
-        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations ?: arrayOfNulls(mn.parameters.size)
-        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations ?: arrayOfNulls(mn.parameters.size)
-
-        for ((index, param) in mn.parameters.withIndex()) {
-            val parameterAnnotationsNodes = invisibleParameterAnnotations[index].orEmpty() +
-                    visibleParameterAnnotations[index].orEmpty()
-
-            val annotations = parameterAnnotationsNodes.map { annotationNode ->
-                MethodParameterAnnotation.get(annotationNode, cm)
-            }
-
-            add(Parameter(cm, index, param?.name ?: "", desc.args[index], Modifiers(param?.access ?: 0), annotations))
-        }
-    }
-
-    private fun processImplicitNodeParameters(methodNode: MethodNode): List<Parameter> = buildList {
-        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations
-        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations
-        invisibleParameterAnnotations?.let { annotations ->
-            addAll(getParametersStubs(annotations))
-        }
-
-        visibleParameterAnnotations?.let { annotations ->
-            addAll(getParametersStubs(annotations))
-        }
-    }
-
-    private fun getParametersStubs(annotations: Array<List<AnnotationNode>>): List<Parameter> {
-        return annotations.mapIndexed { index, parameterAnnotations ->
-            val type = cm.type.voidType
-
-            @Suppress("UselessCallOnNotNull")  // interoperability error: parameterAnnotations may be null
-            val annotationsOfParameter = parameterAnnotations.orEmpty().map { annotationNode ->
-                MethodParameterAnnotation.get(annotationNode, cm)
-            }
-            StubParameter(cm, index, type, Modifiers(0), annotationsOfParameter)
-        }
     }
 
     val argTypes get() = desc.args
@@ -355,6 +323,23 @@ class Method : Node {
         if (bodyInitialized) append(body.print())
     }
 
+
+    public override fun addAnnotation(annotation: Annotation) {
+        super.addAnnotation(annotation)
+    }
+
+    public override fun addTypeAnnotation(annotation: TypeAnnotation) {
+        super.addTypeAnnotation(annotation)
+    }
+
+    public override fun removeAnnotation(annotation: Annotation) {
+        super.removeAnnotation(annotation)
+    }
+
+    public override fun removeTypeAnnotation(annotation: TypeAnnotation) {
+        super.removeTypeAnnotation(annotation)
+    }
+
     override fun toString() = prototype
 
 //    override fun hashCode() = defaultHashCode(name, klass, desc)
@@ -377,3 +362,43 @@ class Method : Node {
         body.view(name, dot, viewer)
     }
 }
+
+
+private fun getParameters(cm: ClassManager, methodNode: MethodNode, argTypes: List<Type>): List<Parameter> =
+    processNodeParameters(cm, methodNode, argTypes, argTypes.indices.map {
+        methodNode.parameters.orEmpty().getOrNull(it)
+    })
+
+private fun processNodeParameters(
+    cm: ClassManager,
+    methodNode: MethodNode,
+    argTypes: List<Type>,
+    parameters: List<ParameterNode?>,
+): List<Parameter> =
+    buildList {
+        val visibleParameterAnnotations = methodNode.visibleParameterAnnotations ?: arrayOfNulls(parameters.size)
+        val invisibleParameterAnnotations = methodNode.invisibleParameterAnnotations ?: arrayOfNulls(parameters.size)
+
+        for ((index, param) in parameters.withIndex()) {
+            val visibleAnnotationsNodes = visibleParameterAnnotations[index].orEmpty()
+            val invisibleAnnotationNodes = invisibleParameterAnnotations[index].orEmpty()
+
+            val visibleAnnotations = visibleAnnotationsNodes.mapTo(mutableSetOf()) {
+                AnnotationBase.parseAnnotation(cm, it, visible = true)
+            }
+            val invisibleAnnotations = invisibleAnnotationNodes.mapTo(mutableSetOf()) {
+                AnnotationBase.parseAnnotation(cm, it, visible = false)
+            }
+
+            add(
+                Parameter(
+                    cm,
+                    index,
+                    param?.name ?: "",
+                    argTypes[index],
+                    Modifiers(param?.access ?: 0),
+                    visibleAnnotations + invisibleAnnotations
+                )
+            )
+        }
+    }

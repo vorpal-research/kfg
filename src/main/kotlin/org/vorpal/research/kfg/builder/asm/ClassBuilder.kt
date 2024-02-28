@@ -3,6 +3,7 @@ package org.vorpal.research.kfg.builder.asm
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.InnerClassNode
 import org.vorpal.research.kfg.ClassManager
+import org.vorpal.research.kfg.ir.AnnotationBase
 import org.vorpal.research.kfg.ir.Class
 import org.vorpal.research.kfg.ir.Field
 import org.vorpal.research.kfg.ir.Method
@@ -26,6 +27,24 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
         })
         cn.fields = klass.fields.map { it.fn }
         cn.methods = klass.allMethods.map { it.mn }
+        cn.visibleAnnotations = mutableListOf()
+        cn.invisibleAnnotations = mutableListOf()
+        cn.visibleTypeAnnotations = mutableListOf()
+        cn.invisibleTypeAnnotations = mutableListOf()
+        klass.annotations.forEach {
+            val list = when {
+                it.visible -> cn.visibleAnnotations
+                else -> cn.invisibleAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
+        klass.typeAnnotations.forEach {
+            val list = when {
+                it.visible -> cn.visibleTypeAnnotations
+                else -> cn.invisibleTypeAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
         super.visit(klass)
     }
 
@@ -39,6 +58,24 @@ class ClassBuilder(override val cm: ClassManager, val `class`: Class) : ClassVis
         field.fn.value = cm.value.unwrapConstant(field.defaultValue)
         // because sometimes ASM is not able to process kotlin-generated signatures
         field.fn.signature = null
+        field.fn.visibleAnnotations = mutableListOf()
+        field.fn.invisibleAnnotations = mutableListOf()
+        field.fn.visibleTypeAnnotations = mutableListOf()
+        field.fn.invisibleTypeAnnotations = mutableListOf()
+        field.annotations.forEach {
+            val list = when {
+                it.visible -> field.fn.visibleAnnotations
+                else -> field.fn.invisibleAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
+        field.typeAnnotations.forEach {
+            val list = when {
+                it.visible -> field.fn.visibleTypeAnnotations
+                else -> field.fn.invisibleTypeAnnotations
+            }
+            list += AnnotationBase.toAnnotationNode(it)
+        }
     }
 
     fun build(): ClassNode {

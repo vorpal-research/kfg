@@ -11,12 +11,26 @@ class Field : Node {
     internal val fn: FieldNode
     val type: Type
     var defaultValue: Value?
+    override val innerAnnotations = mutableSetOf<Annotation>()
+    override val innerTypeAnnotations = mutableSetOf<TypeAnnotation>()
 
     constructor(cm: ClassManager, klass: Class, fn: FieldNode) : super(cm, fn.name, Modifiers(fn.access)) {
         this.fn = fn
         this.klass = klass
         this.type = parseDescOrNull(cm.type, fn.desc)!!
         this.defaultValue = cm.value.getConstant(fn.value)
+        fn.visibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = true)
+        }
+        fn.invisibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = false)
+        }
+        fn.visibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = true)
+        }
+        fn.invisibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = false)
+        }
     }
 
     constructor(cm: ClassManager, klass: Class, name: String, type: Type, modifiers: Modifiers = Modifiers(0)) :
@@ -29,6 +43,22 @@ class Field : Node {
 
     override val asmDesc
         get() = type.asmDesc
+
+    public override fun addAnnotation(annotation: Annotation) {
+        super.addAnnotation(annotation)
+    }
+
+    public override fun addTypeAnnotation(annotation: TypeAnnotation) {
+        super.addTypeAnnotation(annotation)
+    }
+
+    public override fun removeAnnotation(annotation: Annotation) {
+        super.removeAnnotation(annotation)
+    }
+
+    public override fun removeTypeAnnotation(annotation: TypeAnnotation) {
+        super.removeTypeAnnotation(annotation)
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -37,6 +37,8 @@ abstract class Class : Node {
     protected var outerMethodName: String? = null
     protected var outerMethodDesc: String? = null
     protected var innerClassesMap = mutableMapOf<String, Modifiers>()
+    override val innerAnnotations = mutableSetOf<Annotation>()
+    override val innerTypeAnnotations = mutableSetOf<TypeAnnotation>()
 
     val allMethods get() = innerMethods.values.toSet()
     val constructors: Set<Method> get() = allMethods.filterTo(mutableSetOf()) { it.isConstructor }
@@ -107,6 +109,18 @@ abstract class Class : Node {
         this.outerClassName = cn.outerClass
         this.outerMethodName = cn.outerMethod
         this.outerMethodDesc = cn.outerMethodDesc
+        cn.visibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = true)
+        }
+        cn.invisibleAnnotations.orEmpty().filterNotNull().forEach {
+            innerAnnotations += AnnotationBase.parseAnnotation(cm, it, visible = false)
+        }
+        cn.visibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = true)
+        }
+        cn.invisibleTypeAnnotations.orEmpty().filterNotNull().forEach {
+            innerTypeAnnotations += AnnotationBase.parseTypeAnnotation(cm, it, visible = false)
+        }
     }
 
     internal fun init() {
@@ -179,6 +193,22 @@ abstract class Class : Node {
 
     fun addInnerClass(klass: Class, modifiers: Modifiers) {
         innerClassesMap[klass.fullName] = modifiers
+    }
+
+    public override fun addAnnotation(annotation: Annotation) {
+        super.addAnnotation(annotation)
+    }
+
+    public override fun addTypeAnnotation(annotation: TypeAnnotation) {
+        super.addTypeAnnotation(annotation)
+    }
+
+    public override fun removeAnnotation(annotation: Annotation) {
+        super.removeAnnotation(annotation)
+    }
+
+    public override fun removeTypeAnnotation(annotation: TypeAnnotation) {
+        super.removeTypeAnnotation(annotation)
     }
 
     override fun toString() = fullName
