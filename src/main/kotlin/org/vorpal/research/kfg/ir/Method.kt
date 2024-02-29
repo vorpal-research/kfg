@@ -394,7 +394,7 @@ private fun processNodeParameters(
                 Parameter(
                     cm,
                     index,
-                    param?.name ?: "",
+                    param?.name ?: Parameter.STUB_NAME,
                     argTypes[index],
                     Modifiers(param?.access ?: 0),
                     visibleAnnotations + invisibleAnnotations

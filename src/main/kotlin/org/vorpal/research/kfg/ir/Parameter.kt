@@ -11,6 +11,10 @@ class Parameter(
     modifiers: Modifiers,
     annotations: Set<Annotation>
 ) : Node(cm, name, modifiers) {
+    companion object {
+        const val STUB_NAME = "STUB"
+    }
+
     override val asmDesc = type.asmDesc
     override val innerAnnotations = annotations.toMutableSet()
     override val innerTypeAnnotations = mutableSetOf<TypeAnnotation>()
